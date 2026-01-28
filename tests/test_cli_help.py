@@ -1,9 +1,6 @@
-from typer.testing import CliRunner
-
-from money_map.app.cli import app
+from money_map.app import cli
 
 
 def test_cli_help() -> None:
-    runner = CliRunner()
-    result = runner.invoke(app, ["--help"])
-    assert result.exit_code == 0
+    exit_code = cli.main(["--help"])
+    assert exit_code == 0

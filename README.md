@@ -19,16 +19,16 @@ python -m pip install -e ".[dev]"
 ## CLI
 
 ```bash
-money-map --help
-money-map validate --data-dir data
-money-map recommend --profile profiles/demo_fast_start.yaml --top 5
-money-map export --profile profiles/demo_fast_start.yaml --out exports
+python -m money_map --help
+python -m money_map validate --data-dir data
+python -m money_map recommend --profile profiles/demo_fast_start.yaml --top 5
+python -m money_map export --profile profiles/demo_fast_start.yaml --out exports
 ```
 
 ## UI
 
 ```bash
-money-map ui --data-dir data --port 8501
+python -m money_map ui --data-dir data --port 8501
 ```
 
 Open the Streamlit URL printed in the terminal (usually http://localhost:8501).
@@ -39,8 +39,8 @@ Open the Streamlit URL printed in the terminal (usually http://localhost:8501).
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
-money-map --help
-money-map ui
-money-map validate --data-dir data
+python -m money_map --help
+python -m money_map ui
+python -m money_map validate --data-dir data
 pytest
 ```

@@ -4,7 +4,46 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, Field
+try:
+    from pydantic import BaseModel, Field
+except ImportError:  # pragma: no cover - optional dependency
+
+    class _FieldInfo:
+        def __init__(self, default_factory: Any | None = None) -> None:
+            self.default_factory = default_factory
+
+    def Field(default_factory: Any | None = None) -> Any:  # type: ignore[override]
+        return _FieldInfo(default_factory=default_factory)
+
+    class BaseModel:  # type: ignore[override]
+        def __init__(self, **data: Any) -> None:
+            annotations = getattr(self, "__annotations__", {})
+            for name in annotations:
+                if name in data:
+                    setattr(self, name, data[name])
+                elif hasattr(self.__class__, name):
+                    default = getattr(self.__class__, name)
+                    if isinstance(default, _FieldInfo):
+                        value = default.default_factory() if default.default_factory else None
+                        setattr(self, name, value)
+                    elif isinstance(default, (list, dict)):
+                        setattr(self, name, default.copy())
+                    else:
+                        setattr(self, name, default)
+            for key, value in data.items():
+                if key not in annotations:
+                    setattr(self, key, value)
+
+        @classmethod
+        def model_validate(cls, data: Any) -> "BaseModel":
+            if isinstance(data, cls):
+                return data
+            if not isinstance(data, dict):
+                raise TypeError("model_validate expects a dict")
+            return cls(**data)
+
+        def model_dump(self) -> dict[str, Any]:
+            return dict(self.__dict__)
 
 
 class StalenessPolicy(BaseModel):
