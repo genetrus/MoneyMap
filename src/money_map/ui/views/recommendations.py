@@ -9,7 +9,6 @@ from money_map.core.model import UserProfile
 from money_map.core.recommend import recommend
 from money_map.i18n import t
 
-
 REALITY_BLOCKERS = [
     "ui.reco.blocker_1",
     "ui.reco.blocker_2",

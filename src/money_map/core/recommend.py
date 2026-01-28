@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from money_map.core.model import RecommendationResult, UserProfile
 from money_map.core.load import AppData
+from money_map.core.model import RecommendationResult, UserProfile
 
 
 def _to_date(value: date | str) -> date:

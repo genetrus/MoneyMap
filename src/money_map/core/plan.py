@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from money_map.core.model import RoutePlan, UserProfile
 from money_map.core.load import AppData
+from money_map.core.model import RoutePlan, UserProfile
 
 
 def build_plan(
