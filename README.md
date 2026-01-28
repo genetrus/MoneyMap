@@ -21,6 +21,7 @@ python -m pip install -e ".[dev]"
 ```bash
 python -m money_map --help
 python -m money_map validate --data-dir data
+python -m money_map validate --data-dir data --strict
 python -m money_map recommend --profile profiles/demo_fast_start.yaml --top 5
 python -m money_map export --profile profiles/demo_fast_start.yaml --out exports
 ```
@@ -33,6 +34,17 @@ python -m money_map ui --data-dir data --port 8501
 
 Open the Streamlit URL printed in the terminal (usually http://localhost:8501).
 
+## Data setup (start here)
+
+1. Edit `data/meta.yaml` to confirm `schema_version` and `reviewed_at`.
+2. Update lookup files under `data/knowledge/` (skills, assets, constraints, objectives, risks).
+3. Maintain core catalogs in `data/taxonomy.yaml`, `data/cells.yaml`, and `data/variants.yaml`.
+4. Run strict validation after edits:
+
+```bash
+python -m money_map validate --data-dir data --strict
+```
+
 ## Local development checklist
 
 ```bash
@@ -42,5 +54,6 @@ python -m pip install -e ".[dev]"
 python -m money_map --help
 python -m money_map ui
 python -m money_map validate --data-dir data
+python -m money_map validate --data-dir data --strict
 python -m unittest discover -s tests -p "test_*.py" -v
 ```

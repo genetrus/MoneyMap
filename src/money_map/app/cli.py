@@ -94,8 +94,8 @@ def _print_validation_report(
             print(f"{t('cli.validate.warn', lang)}: {t(key, lang, **params)}")
 
 
-def validate_command(data_dir: Path, lang: str) -> int:
-    fatals, warns = validate_app_data(data_dir)
+def validate_command(data_dir: Path, lang: str, strict: bool) -> int:
+    fatals, warns = validate_app_data(data_dir, strict=strict)
     _print_validation_report(fatals, warns, lang)
     if fatals:
         return 1
@@ -179,8 +179,9 @@ if typer:
     def validate(
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
         lang: str = typer.Option("en", "--lang"),
+        strict: bool = typer.Option(False, "--strict"),
     ) -> None:
-        raise typer.Exit(code=validate_command(data_dir, lang))
+        raise typer.Exit(code=validate_command(data_dir, lang, strict))
 
     @app.command()
     def ui(
@@ -215,6 +216,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("--data-dir", default="data")
+    validate_parser.add_argument("--strict", action="store_true")
 
     ui_parser = subparsers.add_parser("ui")
     ui_parser.add_argument("--data-dir", default="data")
@@ -248,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
         return int(exc.code) if exc.code is not None else 0
 
     if args.command == "validate":
-        return validate_command(Path(args.data_dir), args.lang)
+        return validate_command(Path(args.data_dir), args.lang, args.strict)
     if args.command == "ui":
         return ui_command(Path(args.data_dir), args.port)
     if args.command == "recommend":
