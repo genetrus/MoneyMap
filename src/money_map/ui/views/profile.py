@@ -37,15 +37,9 @@ def render(data_dir: Path, lang: str) -> None:
             max_value=1_000_000,
             value=profile.capital_eur,
         )
-        language_level = st.text_input(
-            t("ui.profile.language_level", lang), profile.language_level
-        )
-        skills = st.text_input(
-            t("ui.profile.skills", lang), ", ".join(profile.skills)
-        )
-        assets = st.text_input(
-            t("ui.profile.assets", lang), ", ".join(profile.assets)
-        )
+        language_level = st.text_input(t("ui.profile.language_level", lang), profile.language_level)
+        skills = st.text_input(t("ui.profile.skills", lang), ", ".join(profile.skills))
+        assets = st.text_input(t("ui.profile.assets", lang), ", ".join(profile.assets))
         constraints = st.text_input(
             t("ui.profile.constraints", lang), ", ".join(profile.constraints)
         )

@@ -4,9 +4,7 @@ from money_map.core.load import AppData
 from money_map.core.model import RoutePlan, UserProfile
 
 
-def build_plan(
-    selected_variant_id: str, profile: UserProfile, appdata: AppData
-) -> RoutePlan:
+def build_plan(selected_variant_id: str, profile: UserProfile, appdata: AppData) -> RoutePlan:
     _ = profile
     _ = appdata
     return RoutePlan(

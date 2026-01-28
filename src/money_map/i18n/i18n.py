@@ -13,9 +13,11 @@ SUPPORTED_LANGS = ["en", "de", "fr", "es", "pl", "ru"]
 def _load_lang(lang: str) -> dict[str, Any]:
     if lang not in SUPPORTED_LANGS:
         lang = "en"
-    with resources.files("money_map.i18n").joinpath(f"{lang}.yaml").open(
-        "r", encoding="utf-8"
-    ) as handle:
+    with (
+        resources.files("money_map.i18n")
+        .joinpath(f"{lang}.yaml")
+        .open("r", encoding="utf-8") as handle
+    ):
         return yaml.safe_load(handle) or {}
 
 

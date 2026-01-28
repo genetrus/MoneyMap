@@ -11,7 +11,9 @@ Money Map is an offline-first prototype for exploring income path variants, vali
 ## Install
 
 ```bash
-pip install -e .
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
 ```
 
 ## CLI
@@ -30,3 +32,15 @@ money-map ui --data-dir data --port 8501
 ```
 
 Open the Streamlit URL printed in the terminal (usually http://localhost:8501).
+
+## Local development checklist
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+money-map --help
+money-map ui
+money-map validate --data-dir data
+pytest
+```

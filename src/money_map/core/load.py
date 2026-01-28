@@ -19,17 +19,11 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     raw_cells = load_yaml(data_dir / "cells.yaml")
     raw_variants = load_yaml(data_dir / "variants.yaml")
     taxonomy_items = [
-        TaxonomyItem.model_validate(item)
-        for item in raw_taxonomy
-        if isinstance(raw_taxonomy, list)
+        TaxonomyItem.model_validate(item) for item in raw_taxonomy if isinstance(raw_taxonomy, list)
     ]
-    cells = [
-        Cell.model_validate(item) for item in raw_cells if isinstance(raw_cells, list)
-    ]
+    cells = [Cell.model_validate(item) for item in raw_cells if isinstance(raw_cells, list)]
     variants = [
-        Variant.model_validate(item)
-        for item in raw_variants
-        if isinstance(raw_variants, list)
+        Variant.model_validate(item) for item in raw_variants if isinstance(raw_variants, list)
     ]
     bridges = load_yaml(data_dir / "bridges.yaml") or []
     rulepack_path = data_dir / "rulepacks" / f"{country_code}.yaml"

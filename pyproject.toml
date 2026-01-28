@@ -21,7 +21,7 @@ dev = ["pytest", "ruff"]
 money-map = "money_map.app.cli:app"
 
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]

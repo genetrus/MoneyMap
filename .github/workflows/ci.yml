@@ -14,15 +14,14 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-          pip install pytest ruff
+          python -m pip install -U pip
+          python -m pip install -e ".[dev]"
       - name: Ruff
         run: |
-          ruff check .
+          python -m ruff check .
       - name: Pytest
         run: |
-          pytest
+          python -m pytest
       - name: Validate data
         run: |
           money-map validate --data-dir data
