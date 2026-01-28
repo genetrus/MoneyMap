@@ -1,6 +1,15 @@
-from money_map.app import cli
+import subprocess
+import sys
+import unittest
 
 
-def test_cli_help() -> None:
-    exit_code = cli.main(["--help"])
-    assert exit_code == 0
+class TestCliHelp(unittest.TestCase):
+    def test_cli_help(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "money_map", "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("validate", result.stdout.lower())

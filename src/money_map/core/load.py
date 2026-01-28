@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import json
 from pathlib import Path
 from typing import Any
 
@@ -112,12 +113,21 @@ def _safe_load_basic(text: str) -> Any:
     return parsed
 
 
-def load_yaml(path: Path) -> Any:
+def load_mapping(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as handle:
         content = handle.read()
-    if yaml:
-        return yaml.safe_load(content) or {}
-    return _safe_load_basic(content) or {}
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        if yaml:
+            return yaml.safe_load(content) or {}
+        raise ValueError(
+            "PyYAML not installed; either install pyyaml or make data files JSON-compatible YAML."
+        ) from None
+
+
+def load_yaml(path: Path) -> Any:
+    return load_mapping(path)
 
 
 def _ensure_list(data: Any) -> list[Any]:

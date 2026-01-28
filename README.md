@@ -42,5 +42,5 @@ python -m pip install -e ".[dev]"
 python -m money_map --help
 python -m money_map ui
 python -m money_map validate --data-dir data
-pytest
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
