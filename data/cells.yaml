@@ -1,0 +1,8 @@
+- cell_id: "cell_research"
+  title_key: "cell.research"
+- cell_id: "cell_delivery"
+  title_key: "cell.delivery"
+- cell_id: "cell_marketing"
+  title_key: "cell.marketing"
+- cell_id: "cell_compliance"
+  title_key: "cell.compliance"

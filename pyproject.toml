@@ -1,0 +1,41 @@
+[project]
+name = "money-map"
+version = "0.1.0"
+description = "Money Map walking skeleton"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "typer[all]",
+  "rich",
+  "streamlit",
+  "pydantic>=2",
+  "pyyaml",
+]
+
+[project.optional-dependencies]
+# For local development
+
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+money-map = "money_map.app.cli:app"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"money_map.i18n" = ["*.yaml"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]
+
+[tool.ruff.isort]
+known-first-party = ["money_map"]
+
+[tool.pytest.ini_options]
+addopts = "-q"

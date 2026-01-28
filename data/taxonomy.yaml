@@ -1,0 +1,8 @@
+- taxonomy_id: "digital_services"
+  title_key: "taxonomy.digital_services"
+- taxonomy_id: "education"
+  title_key: "taxonomy.education"
+- taxonomy_id: "commerce"
+  title_key: "taxonomy.commerce"
+- taxonomy_id: "operations"
+  title_key: "taxonomy.operations"
