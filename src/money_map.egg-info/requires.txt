@@ -1,0 +1,9 @@
+typer[all]
+rich
+streamlit
+pydantic>=2
+pyyaml
+
+[dev]
+pytest
+ruff
