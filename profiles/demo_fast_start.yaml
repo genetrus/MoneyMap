@@ -1,0 +1,10 @@
+{
+  "country_code": "DE",
+  "time_hours_per_week": 12,
+  "capital_eur": 500,
+  "language_level": "B2",
+  "skills": ["communication", "analysis"],
+  "assets": ["laptop"],
+  "constraints": ["evenings"],
+  "objective_preset": "fast_start"
+}

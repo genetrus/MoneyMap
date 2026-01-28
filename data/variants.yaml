@@ -1,0 +1,74 @@
+[
+  {
+    "variant_id": "v001",
+    "title_key": "variant.v001.title",
+    "summary_key": "variant.v001.summary",
+    "taxonomy_id": "digital_services",
+    "cells": ["cell_research", "cell_delivery", "cell_marketing"],
+    "tags": ["low_capital", "regulated"],
+    "review_date": "2025-01-10",
+    "feasibility": {"status": "stub"},
+    "economics": {"status": "stub"},
+    "legal": {"status": "stub"}
+  },
+  {
+    "variant_id": "v002",
+    "title_key": "variant.v002.title",
+    "summary_key": "variant.v002.summary",
+    "taxonomy_id": "education",
+    "cells": ["cell_research", "cell_delivery"],
+    "tags": ["remote"],
+    "review_date": "2025-01-12",
+    "feasibility": {"status": "stub"},
+    "economics": {"status": "stub"},
+    "legal": {"status": "stub"}
+  },
+  {
+    "variant_id": "v003",
+    "title_key": "variant.v003.title",
+    "summary_key": "variant.v003.summary",
+    "taxonomy_id": "education",
+    "cells": ["cell_research", "cell_marketing"],
+    "tags": ["content"],
+    "review_date": "2025-01-11",
+    "feasibility": {"status": "stub"},
+    "economics": {"status": "stub"},
+    "legal": {"status": "stub"}
+  },
+  {
+    "variant_id": "v004",
+    "title_key": "variant.v004.title",
+    "summary_key": "variant.v004.summary",
+    "taxonomy_id": "commerce",
+    "cells": ["cell_marketing", "cell_delivery"],
+    "tags": ["finance", "inventory"],
+    "review_date": "2025-01-09",
+    "feasibility": {"status": "stub"},
+    "economics": {"status": "stub"},
+    "legal": {"status": "stub"}
+  },
+  {
+    "variant_id": "v005",
+    "title_key": "variant.v005.title",
+    "summary_key": "variant.v005.summary",
+    "taxonomy_id": "education",
+    "cells": ["cell_delivery", "cell_marketing"],
+    "tags": ["community"],
+    "review_date": "2025-01-08",
+    "feasibility": {"status": "stub"},
+    "economics": {"status": "stub"},
+    "legal": {"status": "stub"}
+  },
+  {
+    "variant_id": "v006",
+    "title_key": "variant.v006.title",
+    "summary_key": "variant.v006.summary",
+    "taxonomy_id": "operations",
+    "cells": ["cell_research", "cell_compliance"],
+    "tags": ["automation"],
+    "review_date": "2025-01-07",
+    "feasibility": {"status": "stub"},
+    "economics": {"status": "stub"},
+    "legal": {"status": "stub"}
+  }
+]
