@@ -22,6 +22,7 @@ from money_map.core.model import (
     Legal,
     Meta,
     Objective,
+    ObjectivePreset,
     Risk,
     Rule,
     RulePack,
@@ -193,6 +194,7 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     assets_path = data_dir / "knowledge" / "assets.yaml"
     constraints_path = data_dir / "knowledge" / "constraints.yaml"
     objectives_path = data_dir / "knowledge" / "objectives.yaml"
+    presets_path = data_dir / "presets.yaml"
     risks_path = data_dir / "knowledge" / "risks.yaml"
 
     skills = [Skill.model_validate(item) for item in _ensure_list(load_yaml(skills_path))]
@@ -204,6 +206,10 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     objectives = [
         Objective.model_validate(item)
         for item in _ensure_list(load_yaml(objectives_path))
+    ]
+    presets = [
+        ObjectivePreset.model_validate(item)
+        for item in _ensure_list(load_yaml(presets_path))
     ]
     risks = [Risk.model_validate(item) for item in _ensure_list(load_yaml(risks_path))]
     bridges = load_yaml(data_dir / "bridges.yaml") or []
@@ -238,6 +244,7 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
         assets=_sort_by_id(assets, "asset_id"),
         constraints=_sort_by_id(constraints, "constraint_id"),
         objectives=_sort_by_id(objectives, "objective_id"),
+        presets=_sort_by_id(presets, "preset_id"),
         risks=_sort_by_id(risks, "risk_id"),
         rulepacks=rulepacks,
         rulepack=rulepack,

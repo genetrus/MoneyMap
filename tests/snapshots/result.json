@@ -1,0 +1,281 @@
+{
+  "diagnostics": {
+    "profile_country": "DE",
+    "ranked_count": 6,
+    "staleness_days": {
+      "dataset": 320,
+      "rulepack": 325
+    }
+  },
+  "ranked_variants": [
+    {
+      "assumptions": [
+        "Assumes access to platforms/tools",
+        "Assumes sufficient market demand",
+        "Assumes you can acquire clients/customers"
+      ],
+      "blockers": [],
+      "compliance_summary": {
+        "regulated_level": "none",
+        "required_kits": [
+          "de.business_registration",
+          "de.invoicing_basics",
+          "de.data_privacy",
+          "de.insurance_basic"
+        ],
+        "warnings": []
+      },
+      "cons": [
+        "Data may be stale"
+      ],
+      "pros": [
+        "Low operational complexity",
+        "Prerequisites appear covered",
+        "Fast time to first revenue"
+      ],
+      "score_breakdown": {
+        "economics": 95.0,
+        "feasibility": 88.0,
+        "fit": 85.0,
+        "legal": 88.0,
+        "staleness": 50.0
+      },
+      "score_total": 85.35,
+      "staleness": {
+        "days_since_review": 332,
+        "is_stale_force_check": true,
+        "is_stale_warn": true
+      },
+      "summary": "Package short consultations with clear deliverables.",
+      "title": "Productized micro-consulting",
+      "variant_id": "v002"
+    },
+    {
+      "assumptions": [
+        "Assumes competitive content quality",
+        "Assumes sufficient market demand",
+        "Assumes you can acquire clients/customers"
+      ],
+      "blockers": [],
+      "compliance_summary": {
+        "regulated_level": "none",
+        "required_kits": [
+          "de.business_registration",
+          "de.invoicing_basics",
+          "de.consumer_protection",
+          "de.product_safety"
+        ],
+        "warnings": []
+      },
+      "cons": [
+        "Missing some prerequisites",
+        "Data may be stale"
+      ],
+      "pros": [
+        "Capex within available capital",
+        "Potentially meets target net income",
+        "Unregulated activity"
+      ],
+      "score_breakdown": {
+        "economics": 95.0,
+        "feasibility": 68.0,
+        "fit": 70.0,
+        "legal": 88.0,
+        "staleness": 50.0
+      },
+      "score_total": 76.35,
+      "staleness": {
+        "days_since_review": 333,
+        "is_stale_force_check": true,
+        "is_stale_warn": true
+      },
+      "summary": "Create a focused course for a narrow audience.",
+      "title": "Niche online course",
+      "variant_id": "v003"
+    },
+    {
+      "assumptions": [
+        "Assumes sufficient market demand",
+        "Assumes you can acquire clients/customers"
+      ],
+      "blockers": [
+        "Verification required due to regulation and staleness"
+      ],
+      "compliance_summary": {
+        "regulated_level": "light",
+        "required_kits": [
+          "de.business_registration",
+          "de.tax_registration",
+          "de.invoicing_basics",
+          "de.data_privacy",
+          "de.insurance_basic",
+          "de.local_permits"
+        ],
+        "warnings": []
+      },
+      "cons": [
+        "Missing some prerequisites",
+        "Data may be stale"
+      ],
+      "pros": [
+        "Low operational complexity",
+        "Fast time to first revenue",
+        "Capex within available capital"
+      ],
+      "score_breakdown": {
+        "economics": 95.0,
+        "feasibility": 80.0,
+        "fit": 85.0,
+        "legal": 45.0,
+        "staleness": 30.0
+      },
+      "score_total": 74.5,
+      "staleness": {
+        "days_since_review": 334,
+        "is_stale_force_check": true,
+        "is_stale_warn": true
+      },
+      "summary": "Deliver fixed-scope digital services to nearby SMEs.",
+      "title": "Local digital services sprint",
+      "variant_id": "v001"
+    },
+    {
+      "assumptions": [
+        "Assumes active community engagement",
+        "Assumes sufficient market demand",
+        "Assumes you can acquire clients/customers"
+      ],
+      "blockers": [
+        "Verification required due to regulation and staleness"
+      ],
+      "compliance_summary": {
+        "regulated_level": "light",
+        "required_kits": [
+          "de.business_registration",
+          "de.invoicing_basics",
+          "de.insurance_basic",
+          "de.data_privacy",
+          "de.local_permits"
+        ],
+        "warnings": []
+      },
+      "cons": [
+        "Missing some prerequisites",
+        "Data may be stale"
+      ],
+      "pros": [
+        "Fast time to first revenue",
+        "Capex within available capital",
+        "Potentially meets target net income"
+      ],
+      "score_breakdown": {
+        "economics": 95.0,
+        "feasibility": 68.0,
+        "fit": 85.0,
+        "legal": 45.0,
+        "staleness": 30.0
+      },
+      "score_total": 70.9,
+      "staleness": {
+        "days_since_review": 331,
+        "is_stale_force_check": true,
+        "is_stale_warn": true
+      },
+      "summary": "Run small workshops with repeatable materials.",
+      "title": "Community-led workshop",
+      "variant_id": "v005"
+    },
+    {
+      "assumptions": [
+        "Assumes clients can provide process data",
+        "Assumes sufficient market demand",
+        "Assumes you can acquire clients/customers"
+      ],
+      "blockers": [
+        "Verification required due to regulation and staleness"
+      ],
+      "compliance_summary": {
+        "regulated_level": "light",
+        "required_kits": [
+          "de.business_registration",
+          "de.invoicing_basics",
+          "de.data_privacy",
+          "de.insurance_basic"
+        ],
+        "warnings": []
+      },
+      "cons": [
+        "High operational complexity",
+        "Missing some prerequisites"
+      ],
+      "pros": [
+        "Capex within available capital",
+        "Potentially meets target net income",
+        "Matches preferred operating mode"
+      ],
+      "score_breakdown": {
+        "economics": 95.0,
+        "feasibility": 48.0,
+        "fit": 85.0,
+        "legal": 48.0,
+        "staleness": 30.0
+      },
+      "score_total": 65.35,
+      "staleness": {
+        "days_since_review": 337,
+        "is_stale_force_check": true,
+        "is_stale_warn": true
+      },
+      "summary": "Implement simple automations for SMEs.",
+      "title": "Automation setup",
+      "variant_id": "v006"
+    },
+    {
+      "assumptions": [
+        "Assumes reliable suppliers/logistics",
+        "Assumes sufficient market demand",
+        "Assumes you can acquire clients/customers"
+      ],
+      "blockers": [
+        "Verification required due to regulation and staleness"
+      ],
+      "compliance_summary": {
+        "regulated_level": "medium",
+        "required_kits": [
+          "de.business_registration",
+          "de.tax_registration",
+          "de.invoicing_basics",
+          "de.consumer_protection",
+          "de.product_safety",
+          "de.local_permits"
+        ],
+        "warnings": [
+          "reason.legal.required_kits"
+        ]
+      },
+      "cons": [
+        "High operational complexity",
+        "Missing some prerequisites"
+      ],
+      "pros": [
+        "Potentially meets target net income"
+      ],
+      "score_breakdown": {
+        "economics": 65.0,
+        "feasibility": 48.0,
+        "fit": 70.0,
+        "legal": 30.0,
+        "staleness": 30.0
+      },
+      "score_total": 52.15,
+      "staleness": {
+        "days_since_review": 336,
+        "is_stale_force_check": true,
+        "is_stale_warn": true
+      },
+      "summary": "Resell curated products with margin control.",
+      "title": "Marketplace arbitrage",
+      "variant_id": "v004"
+    }
+  ]
+}

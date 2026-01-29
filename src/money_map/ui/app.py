@@ -6,7 +6,15 @@ from pathlib import Path
 import streamlit as st
 
 from money_map.i18n import t
-from money_map.ui.views import data_explorer, data_status, export, plan, profile, recommendations
+from money_map.ui.views import (
+    data_editor,
+    data_explorer,
+    data_status,
+    export,
+    plan,
+    profile,
+    recommendations,
+)
 
 LANG_OPTIONS = ["en", "de", "fr", "es", "pl", "ru"]
 
@@ -35,6 +43,7 @@ def main() -> None:
     nav_labels = {
         "data_status": t("nav.data_status", lang),
         "data_explorer": t("nav.data_explorer", lang),
+        "data_editor": t("nav.data_editor", lang),
         "profile": t("nav.profile", lang),
         "recommendations": t("nav.recommendations", lang),
         "plan": t("nav.plan", lang),
@@ -49,6 +58,8 @@ def main() -> None:
         data_status.render(data_dir, lang)
     elif selection == "data_explorer":
         data_explorer.render(data_dir, lang)
+    elif selection == "data_editor":
+        data_editor.render(data_dir, lang)
     elif selection == "profile":
         profile.render(data_dir, lang)
     elif selection == "recommendations":

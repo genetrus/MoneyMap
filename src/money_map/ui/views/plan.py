@@ -8,6 +8,7 @@ from money_map.core.load import load_app_data
 from money_map.core.model import UserProfile
 from money_map.core.plan import build_plan
 from money_map.i18n import t
+from money_map.i18n.locale import format_date, format_int
 
 
 def render(data_dir: Path, lang: str) -> None:
@@ -32,7 +33,8 @@ def render(data_dir: Path, lang: str) -> None:
     )
     st.write(
         f"- {t('planner.overview.time_budget', lang)}: "
-        f"{plan.overview.get('time_hours_per_week', 0)} {t('planner.units.hours_per_week', lang)}"
+        f"{format_int(plan.overview.get('time_hours_per_week', 0), lang)} "
+        f"{t('planner.units.hours_per_week', lang)}"
     )
     if plan.overview.get("constraints"):
         st.write(
@@ -48,7 +50,8 @@ def render(data_dir: Path, lang: str) -> None:
             expanded=False,
         ):
             st.write(
-                f"{t('planner.estimated_hours', lang)}: {step.get('estimated_hours', 0)}"
+                f"{t('planner.estimated_hours', lang)}: "
+                f"{format_int(step.get('estimated_hours', 0), lang)}"
             )
             st.write(f"**{t('planner.actions', lang)}**")
             for action in step.get("actions", []):
@@ -70,7 +73,10 @@ def render(data_dir: Path, lang: str) -> None:
 
     st.subheader(t("ui.plan.next_reviews", lang))
     for review in plan.next_reviews:
-        st.write(f"- {t(review.get('item_key', ''), lang)}: {review.get('due_date')}")
+        st.write(
+            f"- {t(review.get('item_key', ''), lang)}: "
+            f"{format_date(review.get('due_date'), lang)}"
+        )
 
     st.subheader(t("ui.plan.artifacts", lang))
     for artifact in plan.artifacts:

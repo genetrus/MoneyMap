@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from money_map.core.load import AppData
-from money_map.core.model import RankedVariant, RecommendationResult, UserProfile, Variant
+from money_map.core.model import ObjectivePreset, RankedVariant, RecommendationResult, UserProfile, Variant
 from money_map.core.rules import evaluate_rulepack
 
 
@@ -59,22 +59,47 @@ def _assumptions_for_variant(variant: Variant) -> list[str]:
     return assumptions
 
 
-def _scoring_weights() -> dict[str, float]:
+def _scoring_weights(preset: ObjectivePreset | None = None) -> dict[str, float]:
+    if preset is None:
+        return {
+            "feasibility": 0.25,
+            "economics": 0.25,
+            "legal": 0.2,
+            "fit": 0.2,
+            "staleness": 0.1,
+        }
     return {
-        "feasibility": 0.25,
-        "economics": 0.25,
-        "legal": 0.2,
-        "fit": 0.2,
-        "staleness": 0.1,
+        "feasibility": preset.weight_feasibility,
+        "economics": preset.weight_economics,
+        "legal": preset.weight_legal,
+        "fit": preset.weight_fit,
+        "staleness": preset.weight_staleness,
     }
 
 
-def recommend(profile: UserProfile, appdata: AppData, top_n: int) -> RecommendationResult:
+def _find_preset(profile: UserProfile, appdata: AppData) -> ObjectivePreset | None:
+    for preset in appdata.presets:
+        if preset.preset_id == profile.objective_preset:
+            return preset
+    return appdata.presets[0] if appdata.presets else None
+
+
+def recommend(
+    profile: UserProfile, appdata: AppData, top_n: int, today: date | None = None
+) -> RecommendationResult:
     policy = appdata.meta.staleness_policy
-    today = date.today()
+    today = today or date.today()
     meta_days = (today - _to_date(appdata.meta.reviewed_at)).days
     rulepack_days = (today - _to_date(appdata.rulepack.reviewed_at)).days
     regulated_tags = set(policy.regulated_tags)
+    preset = _find_preset(profile, appdata)
+    if preset and preset.constraints_profile_overrides is not None:
+        profile = UserProfile.model_validate(
+            {
+                **(profile.model_dump() if hasattr(profile, "model_dump") else profile.__dict__),
+                "constraints": preset.constraints_profile_overrides,
+            }
+        )
 
     ranked: list[RankedVariant] = []
     for variant in sorted(appdata.variants, key=lambda item: item.variant_id):
@@ -154,7 +179,7 @@ def recommend(profile: UserProfile, appdata: AppData, top_n: int) -> Recommendat
             staleness_score = 30
         staleness_score = _clamp(staleness_score)
 
-        weights = _scoring_weights()
+        weights = _scoring_weights(preset)
         score_breakdown = {
             "feasibility": feasibility_score,
             "economics": economics_score,

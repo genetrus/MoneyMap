@@ -31,6 +31,9 @@ jobs:
       - name: Recommend sample
         run: |
           money-map recommend --profile profiles/demo_fast_start.yaml --top 5 --lang en
+      - name: Doctor
+        run: |
+          money-map doctor --data-dir data --lang en
       - name: Export sample
         run: |
-          money-map export --profile profiles/demo_fast_start.yaml --out exports --lang en
+          money-map export --profile profiles/demo_fast_start.yaml --out exports --lang en --today 2026-01-01

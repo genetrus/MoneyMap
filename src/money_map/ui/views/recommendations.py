@@ -8,6 +8,7 @@ from money_map.core.load import load_app_data
 from money_map.core.model import UserProfile
 from money_map.core.recommend import recommend
 from money_map.i18n import t
+from money_map.i18n.locale import format_percent
 
 
 def render(data_dir: Path, lang: str) -> None:
@@ -19,10 +20,24 @@ def render(data_dir: Path, lang: str) -> None:
         st.info(t("ui.common.load_profile_first", lang))
         return
 
+    presets = appdata.presets
+    preset_ids = [preset.preset_id for preset in presets]
+    preset_index = (
+        preset_ids.index(profile.objective_preset)
+        if profile.objective_preset in preset_ids
+        else 0
+    )
     objective = st.selectbox(
         t("ui.reco.objective_preset", lang),
-        options=["fast_start", "balanced", "low_risk"],
-        index=0,
+        options=preset_ids,
+        index=preset_index,
+        format_func=lambda preset_id: t(
+            next(
+                (preset.title_key for preset in presets if preset.preset_id == preset_id),
+                preset_id,
+            ),
+            lang,
+        ),
     )
 
     if st.button(t("common.recommend", lang)):
@@ -43,7 +58,8 @@ def render(data_dir: Path, lang: str) -> None:
             st.subheader(t(variant.title_key, lang))
             st.write(t(variant.summary_key, lang))
             st.caption(
-                f"{t('ui.reco.score_total', lang)}: {payload['score_total']:.2f}"
+                f"{t('ui.reco.score_total', lang)}: "
+                f"{format_percent(payload['score_total'], lang)}"
             )
             st.write(f"**{t('ui.reco.score_breakdown', lang)}**")
             for key in ("feasibility", "economics", "legal", "fit", "staleness"):

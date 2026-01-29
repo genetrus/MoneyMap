@@ -13,6 +13,7 @@ REQUIRED_FILES = [
     "cells.yaml",
     "variants.yaml",
     "bridges.yaml",
+    "presets.yaml",
     "rulepacks/DE.yaml",
     "knowledge/skills.yaml",
     "knowledge/assets.yaml",
@@ -123,6 +124,9 @@ def validate_app_data(
     constraint_ids = {item.constraint_id for item in appdata.constraints}
     objective_ids = {item.objective_id for item in appdata.objectives}
     risk_ids = {item.risk_id for item in appdata.risks}
+    preset_ids = [item.preset_id for item in appdata.presets]
+    if len(set(preset_ids)) != len(preset_ids):
+        fatals.append(("validate.preset_id_unique", {}))
 
     for variant in appdata.variants:
         fatals.extend(
@@ -281,6 +285,23 @@ def validate_app_data(
     )
     fatals.extend(
         _validate_lookup_list(
+            "presets",
+            load_yaml(data_dir / "presets.yaml"),
+            "preset_id",
+            [
+                "preset_id",
+                "title_key",
+                "summary_key",
+                "weight_feasibility",
+                "weight_economics",
+                "weight_legal",
+                "weight_fit",
+                "weight_staleness",
+            ],
+        )
+    )
+    fatals.extend(
+        _validate_lookup_list(
             "knowledge.risks",
             load_yaml(data_dir / "knowledge" / "risks.yaml"),
             "risk_id",
@@ -415,6 +436,9 @@ def validate_app_data(
         i18n_keys.add(item.title_key)
     for item in appdata.objectives:
         i18n_keys.add(item.title_key)
+    for preset in appdata.presets:
+        i18n_keys.add(preset.title_key)
+        i18n_keys.add(preset.summary_key)
     for item in appdata.risks:
         i18n_keys.add(item.title_key)
     for rulepack in appdata.rulepacks.values():
