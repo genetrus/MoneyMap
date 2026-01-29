@@ -36,7 +36,12 @@ def _tagged_actions(variant: Variant) -> list[str]:
     return actions
 
 
-def build_plan(selected_variant_id: str, profile: UserProfile, appdata: AppData) -> RoutePlan:
+def build_plan(
+    selected_variant_id: str,
+    profile: UserProfile,
+    appdata: AppData,
+    today: date | None = None,
+) -> RoutePlan:
     variant = next(
         (item for item in appdata.variants if item.variant_id == selected_variant_id),
         None,
@@ -44,7 +49,8 @@ def build_plan(selected_variant_id: str, profile: UserProfile, appdata: AppData)
     if variant is None:
         raise ValueError(f"Unknown variant_id: {selected_variant_id}")
 
-    rule_eval = evaluate_rulepack(profile, variant, appdata.rulepack, today=date.today())
+    today = today or date.today()
+    rule_eval = evaluate_rulepack(profile, variant, appdata.rulepack, today=today)
     compliance_checklist = rule_eval.compliance_checklist
     checklist_chunks = _chunk(compliance_checklist, 4)
 
@@ -104,7 +110,6 @@ def build_plan(selected_variant_id: str, profile: UserProfile, appdata: AppData)
             }
         )
 
-    today = date.today()
     next_reviews = [
         {"item_key": "planner.review.legal", "due_date": today + timedelta(days=30)},
         {"item_key": "planner.review.market", "due_date": today + timedelta(days=60)},

@@ -5,6 +5,7 @@ from pathlib import Path
 import streamlit as st
 import yaml
 
+from money_map.core.load import load_app_data
 from money_map.core.model import UserProfile
 from money_map.i18n import t
 
@@ -22,6 +23,14 @@ def render(data_dir: Path, lang: str) -> None:
         st.session_state["profile"] = _load_default_profile(data_dir)
 
     profile: UserProfile = st.session_state["profile"]
+    appdata = load_app_data(data_dir)
+    presets = appdata.presets
+    preset_ids = [preset.preset_id for preset in presets]
+    preset_index = (
+        preset_ids.index(profile.objective_preset)
+        if profile.objective_preset in preset_ids
+        else 0
+    )
 
     with st.form("profile_form"):
         country_code = st.text_input(t("ui.profile.country", lang), profile.country_code)
@@ -63,8 +72,17 @@ def render(data_dir: Path, lang: str) -> None:
         preferred_modes = st.text_input(
             t("ui.profile.preferred_modes", lang), ", ".join(profile.preferred_modes)
         )
-        objective_preset = st.text_input(
-            t("ui.profile.objective_preset", lang), profile.objective_preset
+        objective_preset = st.selectbox(
+            t("ui.profile.objective_preset", lang),
+            options=preset_ids,
+            index=preset_index,
+            format_func=lambda preset_id: t(
+                next(
+                    (preset.title_key for preset in presets if preset.preset_id == preset_id),
+                    preset_id,
+                ),
+                lang,
+            ),
         )
         submitted = st.form_submit_button(t("ui.profile.save", lang))
 

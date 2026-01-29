@@ -16,6 +16,14 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
+## Quickstart
+
+```bash
+python -m money_map doctor --data-dir data --lang en
+python -m money_map recommend --profile profiles/demo_fast_start.yaml --top 5 --lang en
+python -m money_map export --profile profiles/demo_fast_start.yaml --out exports --lang en --today 2026-01-01
+```
+
 ## CLI
 
 ```bash
@@ -24,6 +32,9 @@ python -m money_map validate --data-dir data
 python -m money_map validate --data-dir data --strict
 python -m money_map recommend --profile profiles/demo_fast_start.yaml --top 5
 python -m money_map export --profile profiles/demo_fast_start.yaml --out exports
+python -m money_map preset list --lang en
+python -m money_map preset show fast_start --lang en
+python -m money_map doctor --data-dir data --lang en
 ```
 
 ## UI
@@ -44,6 +55,11 @@ Open the Streamlit URL printed in the terminal (usually http://localhost:8501).
 ```bash
 python -m money_map validate --data-dir data --strict
 ```
+
+## Documentation
+
+- [User Guide](docs/user_guide.md)
+- [Data Workflow](docs/data_workflow.md)
 
 ## Local development checklist
 

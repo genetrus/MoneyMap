@@ -152,6 +152,19 @@ class Objective(BaseModel):
     title_key: str
 
 
+class ObjectivePreset(BaseModel):
+    preset_id: str
+    title_key: str
+    summary_key: str
+    weight_feasibility: float
+    weight_economics: float
+    weight_legal: float
+    weight_fit: float
+    weight_staleness: float
+    constraints_profile_overrides: list[str] | None = None
+    sorting_policy: str | None = None
+
+
 class Risk(BaseModel):
     risk_id: str
     title_key: str
@@ -223,6 +236,7 @@ class AppData:
     assets: list[Asset]
     constraints: list[Constraint]
     objectives: list[Objective]
+    presets: list[ObjectivePreset]
     risks: list[Risk]
     rulepacks: dict[str, RulePack]
     rulepack: RulePack

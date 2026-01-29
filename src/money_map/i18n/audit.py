@@ -22,10 +22,16 @@ CORE_KEYS = [
     "nav.plan",
     "nav.export",
     "nav.data_explorer",
+    "nav.data_editor",
     "common.run_validate",
     "common.recommend",
     "common.export",
     "common.language",
+    "common.validate",
+    "common.diff",
+    "common.save",
+    "common.revert",
+    "common.normalize_yaml",
     "cli.recommend.rank",
     "cli.recommend.title",
     "cli.recommend.score",
@@ -42,9 +48,66 @@ CORE_KEYS = [
     "cli.i18n.missing_keys",
     "cli.i18n.severity",
     "cli.i18n.none",
+    "cli.i18n.unused_keys",
+    "cli.preset.list_header",
+    "cli.preset.show_header",
+    "cli.preset.id",
+    "cli.preset.title",
+    "cli.preset.summary",
+    "cli.preset.weights",
+    "cli.preset.weight.feasibility",
+    "cli.preset.weight.economics",
+    "cli.preset.weight.legal",
+    "cli.preset.weight.fit",
+    "cli.preset.weight.staleness",
+    "cli.preset.field",
+    "cli.preset.value",
+    "cli.preset.constraints_override",
+    "cli.preset.sorting_policy",
+    "cli.preset.not_found",
+    "cli.doctor.header",
+    "cli.doctor.check",
+    "cli.doctor.status",
+    "cli.doctor.status.pass",
+    "cli.doctor.status.warn",
+    "cli.doctor.status.fail",
+    "cli.doctor.detail",
+    "cli.doctor.python",
+    "cli.doctor.dependency",
+    "cli.doctor.data_dir",
+    "cli.doctor.exports_dir",
+    "cli.doctor.validate",
+    "cli.doctor.i18n",
+    "cli.doctor.recommend",
+    "cli.doctor.ok",
+    "cli.doctor.found",
+    "cli.doctor.summary_pass",
+    "cli.doctor.summary_warn",
+    "cli.doctor.summary_fail",
     "ui.data_status.dataset_version",
     "ui.data_status.reviewed_at",
     "ui.data_status.stale_warning",
+    "ui.data_editor.header",
+    "ui.data_editor.file_select",
+    "ui.data_editor.editor_label",
+    "ui.data_editor.file_path",
+    "ui.data_editor.last_modified",
+    "ui.data_editor.summary",
+    "ui.data_editor.validate_draft",
+    "ui.data_editor.show_diff",
+    "ui.data_editor.save",
+    "ui.data_editor.revert",
+    "ui.data_editor.normalize",
+    "ui.data_editor.validation_ok",
+    "ui.data_editor.validation_failed",
+    "ui.data_editor.diff_header",
+    "ui.data_editor.diff_empty",
+    "ui.data_editor.saved",
+    "ui.data_editor.save_failed",
+    "ui.data_editor.backup_saved",
+    "ui.data_editor.parse_failed",
+    "ui.data_editor.disallowed_path",
+    "ui.data_editor.empty_selection",
     "ui.profile.header",
     "ui.reco.header",
     "ui.plan.header",
@@ -264,6 +327,9 @@ def _collect_dataset_keys(data_dir: Path) -> list[str]:
         keys.add(item.title_key)
     for item in appdata.objectives:
         keys.add(item.title_key)
+    for preset in appdata.presets:
+        keys.add(preset.title_key)
+        keys.add(preset.summary_key)
     for item in appdata.risks:
         keys.add(item.title_key)
     for rulepack in appdata.rulepacks.values():
@@ -285,12 +351,14 @@ def audit_i18n(
     data_dir: Path,
     langs: Iterable[str] | None = None,
     strict_dataset: bool = False,
+    report_unused: bool = False,
 ) -> tuple[list[MissingKey], list[MissingKey]]:
     lang_list = _normalize_langs(langs or SUPPORTED_LANGS)
     dataset_keys = _collect_dataset_keys(data_dir)
     fatals: list[MissingKey] = []
     warns: list[MissingKey] = []
 
+    used_keys = set(CORE_KEYS).union(dataset_keys)
     for lang in lang_list:
         translations = load_lang(lang)
         for key in CORE_KEYS:
@@ -302,6 +370,12 @@ def audit_i18n(
                     fatals.append(MissingKey(lang=lang, severity="FATAL", key=key))
                 else:
                     warns.append(MissingKey(lang=lang, severity="WARN", key=key))
+        if report_unused:
+            unused = sorted(
+                key for key in translations.keys() if key not in used_keys
+            )
+            for key in unused:
+                warns.append(MissingKey(lang=lang, severity="WARN", key=key))
 
     fatals.sort(key=lambda item: (item.lang, item.key))
     warns.sort(key=lambda item: (item.lang, item.key))

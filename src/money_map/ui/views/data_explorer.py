@@ -8,6 +8,7 @@ import streamlit as st
 from money_map.core.load import load_app_data, load_yaml
 from money_map.core.validate import REQUIRED_FILES, validate_app_data
 from money_map.i18n import t
+from money_map.i18n.locale import format_int
 from money_map.i18n.audit import audit_i18n
 
 
@@ -20,6 +21,7 @@ def _entity_options(appdata) -> dict[str, list]:
         "assets": appdata.assets,
         "constraints": appdata.constraints,
         "objectives": appdata.objectives,
+        "presets": appdata.presets,
         "risks": appdata.risks,
         "rulepacks": list(appdata.rulepacks.values()),
     }
@@ -58,6 +60,7 @@ def render(data_dir: Path, lang: str) -> None:
             "knowledge/assets.yaml": len(appdata.assets),
             "knowledge/constraints.yaml": len(appdata.constraints),
             "knowledge/objectives.yaml": len(appdata.objectives),
+            "presets.yaml": len(appdata.presets),
             "knowledge/risks.yaml": len(appdata.risks),
             "rulepacks": len(appdata.rulepacks),
         }
@@ -67,14 +70,16 @@ def render(data_dir: Path, lang: str) -> None:
                 {
                     t("ui.data_explorer.file", lang): rel,
                     t("ui.data_explorer.exists", lang): path.exists(),
-                    t("ui.data_explorer.count", lang): counts.get(rel, 0),
+                    t("ui.data_explorer.count", lang): format_int(
+                        counts.get(rel, 0), lang
+                    ),
                 }
             )
         file_rows.append(
             {
                 t("ui.data_explorer.file", lang): "rulepacks/",
                 t("ui.data_explorer.exists", lang): (data_dir / "rulepacks").exists(),
-                t("ui.data_explorer.count", lang): counts["rulepacks"],
+                t("ui.data_explorer.count", lang): format_int(counts["rulepacks"], lang),
             }
         )
         st.dataframe(file_rows, use_container_width=True)
@@ -117,6 +122,7 @@ def render(data_dir: Path, lang: str) -> None:
             "assets": "asset_id",
             "constraints": "constraint_id",
             "objectives": "objective_id",
+            "presets": "preset_id",
             "risks": "risk_id",
             "rulepacks": "country_code",
         }[entity_type]

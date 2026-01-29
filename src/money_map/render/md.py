@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from money_map.core.model import RoutePlan
 from money_map.i18n import t
+from money_map.i18n.locale import format_date, format_int
 
 
 def _format_list(items: list[str], lang: str) -> list[str]:
@@ -17,7 +18,8 @@ def render_plan_md(plan: RoutePlan, lang: str) -> str:
     )
     lines.append(
         f"- {t('planner.overview.time_budget', lang)}: "
-        f"{plan.overview.get('time_hours_per_week', 0)} {t('planner.units.hours_per_week', lang)}"
+        f"{format_int(plan.overview.get('time_hours_per_week', 0), lang)} "
+        f"{t('planner.units.hours_per_week', lang)}"
     )
     constraints = plan.overview.get("constraints", [])
     if constraints:
@@ -39,7 +41,8 @@ def render_plan_md(plan: RoutePlan, lang: str) -> str:
             f"({t('planner.week_label', lang, week=step.get('week'))})"
         )
         lines.append(
-            f"- {t('planner.estimated_hours', lang)}: {step.get('estimated_hours', 0)}"
+            f"- {t('planner.estimated_hours', lang)}: "
+            f"{format_int(step.get('estimated_hours', 0), lang)}"
         )
         lines.append(f"- {t('planner.actions', lang)}:")
         for action in _format_list(step.get("actions", []), lang):
@@ -77,7 +80,8 @@ def render_plan_md(plan: RoutePlan, lang: str) -> str:
     lines.append(f"## {t('planner.heading.next_reviews', lang)}")
     for review in plan.next_reviews:
         lines.append(
-            f"- {t(review.get('item_key', ''), lang)}: {review.get('due_date')}"
+            f"- {t(review.get('item_key', ''), lang)}: "
+            f"{format_date(review.get('due_date'), lang)}"
         )
     lines.append("")
 
