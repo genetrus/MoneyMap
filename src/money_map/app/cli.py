@@ -221,7 +221,8 @@ def export_command(profile: Path, out: Path, data_dir: Path, lang: str) -> int:
     return 0
 
 
-def ui_command(data_dir: Path, port: int) -> int:
+def ui_command(data_dir: Path, port: int, lang: str) -> int:
+    _ = lang
     try:
         import streamlit  # noqa: F401
     except ImportError:
@@ -251,7 +252,7 @@ if typer:
     @app.command()
     def validate(
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
-        lang: str = typer.Option("en", "--lang"),
+        lang: str = typer.Option("en", "--lang", "-l"),
         strict: bool = typer.Option(False, "--strict"),
     ) -> None:
         raise typer.Exit(code=validate_command(data_dir, lang, strict))
@@ -260,15 +261,16 @@ if typer:
     def ui(
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
         port: int = typer.Option(8501, "--port"),
+        lang: str = typer.Option("en", "--lang", "-l"),
     ) -> None:
-        raise typer.Exit(code=ui_command(data_dir, port))
+        raise typer.Exit(code=ui_command(data_dir, port, lang))
 
     @app.command("recommend")
     def recommend_cmd(
         profile: Path = typer.Option(Path("profiles/demo_fast_start.yaml"), "--profile"),
         top: int = typer.Option(10, "--top"),
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
-        lang: str = typer.Option("en", "--lang"),
+        lang: str = typer.Option("en", "--lang", "-l"),
         explain: bool = typer.Option(False, "--explain"),
     ) -> None:
         raise typer.Exit(code=recommend_command(profile, top, data_dir, lang, explain))
@@ -278,7 +280,7 @@ if typer:
         profile: Path = typer.Option(Path("profiles/demo_fast_start.yaml"), "--profile"),
         out: Path = typer.Option(Path("exports"), "--out"),
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
-        lang: str = typer.Option("en", "--lang"),
+        lang: str = typer.Option("en", "--lang", "-l"),
     ) -> None:
         raise typer.Exit(code=export_command(profile, out, data_dir, lang))
 
@@ -373,7 +375,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "validate":
         return validate_command(Path(args.data_dir), args.lang, args.strict)
     if args.command == "ui":
-        return ui_command(Path(args.data_dir), args.port)
+        return ui_command(Path(args.data_dir), args.port, args.lang)
     if args.command == "recommend":
         return recommend_command(
             Path(args.profile),

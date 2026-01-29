@@ -15,6 +15,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install -U pip
+          python -m pip install -e .
       - name: Pytest
         run: |
           python -m unittest discover -s tests -p "test_*.py" -v
@@ -29,7 +30,7 @@ jobs:
           python -m money_map data docs --data-dir data --out docs/data_dictionary.md
       - name: Recommend sample
         run: |
-          python -m money_map recommend --profile profiles/demo_fast_start.yaml --top 5 --lang en
+          money-map recommend --profile profiles/demo_fast_start.yaml --top 5 --lang en
       - name: Export sample
         run: |
-          python -m money_map export --profile profiles/demo_fast_start.yaml --out exports --lang en
+          money-map export --profile profiles/demo_fast_start.yaml --out exports --lang en
