@@ -11,7 +11,7 @@ except ImportError:  # pragma: no cover - optional dependency
     Console = None
     Table = None
 
-from money_map.core.load import load_app_data
+from money_map.core.load import load_app_data, load_yaml
 from money_map.i18n.i18n import SUPPORTED_LANGS, load_lang
 
 CORE_KEYS = [
@@ -23,6 +23,9 @@ CORE_KEYS = [
     "nav.export",
     "nav.data_explorer",
     "nav.data_editor",
+    "nav.reviews",
+    "nav.evidence",
+    "nav.simulation",
     "common.run_validate",
     "common.recommend",
     "common.export",
@@ -79,6 +82,9 @@ CORE_KEYS = [
     "cli.doctor.validate",
     "cli.doctor.i18n",
     "cli.doctor.recommend",
+    "cli.doctor.evidence",
+    "cli.doctor.review_coverage",
+    "cli.doctor.simulate",
     "cli.doctor.ok",
     "cli.doctor.found",
     "cli.doctor.summary_pass",
@@ -98,6 +104,7 @@ CORE_KEYS = [
     "ui.data_editor.save",
     "ui.data_editor.revert",
     "ui.data_editor.normalize",
+    "ui.data_editor.overlay_toggle",
     "ui.data_editor.validation_ok",
     "ui.data_editor.validation_failed",
     "ui.data_editor.diff_header",
@@ -167,6 +174,7 @@ CORE_KEYS = [
     "ui.data_explorer.run_validate",
     "ui.data_explorer.tab_entities",
     "ui.data_explorer.tab_rulepacks",
+    "ui.data_explorer.tab_evidence",
     "ui.data_explorer.rulepacks_header",
     "ui.data_explorer.rulepack_country",
     "ui.data_explorer.kits_header",
@@ -180,6 +188,78 @@ CORE_KEYS = [
     "ui.data_explorer.validation_fatals",
     "ui.data_explorer.validation_warns",
     "ui.data_explorer.i18n_missing",
+    "ui.data_explorer.evidence_header",
+    "ui.workspace.path",
+    "ui.workspace.load",
+    "ui.workspace.summary",
+    "ui.evidence.no_workspace",
+    "ui.evidence.id",
+    "ui.evidence.type",
+    "ui.evidence.title",
+    "ui.evidence.related",
+    "ui.evidence.add_note",
+    "ui.evidence.note",
+    "ui.evidence.add",
+    "ui.evidence.add_file",
+    "ui.evidence.file",
+    "ui.evidence.file_id",
+    "ui.evidence.upload",
+    "ui.evidence.validate",
+    "ui.evidence.added",
+    "ui.evidence.valid",
+    "ui.review.no_workspace",
+    "ui.review.entity",
+    "ui.review.status",
+    "ui.review.verified_at",
+    "ui.review.reviewer",
+    "ui.review.update",
+    "ui.review.note",
+    "ui.review.save",
+    "ui.review.saved",
+    "ui.simulation.variant",
+    "ui.simulation.months",
+    "ui.simulation.six_month_net",
+    "sim.table.month",
+    "sim.table.revenue",
+    "sim.table.opex",
+    "sim.table.capex",
+    "sim.table.net",
+    "sim.table.cum_net",
+    "sim.breakeven",
+    "sim.assumptions",
+    "sim.assumption.missing_revenue_low",
+    "sim.assumption.delayed_start",
+    "sim.assumption.time_cap",
+    "sim.assumption.zero_hours",
+    "reason.review.requires_verification",
+    "reason.review.missing_verified_at",
+    "reason.review.stale_warn",
+    "reason.review.stale_force",
+    "cli.workspace.init_done",
+    "cli.workspace.status_header",
+    "cli.workspace.status_item",
+    "cli.workspace.status_value",
+    "cli.workspace.overlay_files",
+    "cli.workspace.review_count",
+    "cli.workspace.last_reviewed_at",
+    "cli.workspace.evidence_count",
+    "cli.workspace.evidence_files",
+    "cli.simulate.export_done",
+    "validate.source_summary",
+    "evidence.registry_missing",
+    "evidence.duplicate_id",
+    "evidence.file_missing_path",
+    "evidence.invalid_path",
+    "evidence.file_missing",
+    "evidence.checksum_mismatch",
+    "evidence.missing_relations",
+    "evidence.empty_registry",
+    "review.invalid_format",
+    "review.invalid_entries",
+    "review.invalid_entry",
+    "review.missing_entity_ref",
+    "review.duplicate_entity_ref",
+    "review.invalid_status",
     "legal.regulated.none",
     "legal.regulated.light",
     "legal.regulated.medium",
@@ -347,11 +427,48 @@ def _collect_dataset_keys(data_dir: Path) -> list[str]:
     return sorted(keys)
 
 
+def _load_lang_file(path: Path) -> dict[str, str]:
+    try:
+        data = load_yaml(path) or {}
+    except Exception:
+        data = {}
+    if not isinstance(data, dict):
+        return {}
+    return {str(key): str(value) for key, value in data.items()}
+
+
+def _collect_lang_files(lang: str) -> list[Path]:
+    root = Path(__file__).resolve().parent
+    files: list[Path] = []
+    base = root / f"{lang}.yaml"
+    if base.exists():
+        files.append(base)
+    folder = root / lang
+    if folder.exists():
+        files.extend(sorted(path for path in folder.glob("*.yaml") if path.is_file()))
+    return files
+
+
+def _find_duplicates(lang: str) -> dict[str, list[str]]:
+    seen: dict[str, str] = {}
+    duplicates: dict[str, list[str]] = {}
+    for path in _collect_lang_files(lang):
+        payload = _load_lang_file(path)
+        for key in payload.keys():
+            if key in seen:
+                duplicates.setdefault(key, [seen[key]]).append(path.name)
+            else:
+                seen[key] = path.name
+    return duplicates
+
+
 def audit_i18n(
     data_dir: Path,
     langs: Iterable[str] | None = None,
     strict_dataset: bool = False,
     report_unused: bool = False,
+    report_duplicates: bool = False,
+    strict_core: bool = False,
 ) -> tuple[list[MissingKey], list[MissingKey]]:
     lang_list = _normalize_langs(langs or SUPPORTED_LANGS)
     dataset_keys = _collect_dataset_keys(data_dir)
@@ -376,6 +493,13 @@ def audit_i18n(
             )
             for key in unused:
                 warns.append(MissingKey(lang=lang, severity="WARN", key=key))
+        duplicates = _find_duplicates(lang)
+        if duplicates and (report_duplicates or strict_core):
+            for key in sorted(duplicates.keys()):
+                if key in CORE_KEYS and strict_core:
+                    fatals.append(MissingKey(lang=lang, severity="FATAL", key=key))
+                else:
+                    warns.append(MissingKey(lang=lang, severity="WARN", key=key))
 
     fatals.sort(key=lambda item: (item.lang, item.key))
     warns.sort(key=lambda item: (item.lang, item.key))

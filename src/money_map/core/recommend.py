@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 from money_map.core.load import AppData
 from money_map.core.model import ObjectivePreset, RankedVariant, RecommendationResult, UserProfile, Variant
+from money_map.core.reviews import normalize_review_date, review_status_for_entity, ReviewsIndex
 from money_map.core.rules import evaluate_rulepack
 
 
@@ -85,7 +86,11 @@ def _find_preset(profile: UserProfile, appdata: AppData) -> ObjectivePreset | No
 
 
 def recommend(
-    profile: UserProfile, appdata: AppData, top_n: int, today: date | None = None
+    profile: UserProfile,
+    appdata: AppData,
+    top_n: int,
+    today: date | None = None,
+    reviews: ReviewsIndex | None = None,
 ) -> RecommendationResult:
     policy = appdata.meta.staleness_policy
     today = today or date.today()
@@ -111,6 +116,10 @@ def recommend(
         )
         is_stale_warn = days_since_review > policy.warn_after_days
         is_stale_force = days_since_review > policy.force_require_check_after_days
+        review_entry = review_status_for_entity(reviews, f"variant:{variant.variant_id}")
+        review_verified_at = normalize_review_date(
+            review_entry.verified_at if review_entry else None
+        )
 
         prerequisites = set(variant.feasibility.prerequisites)
         available = set(profile.skills + profile.assets)
@@ -240,6 +249,17 @@ def recommend(
             cons.append("reason.legal.medium_regulated")
         if is_stale_warn:
             cons.append("reason.staleness.warn")
+        if is_regulated:
+            if not review_entry or review_entry.status != "verified":
+                blockers.append("reason.review.requires_verification")
+            elif review_verified_at is None:
+                blockers.append("reason.review.missing_verified_at")
+            else:
+                review_days = (today - review_verified_at).days
+                if review_days > policy.warn_after_days:
+                    cons.append("reason.review.stale_warn")
+                if review_days > policy.force_require_check_after_days:
+                    blockers.append("reason.review.stale_force")
 
         blockers.extend(rule_eval.blockers)
         if is_regulated and is_stale_force:

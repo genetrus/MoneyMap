@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
@@ -240,3 +240,4 @@ class AppData:
     risks: list[Risk]
     rulepacks: dict[str, RulePack]
     rulepack: RulePack
+    data_sources: dict[str, str] = field(default_factory=dict)

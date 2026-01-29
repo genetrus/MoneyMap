@@ -17,12 +17,16 @@ except ImportError:  # pragma: no cover - optional dependency
 from money_map.core.load import _safe_load_basic
 from money_map.core.model import UserProfile
 from money_map.core.validate import validate_app_data
+from money_map.core.workspace import get_workspace_paths
 from money_map.core.yaml_utils import dump_yaml, normalize_data
 from money_map.i18n import t
 from money_map.i18n.locale import format_date
 
 
-def _allowed_roots(data_dir: Path) -> list[Path]:
+def _allowed_roots(data_dir: Path, workspace: Path | None, overlay_edit: bool) -> list[Path]:
+    if overlay_edit and workspace:
+        paths = get_workspace_paths(workspace)
+        return [paths.overlay.resolve(), paths.profiles.resolve()]
     return [data_dir.resolve(), (data_dir.parent / "profiles").resolve()]
 
 
@@ -97,26 +101,40 @@ def _validate_data_dir(
 
 
 def _validate_draft(
-    path: Path, data_dir: Path, text: str, lang: str
+    path: Path,
+    data_dir: Path,
+    text: str,
+    lang: str,
+    workspace: Path | None,
+    overlay_edit: bool,
 ) -> tuple[bool, list[str]]:
     try:
         parsed = _parse_yaml(text)
     except Exception as exc:  # pragma: no cover - safety
         return False, [str(exc)]
 
-    roots = _allowed_roots(data_dir)
+    roots = _allowed_roots(data_dir, workspace, overlay_edit)
     if path.resolve().is_relative_to(roots[1]):
         return _validate_profile(parsed)
+    if overlay_edit:
+        return True, []
     rel_path = path.resolve().relative_to(data_dir.resolve())
     return _validate_data_dir(data_dir, rel_path, text, lang)
 
 
-def _safe_write(path: Path, data_dir: Path, text: str, lang: str) -> tuple[bool, str]:
+def _safe_write(
+    path: Path,
+    data_dir: Path,
+    text: str,
+    lang: str,
+    workspace: Path | None,
+    overlay_edit: bool,
+) -> tuple[bool, str]:
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     temp_path = path.with_suffix(path.suffix + ".tmp")
     temp_path.write_text(text, encoding="utf-8")
 
-    ok, messages = _validate_draft(path, data_dir, text, lang)
+    ok, messages = _validate_draft(path, data_dir, text, lang, workspace, overlay_edit)
     if not ok:
         temp_path.unlink(missing_ok=True)
         return False, "\n".join(messages)
@@ -127,10 +145,13 @@ def _safe_write(path: Path, data_dir: Path, text: str, lang: str) -> tuple[bool,
     return True, str(backup_path)
 
 
-def render(data_dir: Path, lang: str) -> None:
+def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.data_editor.header", lang))
 
-    roots = _allowed_roots(data_dir)
+    overlay_edit = False
+    if workspace:
+        overlay_edit = st.toggle(t("ui.data_editor.overlay_toggle", lang), value=False)
+    roots = _allowed_roots(data_dir, workspace, overlay_edit)
     files = _list_yaml_files(roots)
     if not files:
         st.info(t("ui.data_editor.empty_selection", lang))
@@ -176,7 +197,9 @@ def render(data_dir: Path, lang: str) -> None:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         if st.button(t("ui.data_editor.validate_draft", lang)):
-            ok, messages = _validate_draft(path, data_dir, updated_text, lang)
+            ok, messages = _validate_draft(
+                path, data_dir, updated_text, lang, workspace, overlay_edit
+            )
             if ok:
                 st.success(t("ui.data_editor.validation_ok", lang))
             else:
@@ -210,7 +233,9 @@ def render(data_dir: Path, lang: str) -> None:
             st.info(t("ui.data_editor.saved", lang))
 
     if st.button(t("ui.data_editor.save", lang)):
-        ok, result = _safe_write(path, data_dir, st.session_state[state_key], lang)
+        ok, result = _safe_write(
+            path, data_dir, st.session_state[state_key], lang, workspace, overlay_edit
+        )
         if ok:
             st.success(t("ui.data_editor.saved", lang))
             st.info(t("ui.data_editor.backup_saved", lang, path=result))

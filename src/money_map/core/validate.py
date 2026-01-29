@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import date, datetime
 from pathlib import Path
 
+from money_map.core.evidence import validate_registry
 from money_map.core.load import load_app_data, load_yaml
+from money_map.core.reviews import validate_reviews_data
+from money_map.core.workspace import get_workspace_paths
 from money_map.core.schema_version import EXPECTED_SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS
 from money_map.i18n.i18n import load_lang
 
@@ -91,13 +94,13 @@ def _validate_lookup_list(
 
 
 def validate_app_data(
-    data_dir: Path, strict: bool = False
+    data_dir: Path, strict: bool = False, workspace: Path | None = None
 ) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]]]:
     fatals, warns = validate_files_exist(data_dir, strict)
     if fatals:
         return fatals, warns
 
-    appdata = load_app_data(data_dir)
+    appdata = load_app_data(data_dir, workspace=workspace)
 
     if not appdata.meta.schema_version:
         fatals.append(("validate.schema_version_required", {}))
@@ -456,5 +459,28 @@ def validate_app_data(
     missing_i18n = sorted(key for key in i18n_keys if key and key not in en_translations)
     if missing_i18n:
         fatals.append(("validate.missing_i18n_keys", {"keys": ", ".join(missing_i18n)}))
+
+    if workspace is not None:
+        paths = get_workspace_paths(workspace)
+        reviews_path = paths.reviews / "reviews.yaml"
+        if reviews_path.exists():
+            review_errors = validate_reviews_data(load_yaml(reviews_path) or {})
+            fatals.extend(review_errors)
+        evidence_fatals, evidence_warns = validate_registry(workspace)
+        fatals.extend(evidence_fatals)
+        warns.extend(evidence_warns)
+        if appdata.data_sources:
+            overlay_count = len(
+                [source for source in appdata.data_sources.values() if source == "overlay"]
+            )
+            canonical_count = len(
+                [source for source in appdata.data_sources.values() if source == "canonical"]
+            )
+            warns.append(
+                (
+                    "validate.source_summary",
+                    {"overlay": overlay_count, "canonical": canonical_count},
+                )
+            )
 
     return fatals, warns

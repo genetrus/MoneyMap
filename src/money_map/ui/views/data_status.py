@@ -20,9 +20,9 @@ def _to_date(value: date | str) -> date:
         return date.today()
 
 
-def render(data_dir: Path, lang: str) -> None:
+def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("nav.data_status", lang))
-    appdata = load_app_data(data_dir)
+    appdata = load_app_data(data_dir, workspace=workspace)
     st.write(f"{t('ui.data_status.dataset_version', lang)}: {appdata.meta.dataset_version}")
     st.write(
         f"{t('ui.data_status.reviewed_at', lang)}: "
@@ -34,7 +34,7 @@ def render(data_dir: Path, lang: str) -> None:
         st.warning(t("ui.data_status.stale_warning", lang, days=format_int(days, lang)))
 
     if st.button(t("common.run_validate", lang)):
-        fatals, warns = validate_app_data(data_dir)
+        fatals, warns = validate_app_data(data_dir, workspace=workspace)
         st.write(
             {
                 "fatals": [t(key, lang, **params) for key, params in fatals],

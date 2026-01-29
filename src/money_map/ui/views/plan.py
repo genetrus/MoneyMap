@@ -11,7 +11,7 @@ from money_map.i18n import t
 from money_map.i18n.locale import format_date, format_int
 
 
-def render(data_dir: Path, lang: str) -> None:
+def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.plan.header", lang))
     selected = st.session_state.get("selected_variant_id")
     if not selected:
@@ -23,7 +23,7 @@ def render(data_dir: Path, lang: str) -> None:
         st.info(t("ui.common.load_profile_first", lang))
         return
 
-    appdata = load_app_data(data_dir)
+    appdata = load_app_data(data_dir, workspace=workspace)
     plan = build_plan(selected, profile, appdata)
 
     st.subheader(t("ui.plan.overview", lang))

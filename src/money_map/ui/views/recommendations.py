@@ -4,16 +4,20 @@ from pathlib import Path
 
 import streamlit as st
 
+from datetime import date
 from money_map.core.load import load_app_data
 from money_map.core.model import UserProfile
 from money_map.core.recommend import recommend
+from money_map.core.reviews import load_reviews
+from money_map.core.simulate import simulate_variant
+from money_map.core.workspace import get_workspace_paths
 from money_map.i18n import t
-from money_map.i18n.locale import format_percent
+from money_map.i18n.locale import format_currency, format_percent
 
 
-def render(data_dir: Path, lang: str) -> None:
+def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.reco.header", lang))
-    appdata = load_app_data(data_dir)
+    appdata = load_app_data(data_dir, workspace=workspace)
 
     profile: UserProfile = st.session_state.get("profile")
     if profile is None:
@@ -42,7 +46,10 @@ def render(data_dir: Path, lang: str) -> None:
 
     if st.button(t("common.recommend", lang)):
         profile.objective_preset = objective
-        result = recommend(profile, appdata, top_n=5)
+        reviews = None
+        if workspace is not None:
+            reviews = load_reviews(get_workspace_paths(workspace).reviews / "reviews.yaml")
+        result = recommend(profile, appdata, top_n=5, reviews=reviews)
         st.session_state["recommendations"] = result
 
     result = st.session_state.get("recommendations")
@@ -81,6 +88,21 @@ def render(data_dir: Path, lang: str) -> None:
             st.write(f"**{t('ui.reco.assumptions', lang)}**")
             for reason in payload.get("assumptions", []):
                 st.write(f"- {t(reason, lang)}")
+            sim_result = simulate_variant(
+                profile,
+                variant,
+                appdata.presets[0] if appdata.presets else None,
+                6,
+                date.today(),
+            )
+            if sim_result.months:
+                st.caption(
+                    t(
+                        "ui.simulation.six_month_net",
+                        lang,
+                        amount=format_currency(sim_result.months[-1].cum_net, lang),
+                    )
+                )
 
             compliance = payload.get("compliance_summary", {})
             st.write(f"**{t('ui.reco.compliance', lang)}**")

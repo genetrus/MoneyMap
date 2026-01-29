@@ -99,6 +99,7 @@
         "Assumes you can acquire clients/customers"
       ],
       "blockers": [
+        "Requires verification",
         "Verification required due to regulation and staleness"
       ],
       "compliance_summary": {
@@ -146,6 +147,7 @@
         "Assumes you can acquire clients/customers"
       ],
       "blockers": [
+        "Requires verification",
         "Verification required due to regulation and staleness"
       ],
       "compliance_summary": {
@@ -192,6 +194,7 @@
         "Assumes you can acquire clients/customers"
       ],
       "blockers": [
+        "Requires verification",
         "Verification required due to regulation and staleness"
       ],
       "compliance_summary": {
@@ -237,6 +240,7 @@
         "Assumes you can acquire clients/customers"
       ],
       "blockers": [
+        "Requires verification",
         "Verification required due to regulation and staleness"
       ],
       "compliance_summary": {

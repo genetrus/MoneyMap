@@ -30,15 +30,27 @@ def _parse_flat_yaml(text: str) -> dict[str, Any]:
 def load_lang(lang: str) -> dict[str, Any]:
     if lang not in SUPPORTED_LANGS:
         lang = "en"
-    with (
-        resources.files("money_map.i18n")
-        .joinpath(f"{lang}.yaml")
-        .open("r", encoding="utf-8") as handle
-    ):
-        content = handle.read()
-    if yaml:
-        return yaml.safe_load(content) or {}
-    return _parse_flat_yaml(content)
+    base = resources.files("money_map.i18n").joinpath(f"{lang}.yaml")
+    translations: dict[str, Any] = {}
+    if base.is_file():
+        with base.open("r", encoding="utf-8") as handle:
+            content = handle.read()
+        if yaml:
+            translations.update(yaml.safe_load(content) or {})
+        else:
+            translations.update(_parse_flat_yaml(content))
+    folder = resources.files("money_map.i18n").joinpath(lang)
+    if folder.is_dir():
+        for path in sorted(
+            [item for item in folder.iterdir() if item.name.endswith(".yaml")]
+        ):
+            with path.open("r", encoding="utf-8") as handle:
+                content = handle.read()
+            if yaml:
+                translations.update(yaml.safe_load(content) or {})
+            else:
+                translations.update(_parse_flat_yaml(content))
+    return translations
 
 
 def t(key: str, lang: str, **kwargs: Any) -> str:
