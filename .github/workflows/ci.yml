@@ -21,3 +21,9 @@ jobs:
       - name: Validate data
         run: |
           python -m money_map validate --data-dir data
+      - name: i18n audit
+        run: |
+          python -m money_map i18n audit --strict --data-dir data
+      - name: Data dictionary
+        run: |
+          python -m money_map data docs --data-dir data --out docs/data_dictionary.md

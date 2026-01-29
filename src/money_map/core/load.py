@@ -11,10 +11,17 @@ except ImportError:  # pragma: no cover - optional dependency
     yaml = None
 
 from money_map.core.model import (
+    Asset,
     AppData,
     Cell,
+    ComplianceKit,
+    Constraint,
     Meta,
+    Objective,
+    Risk,
     RulePack,
+    Rule,
+    Skill,
     StalenessPolicy,
     TaxonomyItem,
     Variant,
@@ -134,6 +141,24 @@ def _ensure_list(data: Any) -> list[Any]:
     return data if isinstance(data, list) else []
 
 
+def _sort_by_id(items: list[Any], id_key: str) -> list[Any]:
+    return sorted(
+        items,
+        key=lambda item: getattr(item, id_key, "")
+        if hasattr(item, id_key)
+        else str(item.get(id_key, "")),
+    )
+
+
+def _sort_bridges(bridges: list[Any]) -> list[Any]:
+    def _bridge_key(item: Any) -> tuple[str, str]:
+        if hasattr(item, "get"):
+            return (str(item.get("from_variant_id", "")), str(item.get("to_variant_id", "")))
+        return ("", "")
+
+    return sorted(bridges, key=_bridge_key)
+
+
 def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     meta_data = load_yaml(data_dir / "meta.yaml")
     staleness = meta_data.get("staleness_policy") if isinstance(meta_data, dict) else None
@@ -146,14 +171,48 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     taxonomy_items = [TaxonomyItem.model_validate(item) for item in _ensure_list(raw_taxonomy)]
     cells = [Cell.model_validate(item) for item in _ensure_list(raw_cells)]
     variants = [Variant.model_validate(item) for item in _ensure_list(raw_variants)]
+    skills = [Skill.model_validate(item) for item in _ensure_list(load_yaml(data_dir / "knowledge" / "skills.yaml"))]
+    assets = [Asset.model_validate(item) for item in _ensure_list(load_yaml(data_dir / "knowledge" / "assets.yaml"))]
+    constraints = [
+        Constraint.model_validate(item)
+        for item in _ensure_list(load_yaml(data_dir / "knowledge" / "constraints.yaml"))
+    ]
+    objectives = [
+        Objective.model_validate(item)
+        for item in _ensure_list(load_yaml(data_dir / "knowledge" / "objectives.yaml"))
+    ]
+    risks = [Risk.model_validate(item) for item in _ensure_list(load_yaml(data_dir / "knowledge" / "risks.yaml"))]
     bridges = load_yaml(data_dir / "bridges.yaml") or []
-    rulepack_path = data_dir / "rulepacks" / f"{country_code}.yaml"
-    rulepack = RulePack.model_validate(load_yaml(rulepack_path))
+    if isinstance(bridges, list):
+        bridges = _sort_bridges(bridges)
+    rulepacks_dir = data_dir / "rulepacks"
+    rulepacks: dict[str, RulePack] = {}
+    if rulepacks_dir.exists():
+        for path in sorted(rulepacks_dir.glob("*.yaml")):
+            raw_pack = load_yaml(path) or {}
+            raw_rules = [Rule.model_validate(item) for item in _ensure_list(raw_pack.get("rules"))]
+            raw_kits = [
+                ComplianceKit.model_validate(item)
+                for item in _ensure_list(raw_pack.get("compliance_kits"))
+            ]
+            raw_pack["rules"] = _sort_by_id(raw_rules, "rule_id")
+            raw_pack["compliance_kits"] = _sort_by_id(raw_kits, "kit_id")
+            rulepack = RulePack.model_validate(raw_pack)
+            rulepacks[rulepack.country_code] = rulepack
+    if country_code not in rulepacks:
+        rulepacks[country_code] = RulePack.model_validate(load_yaml(rulepacks_dir / f"{country_code}.yaml"))
+    rulepack = rulepacks[country_code]
     return AppData(
         meta=meta,
-        taxonomy=taxonomy_items,
-        cells=cells,
-        variants=variants,
+        taxonomy=_sort_by_id(taxonomy_items, "taxonomy_id"),
+        cells=_sort_by_id(cells, "cell_id"),
+        variants=_sort_by_id(variants, "variant_id"),
         bridges=bridges,
+        skills=_sort_by_id(skills, "skill_id"),
+        assets=_sort_by_id(assets, "asset_id"),
+        constraints=_sort_by_id(constraints, "constraint_id"),
+        objectives=_sort_by_id(objectives, "objective_id"),
+        risks=_sort_by_id(risks, "risk_id"),
+        rulepacks=rulepacks,
         rulepack=rulepack,
     )

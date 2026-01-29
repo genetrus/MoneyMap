@@ -57,6 +57,7 @@ class Meta(BaseModel):
     schema_version: str
     reviewed_at: date | str
     staleness_policy: StalenessPolicy
+    supported_countries: list[str] = Field(default_factory=list)
 
 
 class UserProfile(BaseModel):
@@ -91,13 +92,61 @@ class Variant(BaseModel):
     feasibility: dict[str, Any] = Field(default_factory=dict)
     economics: dict[str, Any] = Field(default_factory=dict)
     legal: dict[str, Any] = Field(default_factory=dict)
+    required_skills: list[str] = Field(default_factory=list)
+    required_assets: list[str] = Field(default_factory=list)
+    constraints: list[str] = Field(default_factory=list)
+    objectives: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+
+
+class Skill(BaseModel):
+    skill_id: str
+    title_key: str
+
+
+class Asset(BaseModel):
+    asset_id: str
+    title_key: str
+
+
+class Constraint(BaseModel):
+    constraint_id: str
+    title_key: str
+
+
+class Objective(BaseModel):
+    objective_id: str
+    title_key: str
+
+
+class Risk(BaseModel):
+    risk_id: str
+    title_key: str
+    category: str
+
+
+class Rule(BaseModel):
+    rule_id: str
+    title_key: str
+    summary_key: str
+    sources: list[str] = Field(default_factory=list)
+    requirements: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+
+
+class ComplianceKit(BaseModel):
+    kit_id: str
+    title_key: str
+    summary_key: str
+    requirements: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
 
 
 class RulePack(BaseModel):
     country_code: str
     reviewed_at: date | str
-    rules: list[dict[str, Any]] = Field(default_factory=list)
-    compliance_kits: dict[str, Any] = Field(default_factory=dict)
+    rules: list[Rule] = Field(default_factory=list)
+    compliance_kits: list[ComplianceKit] = Field(default_factory=list)
 
 
 class RecommendationResult(BaseModel):
@@ -120,4 +169,10 @@ class AppData:
     cells: list[Cell]
     variants: list[Variant]
     bridges: list[dict[str, Any]]
+    skills: list[Skill]
+    assets: list[Asset]
+    constraints: list[Constraint]
+    objectives: list[Objective]
+    risks: list[Risk]
+    rulepacks: dict[str, RulePack]
     rulepack: RulePack
