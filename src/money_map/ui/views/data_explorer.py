@@ -5,8 +5,10 @@ from pathlib import Path
 
 import streamlit as st
 
+from money_map.core.evidence import load_registry
 from money_map.core.load import load_app_data, load_yaml
 from money_map.core.validate import REQUIRED_FILES, validate_app_data
+from money_map.core.workspace import get_workspace_paths
 from money_map.i18n import t
 from money_map.i18n.locale import format_int
 from money_map.i18n.audit import audit_i18n
@@ -39,14 +41,18 @@ def _serialize(entity) -> str:
     return json.dumps(entity, indent=2, ensure_ascii=False, default=str)
 
 
-def render(data_dir: Path, lang: str) -> None:
+def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.data_explorer.header", lang))
 
-    appdata = load_app_data(data_dir)
+    appdata = load_app_data(data_dir, workspace=workspace)
 
-    tab_entities, tab_rulepacks = st.tabs(
-        [t("ui.data_explorer.tab_entities", lang), t("ui.data_explorer.tab_rulepacks", lang)]
-    )
+    tabs = [
+        t("ui.data_explorer.tab_entities", lang),
+        t("ui.data_explorer.tab_rulepacks", lang),
+    ]
+    if workspace is not None:
+        tabs.append(t("ui.data_explorer.tab_evidence", lang))
+    tab_entities, tab_rulepacks, *rest = st.tabs(tabs)
 
     with tab_entities:
         st.subheader(t("ui.data_explorer.files_header", lang))
@@ -86,7 +92,7 @@ def render(data_dir: Path, lang: str) -> None:
 
         st.subheader(t("ui.data_explorer.validation_header", lang))
         if st.button(t("ui.data_explorer.run_validate", lang)):
-            fatals, warns = validate_app_data(data_dir)
+            fatals, warns = validate_app_data(data_dir, workspace=workspace)
             st.write(
                 f"{t('ui.data_explorer.validation_fatals', lang)}: {len(fatals)} | "
                 f"{t('ui.data_explorer.validation_warns', lang)}: {len(warns)}"
@@ -148,3 +154,23 @@ def render(data_dir: Path, lang: str) -> None:
         st.write(f"**{t('ui.data_explorer.rules_header', lang)}**")
         for rule in rulepack.rules:
             st.write(f"- {t(rule.title_key, lang)} ({rule.rule_id})")
+
+    if rest:
+        tab_evidence = rest[0]
+        with tab_evidence:
+            st.subheader(t("ui.data_explorer.evidence_header", lang))
+            if workspace is None:
+                st.info(t("ui.evidence.no_workspace", lang))
+                return
+            registry = load_registry(get_workspace_paths(workspace).evidence / "registry.yaml")
+            rows = []
+            for item in sorted(registry.items, key=lambda entry: entry.evidence_id):
+                rows.append(
+                    {
+                        t("ui.evidence.id", lang): item.evidence_id,
+                        t("ui.evidence.type", lang): item.type,
+                        t("ui.evidence.title", lang): item.title or item.title_key or "-",
+                        t("ui.evidence.related", lang): ", ".join(item.related_entities),
+                    }
+                )
+            st.dataframe(rows, use_container_width=True)

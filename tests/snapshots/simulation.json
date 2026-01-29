@@ -1,0 +1,85 @@
+{
+  "assumptions": [],
+  "breakeven_month": 3,
+  "months": [
+    {
+      "capex": 200,
+      "cum_net": -160.0,
+      "feasibility_flags": [
+        "sim.assumption.time_cap"
+      ],
+      "hours_required": 12.0,
+      "month_index": 1,
+      "month_label": "2026-01",
+      "net": -160.0,
+      "opex": 50,
+      "revenue": 90.0
+    },
+    {
+      "capex": 0,
+      "cum_net": -30.0,
+      "feasibility_flags": [
+        "sim.assumption.time_cap"
+      ],
+      "hours_required": 12.0,
+      "month_index": 2,
+      "month_label": "2026-02",
+      "net": 130.0,
+      "opex": 50,
+      "revenue": 180.0
+    },
+    {
+      "capex": 0,
+      "cum_net": 145.0,
+      "feasibility_flags": [
+        "sim.assumption.time_cap"
+      ],
+      "hours_required": 12.0,
+      "month_index": 3,
+      "month_label": "2026-03",
+      "net": 175.0,
+      "opex": 50,
+      "revenue": 225.0
+    },
+    {
+      "capex": 0,
+      "cum_net": 365.0,
+      "feasibility_flags": [
+        "sim.assumption.time_cap"
+      ],
+      "hours_required": 12.0,
+      "month_index": 4,
+      "month_label": "2026-04",
+      "net": 220.0,
+      "opex": 50,
+      "revenue": 270.0
+    },
+    {
+      "capex": 0,
+      "cum_net": 585.0,
+      "feasibility_flags": [
+        "sim.assumption.time_cap"
+      ],
+      "hours_required": 12.0,
+      "month_index": 5,
+      "month_label": "2026-05",
+      "net": 220.0,
+      "opex": 50,
+      "revenue": 270.0
+    },
+    {
+      "capex": 0,
+      "cum_net": 805.0,
+      "feasibility_flags": [
+        "sim.assumption.time_cap"
+      ],
+      "hours_required": 12.0,
+      "month_index": 6,
+      "month_label": "2026-06",
+      "net": 220.0,
+      "opex": 50,
+      "revenue": 270.0
+    }
+  ],
+  "risks": []
+}

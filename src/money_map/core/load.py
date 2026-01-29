@@ -31,6 +31,7 @@ from money_map.core.model import (
     TaxonomyItem,
     Variant,
 )
+from money_map.core.workspace import merge_bridges, merge_by_id, merge_dict, merge_rulepack
 
 
 def _parse_scalar(value: str) -> Any:
@@ -164,8 +165,16 @@ def _sort_bridges(bridges: list[Any]) -> list[Any]:
     return sorted(bridges, key=_bridge_key)
 
 
-def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
+def load_app_data(
+    data_dir: Path, country_code: str = "DE", workspace: Path | None = None
+) -> AppData:
     meta_data = load_yaml(data_dir / "meta.yaml")
+    sources: dict[str, str] = {}
+    overlay_dir = workspace / "overlay" if workspace else None
+    if overlay_dir and overlay_dir.exists():
+        overlay_meta = load_yaml(overlay_dir / "meta.yaml") or {}
+        if isinstance(meta_data, dict) and isinstance(overlay_meta, dict):
+            meta_data = merge_dict(meta_data, overlay_meta)
     staleness = meta_data.get("staleness_policy") if isinstance(meta_data, dict) else None
     if isinstance(staleness, dict):
         meta_data["staleness_policy"] = StalenessPolicy.model_validate(staleness)
@@ -173,6 +182,20 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     raw_taxonomy = load_yaml(data_dir / "taxonomy.yaml")
     raw_cells = load_yaml(data_dir / "cells.yaml")
     raw_variants = load_yaml(data_dir / "variants.yaml")
+    if overlay_dir and overlay_dir.exists():
+        overlay_taxonomy = load_yaml(overlay_dir / "taxonomy.yaml") or []
+        overlay_cells = load_yaml(overlay_dir / "cells.yaml") or []
+        overlay_variants = load_yaml(overlay_dir / "variants.yaml") or []
+        if isinstance(raw_taxonomy, list) and isinstance(overlay_taxonomy, list):
+            raw_taxonomy = merge_by_id(
+                raw_taxonomy, overlay_taxonomy, "taxonomy_id", sources, "taxonomy"
+            )
+        if isinstance(raw_cells, list) and isinstance(overlay_cells, list):
+            raw_cells = merge_by_id(raw_cells, overlay_cells, "cell_id", sources, "cell")
+        if isinstance(raw_variants, list) and isinstance(overlay_variants, list):
+            raw_variants = merge_by_id(
+                raw_variants, overlay_variants, "variant_id", sources, "variant"
+            )
     taxonomy_items = [TaxonomyItem.model_validate(item) for item in _ensure_list(raw_taxonomy)]
     cells = [Cell.model_validate(item) for item in _ensure_list(raw_cells)]
     def _normalize_variant(variant: Variant) -> Variant:
@@ -207,12 +230,22 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
         Objective.model_validate(item)
         for item in _ensure_list(load_yaml(objectives_path))
     ]
+    raw_presets = load_yaml(presets_path)
+    if overlay_dir and overlay_dir.exists():
+        overlay_presets = load_yaml(overlay_dir / "presets.yaml") or []
+        if isinstance(raw_presets, list) and isinstance(overlay_presets, list):
+            raw_presets = merge_by_id(
+                raw_presets, overlay_presets, "preset_id", sources, "preset"
+            )
     presets = [
-        ObjectivePreset.model_validate(item)
-        for item in _ensure_list(load_yaml(presets_path))
+        ObjectivePreset.model_validate(item) for item in _ensure_list(raw_presets)
     ]
     risks = [Risk.model_validate(item) for item in _ensure_list(load_yaml(risks_path))]
     bridges = load_yaml(data_dir / "bridges.yaml") or []
+    if overlay_dir and overlay_dir.exists():
+        overlay_bridges = load_yaml(overlay_dir / "bridges.yaml") or []
+        if isinstance(bridges, list) and isinstance(overlay_bridges, list):
+            bridges = merge_bridges(bridges, overlay_bridges, sources)
     if isinstance(bridges, list):
         bridges = _sort_bridges(bridges)
     rulepacks_dir = data_dir / "rulepacks"
@@ -233,6 +266,29 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
         rulepacks[country_code] = RulePack.model_validate(
             load_yaml(rulepacks_dir / f"{country_code}.yaml")
         )
+    if overlay_dir and (overlay_dir / "rulepacks").exists():
+        overlay_rulepacks_dir = overlay_dir / "rulepacks"
+        for path in sorted(overlay_rulepacks_dir.glob("*.yaml")):
+            overlay_pack = load_yaml(path) or {}
+            if not isinstance(overlay_pack, dict):
+                continue
+            overlay_country = overlay_pack.get("country_code") or path.stem.upper()
+            base_pack = (
+                rulepacks.get(overlay_country).model_dump()
+                if overlay_country in rulepacks
+                else {"country_code": overlay_country, "reviewed_at": meta.reviewed_at}
+            )
+            merged_pack = merge_rulepack(base_pack, overlay_pack, sources, overlay_country)
+            raw_rules = [
+                Rule.model_validate(item) for item in _ensure_list(merged_pack.get("rules"))
+            ]
+            raw_kits = [
+                ComplianceKit.model_validate(item)
+                for item in _ensure_list(merged_pack.get("compliance_kits"))
+            ]
+            merged_pack["rules"] = _sort_by_id(raw_rules, "rule_id")
+            merged_pack["compliance_kits"] = _sort_by_id(raw_kits, "kit_id")
+            rulepacks[overlay_country] = RulePack.model_validate(merged_pack)
     rulepack = rulepacks[country_code]
     return AppData(
         meta=meta,
@@ -248,4 +304,5 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
         risks=_sort_by_id(risks, "risk_id"),
         rulepacks=rulepacks,
         rulepack=rulepack,
+        data_sources=sources,
     )

@@ -17,13 +17,13 @@ def _load_default_profile(data_dir: Path) -> UserProfile:
     return UserProfile.model_validate(data)
 
 
-def render(data_dir: Path, lang: str) -> None:
+def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.profile.header", lang))
     if "profile" not in st.session_state:
         st.session_state["profile"] = _load_default_profile(data_dir)
 
     profile: UserProfile = st.session_state["profile"]
-    appdata = load_app_data(data_dir)
+    appdata = load_app_data(data_dir, workspace=workspace)
     presets = appdata.presets
     preset_ids = [preset.preset_id for preset in presets]
     preset_index = (
