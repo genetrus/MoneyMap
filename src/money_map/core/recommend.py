@@ -3,7 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from money_map.core.load import AppData
-from money_map.core.model import ObjectivePreset, RankedVariant, RecommendationResult, UserProfile, Variant
+from money_map.core.evidence import EvidenceRegistry
+from money_map.core.model import (
+    ObjectivePreset,
+    RankedVariant,
+    RecommendationResult,
+    UserProfile,
+    Variant,
+)
 from money_map.core.reviews import normalize_review_date, review_status_for_entity, ReviewsIndex
 from money_map.core.rules import evaluate_rulepack
 
@@ -91,6 +98,7 @@ def recommend(
     top_n: int,
     today: date | None = None,
     reviews: ReviewsIndex | None = None,
+    evidence_registry: EvidenceRegistry | None = None,
 ) -> RecommendationResult:
     policy = appdata.meta.staleness_policy
     today = today or date.today()
@@ -106,6 +114,11 @@ def recommend(
             }
         )
 
+    evidence_ids = (
+        {item.evidence_id for item in evidence_registry.items}
+        if evidence_registry is not None
+        else set()
+    )
     ranked: list[RankedVariant] = []
     for variant in sorted(appdata.variants, key=lambda item: item.variant_id):
         rule_eval = evaluate_rulepack(profile, variant, appdata.rulepack, today=today)
@@ -260,10 +273,32 @@ def recommend(
                     cons.append("reason.review.stale_warn")
                 if review_days > policy.force_require_check_after_days:
                     blockers.append("reason.review.stale_force")
+            if (
+                appdata.rulepack.is_placeholder
+                and review_entry
+                and review_entry.status == "verified"
+            ):
+                has_evidence = False
+                if review_entry.evidence_refs:
+                    has_evidence = any(ref in evidence_ids for ref in review_entry.evidence_refs)
+                if not has_evidence:
+                    blockers.append("reason.review.requires_verification")
 
         blockers.extend(rule_eval.blockers)
         if is_regulated and is_stale_force:
             blockers.append("reason.legal.force_check")
+
+        if appdata.rulepack.is_placeholder and is_regulated:
+            verified_with_evidence = (
+                review_entry is not None
+                and review_entry.status == "verified"
+                and bool(review_entry.evidence_refs)
+                and any(ref in evidence_ids for ref in review_entry.evidence_refs)
+            )
+            if verified_with_evidence:
+                blockers = [item for item in blockers if item != "reason.review.requires_verification"]
+            elif "reason.review.requires_verification" not in blockers:
+                blockers.append("reason.review.requires_verification")
 
         assumptions = _assumptions_for_variant(variant)
 

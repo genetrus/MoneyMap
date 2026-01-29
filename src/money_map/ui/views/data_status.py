@@ -5,10 +5,10 @@ from pathlib import Path
 
 import streamlit as st
 
-from money_map.core.load import load_app_data
 from money_map.core.validate import validate_app_data
 from money_map.i18n import t
 from money_map.i18n.locale import format_date, format_int
+from money_map.ui.cache import appdata_signature, load_app_data_cached
 
 
 def _to_date(value: date | str) -> date:
@@ -22,7 +22,10 @@ def _to_date(value: date | str) -> date:
 
 def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("nav.data_status", lang))
-    appdata = load_app_data(data_dir, workspace=workspace)
+    signature = appdata_signature(data_dir, workspace)
+    appdata = load_app_data_cached(
+        str(data_dir), "DE", str(workspace) if workspace else None, signature
+    )
     st.write(f"{t('ui.data_status.dataset_version', lang)}: {appdata.meta.dataset_version}")
     st.write(
         f"{t('ui.data_status.reviewed_at', lang)}: "

@@ -1,0 +1,17 @@
+country_code: PL
+time_hours_per_week: 12
+capital_eur: 500
+language_level: B1
+skills:
+  - communication
+  - analysis
+assets:
+  - laptop
+constraints:
+  - evenings
+objective_preset: fast_start
+risk_tolerance: medium
+horizon_months: 6
+target_net_monthly_eur: 900
+preferred_modes:
+  - service
