@@ -14,7 +14,6 @@ except ImportError:  # pragma: no cover - optional dependency
 from money_map.core.load import load_app_data
 from money_map.i18n.i18n import SUPPORTED_LANGS, load_lang
 
-
 CORE_KEYS = [
     "app.title",
     "nav.data_status",
@@ -243,10 +242,20 @@ def _collect_dataset_keys(data_dir: Path) -> list[str]:
     for variant in appdata.variants:
         keys.add(variant.title_key)
         keys.add(variant.summary_key)
-        if variant.economics and variant.economics.margin_notes_key:
-            keys.add(variant.economics.margin_notes_key)
-        if variant.legal and variant.legal.disclaimers_key:
-            keys.add(variant.legal.disclaimers_key)
+        econ = variant.economics
+        if isinstance(econ, dict):
+            margin_key = econ.get("margin_notes_key")
+        else:
+            margin_key = econ.margin_notes_key if econ else None
+        if margin_key:
+            keys.add(margin_key)
+        legal = variant.legal
+        if isinstance(legal, dict):
+            disclaimer_key = legal.get("disclaimers_key")
+        else:
+            disclaimer_key = legal.disclaimers_key if legal else None
+        if disclaimer_key:
+            keys.add(disclaimer_key)
     for item in appdata.skills:
         keys.add(item.title_key)
     for item in appdata.assets:

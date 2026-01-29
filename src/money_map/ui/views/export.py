@@ -46,7 +46,9 @@ def render(data_dir: Path, lang: str) -> None:
     if st.button(t("common.export", lang)):
         result = recommend(profile, appdata, top_n=5)
         top_item = result.ranked_variants[0]
-        variant_id = top_item.variant_id if hasattr(top_item, "variant_id") else top_item["variant_id"]
+        variant_id = (
+            top_item.variant_id if hasattr(top_item, "variant_id") else top_item["variant_id"]
+        )
         plan = build_plan(variant_id, profile, appdata)
 
         profile_bytes = yaml.safe_dump(profile.model_dump(), sort_keys=True).encode("utf-8")

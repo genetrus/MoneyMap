@@ -92,7 +92,7 @@ class Feasibility(BaseModel):
     operational_mode: str = "service"
 
 
-class Economics(BaseModel):
+class EconomicsSnapshot(BaseModel):
     capex_eur: int | None = None
     opex_monthly_eur: int | None = None
     expected_net_monthly_eur_low: int | None = None
@@ -121,10 +121,10 @@ class Variant(BaseModel):
     cells: list[str]
     tags: list[str] = Field(default_factory=list)
     review_date: date | str
-    feasibility: Feasibility = Field(default_factory=Feasibility)
-    economics: Economics = Field(default_factory=Economics)
-    legal: Legal = Field(default_factory=Legal)
-    evidence: Evidence = Field(default_factory=Evidence)
+    feasibility: Feasibility | None = Field(default_factory=Feasibility)
+    economics: EconomicsSnapshot | None = Field(default_factory=EconomicsSnapshot)
+    legal: Legal | None = Field(default_factory=Legal)
+    evidence: Evidence | None = Field(default_factory=Evidence)
     required_skills: list[str] = Field(default_factory=list)
     required_assets: list[str] = Field(default_factory=list)
     constraints: list[str] = Field(default_factory=list)

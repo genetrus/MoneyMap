@@ -41,7 +41,9 @@ def _parse_date(value: date | str) -> date | None:
         return None
 
 
-def validate_files_exist(data_dir: Path, strict: bool) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]]]:
+def validate_files_exist(
+    data_dir: Path, strict: bool
+) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]]]:
     fatals: list[tuple[str, dict]] = []
     warns: list[tuple[str, dict]] = []
     for rel in REQUIRED_FILES:
@@ -181,7 +183,10 @@ def validate_app_data(
             fatals.append(
                 (
                     "validate.unknown_constraint_ids",
-                    {"variant_id": variant.variant_id, "constraint_ids": ", ".join(missing_constraints)},
+                    {
+                        "variant_id": variant.variant_id,
+                        "constraint_ids": ", ".join(missing_constraints),
+                    },
                 )
             )
         missing_objectives = [
@@ -191,7 +196,10 @@ def validate_app_data(
             fatals.append(
                 (
                     "validate.unknown_objective_ids",
-                    {"variant_id": variant.variant_id, "objective_ids": ", ".join(missing_objectives)},
+                    {
+                        "variant_id": variant.variant_id,
+                        "objective_ids": ", ".join(missing_objectives),
+                    },
                 )
             )
         missing_risks = [item for item in variant.risks if item not in risk_ids]
@@ -226,7 +234,10 @@ def validate_app_data(
                     ("validate.bridge_missing_keys", {"keys": ", ".join(missing)})
                 )
                 continue
-            if bridge["from_variant_id"] not in variant_ids or bridge["to_variant_id"] not in variant_ids:
+            if (
+                bridge["from_variant_id"] not in variant_ids
+                or bridge["to_variant_id"] not in variant_ids
+            ):
                 fatals.append(
                     (
                         "validate.bridge_unknown_variant",
@@ -382,10 +393,20 @@ def validate_app_data(
     for variant in appdata.variants:
         i18n_keys.add(variant.title_key)
         i18n_keys.add(variant.summary_key)
-        if variant.economics and variant.economics.margin_notes_key:
-            i18n_keys.add(variant.economics.margin_notes_key)
-        if variant.legal and variant.legal.disclaimers_key:
-            i18n_keys.add(variant.legal.disclaimers_key)
+        econ = variant.economics
+        if isinstance(econ, dict):
+            margin_key = econ.get("margin_notes_key")
+        else:
+            margin_key = econ.margin_notes_key if econ else None
+        if margin_key:
+            i18n_keys.add(margin_key)
+        legal = variant.legal
+        if isinstance(legal, dict):
+            disclaimer_key = legal.get("disclaimers_key")
+        else:
+            disclaimer_key = legal.disclaimers_key if legal else None
+        if disclaimer_key:
+            i18n_keys.add(disclaimer_key)
     for item in appdata.skills:
         i18n_keys.add(item.title_key)
     for item in appdata.assets:

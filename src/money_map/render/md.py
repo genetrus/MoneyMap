@@ -12,7 +12,8 @@ def render_plan_md(plan: RoutePlan, lang: str) -> str:
     lines = [f"# {t('planner.heading.plan', lang)}", ""]
     lines.append(f"## {t('planner.heading.overview', lang)}")
     lines.append(
-        f"- {t('planner.overview.goal', lang)}: {t(plan.overview.get('goal_variant_key', ''), lang)}"
+        f"- {t('planner.overview.goal', lang)}: "
+        f"{t(plan.overview.get('goal_variant_key', ''), lang)}"
     )
     lines.append(
         f"- {t('planner.overview.time_budget', lang)}: "

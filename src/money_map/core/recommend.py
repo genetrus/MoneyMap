@@ -136,7 +136,9 @@ def recommend(profile: UserProfile, appdata: AppData, top_n: int) -> Recommendat
         legal_score = _clamp(legal_score)
 
         fit_score = 70
-        if profile.preferred_modes and variant.feasibility.operational_mode in profile.preferred_modes:
+        if profile.preferred_modes and (
+            variant.feasibility.operational_mode in profile.preferred_modes
+        ):
             fit_score += 15
         conflicts = _constraint_conflicts(profile, variant)
         if conflicts:
@@ -185,7 +187,9 @@ def recommend(profile: UserProfile, appdata: AppData, top_n: int) -> Recommendat
             pros.append("reason.economics.meets_target")
         if regulated_level == "none":
             pros.append("reason.legal.unregulated")
-        if profile.preferred_modes and variant.feasibility.operational_mode in profile.preferred_modes:
+        if profile.preferred_modes and (
+            variant.feasibility.operational_mode in profile.preferred_modes
+        ):
             pros.append("reason.fit.preferred_mode")
 
         if complexity >= 4:

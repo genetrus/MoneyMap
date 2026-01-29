@@ -6,9 +6,9 @@ from pathlib import Path
 
 from money_map.app.cli import export_command
 from money_map.core.load import load_app_data
+from money_map.core.model import UserProfile
 from money_map.core.plan import build_plan
 from money_map.core.recommend import recommend
-from money_map.core.model import UserProfile
 
 
 class TestRecommendationEngine(unittest.TestCase):
@@ -34,7 +34,9 @@ class TestRecommendationEngine(unittest.TestCase):
         regulated_variant.review_date = "2020-01-01"
         result = recommend(self.profile, appdata, top_n=6)
         target = next(
-            item for item in result.ranked_variants if item.variant_id == regulated_variant.variant_id
+            item
+            for item in result.ranked_variants
+            if item.variant_id == regulated_variant.variant_id
         )
         self.assertIn("reason.legal.force_check", target.blockers)
 
@@ -62,4 +64,8 @@ class TestRecommendationEngine(unittest.TestCase):
                 if path.is_file()
             }
             self.assertEqual(first_snapshot, second_snapshot)
-            self.assertTrue({"plan.md", "result.json", "profile.yaml", "checklist.md"}.issubset(first_snapshot))
+            self.assertTrue(
+                {"plan.md", "result.json", "profile.yaml", "checklist.md"}.issubset(
+                    first_snapshot
+                )
+            )
