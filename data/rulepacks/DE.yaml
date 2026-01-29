@@ -1,6 +1,151 @@
 {
   "country_code": "DE",
-  "reviewed_at": "2025-01-14",
-  "rules": [],
-  "compliance_kits": []
+  "reviewed_at": "2025-02-10",
+  "rules": [
+    {
+      "rule_id": "de.finance",
+      "title_key": "rule.de.finance.title",
+      "summary_key": "rule.de.finance.summary",
+      "applies_if": {
+        "tags_any": ["finance"]
+      },
+      "effects": {
+        "add_kits": ["de.tax_registration", "de.invoicing_basics"],
+        "add_warnings": ["reason.legal.required_kits"]
+      }
+    },
+    {
+      "rule_id": "de.inventory",
+      "title_key": "rule.de.inventory.title",
+      "summary_key": "rule.de.inventory.summary",
+      "applies_if": {
+        "tags_any": ["inventory"]
+      },
+      "effects": {
+        "add_kits": ["de.consumer_protection", "de.product_safety"],
+        "add_warnings": ["reason.legal.required_kits"]
+      }
+    },
+    {
+      "rule_id": "de.remote",
+      "title_key": "rule.de.remote.title",
+      "summary_key": "rule.de.remote.summary",
+      "applies_if": {
+        "tags_any": ["remote", "automation"]
+      },
+      "effects": {
+        "add_kits": ["de.data_privacy"]
+      }
+    },
+    {
+      "rule_id": "de.community",
+      "title_key": "rule.de.community.title",
+      "summary_key": "rule.de.community.summary",
+      "applies_if": {
+        "tags_any": ["community"]
+      },
+      "effects": {
+        "add_kits": ["de.insurance_basic"],
+        "add_checklist": ["kit.de.insurance_basic.check_2"]
+      }
+    }
+  ],
+  "compliance_kits": [
+    {
+      "kit_id": "de.business_registration",
+      "title_key": "kit.de.business_registration.title",
+      "summary_key": "kit.de.business_registration.summary",
+      "regulated_level": "light",
+      "checklist": [
+        "kit.de.business_registration.check_1",
+        "kit.de.business_registration.check_2"
+      ],
+      "applies_to_tags": ["service", "product", "regulated"],
+      "stale_after_days": 365
+    },
+    {
+      "kit_id": "de.tax_registration",
+      "title_key": "kit.de.tax_registration.title",
+      "summary_key": "kit.de.tax_registration.summary",
+      "regulated_level": "medium",
+      "checklist": [
+        "kit.de.tax_registration.check_1",
+        "kit.de.tax_registration.check_2"
+      ],
+      "applies_to_tags": ["finance", "inventory", "regulated"],
+      "stale_after_days": 180
+    },
+    {
+      "kit_id": "de.invoicing_basics",
+      "title_key": "kit.de.invoicing_basics.title",
+      "summary_key": "kit.de.invoicing_basics.summary",
+      "regulated_level": "light",
+      "checklist": [
+        "kit.de.invoicing_basics.check_1",
+        "kit.de.invoicing_basics.check_2"
+      ],
+      "applies_to_tags": ["service", "product"],
+      "stale_after_days": 365
+    },
+    {
+      "kit_id": "de.data_privacy",
+      "title_key": "kit.de.data_privacy.title",
+      "summary_key": "kit.de.data_privacy.summary",
+      "regulated_level": "medium",
+      "checklist": [
+        "kit.de.data_privacy.check_1",
+        "kit.de.data_privacy.check_2"
+      ],
+      "applies_to_tags": ["remote", "automation", "service"],
+      "stale_after_days": 180
+    },
+    {
+      "kit_id": "de.insurance_basic",
+      "title_key": "kit.de.insurance_basic.title",
+      "summary_key": "kit.de.insurance_basic.summary",
+      "regulated_level": "light",
+      "checklist": [
+        "kit.de.insurance_basic.check_1",
+        "kit.de.insurance_basic.check_2"
+      ],
+      "applies_to_tags": ["service", "community"],
+      "stale_after_days": 365
+    },
+    {
+      "kit_id": "de.consumer_protection",
+      "title_key": "kit.de.consumer_protection.title",
+      "summary_key": "kit.de.consumer_protection.summary",
+      "regulated_level": "medium",
+      "checklist": [
+        "kit.de.consumer_protection.check_1",
+        "kit.de.consumer_protection.check_2"
+      ],
+      "applies_to_tags": ["product", "inventory"],
+      "stale_after_days": 180
+    },
+    {
+      "kit_id": "de.product_safety",
+      "title_key": "kit.de.product_safety.title",
+      "summary_key": "kit.de.product_safety.summary",
+      "regulated_level": "high",
+      "checklist": [
+        "kit.de.product_safety.check_1",
+        "kit.de.product_safety.check_2"
+      ],
+      "applies_to_tags": ["product", "inventory"],
+      "stale_after_days": 180
+    },
+    {
+      "kit_id": "de.local_permits",
+      "title_key": "kit.de.local_permits.title",
+      "summary_key": "kit.de.local_permits.summary",
+      "regulated_level": "light",
+      "checklist": [
+        "kit.de.local_permits.check_1",
+        "kit.de.local_permits.check_2"
+      ],
+      "applies_to_tags": ["community", "regulated"],
+      "stale_after_days": 365
+    }
+  ]
 }

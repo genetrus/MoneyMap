@@ -41,7 +41,9 @@ def _parse_date(value: date | str) -> date | None:
         return None
 
 
-def validate_files_exist(data_dir: Path, strict: bool) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]]]:
+def validate_files_exist(
+    data_dir: Path, strict: bool
+) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]]]:
     fatals: list[tuple[str, dict]] = []
     warns: list[tuple[str, dict]] = []
     for rel in REQUIRED_FILES:
@@ -135,6 +137,10 @@ def validate_app_data(
                     "cells",
                     "tags",
                     "review_date",
+                    "feasibility",
+                    "economics",
+                    "legal",
+                    "evidence",
                     "required_skills",
                     "required_assets",
                     "constraints",
@@ -177,7 +183,10 @@ def validate_app_data(
             fatals.append(
                 (
                     "validate.unknown_constraint_ids",
-                    {"variant_id": variant.variant_id, "constraint_ids": ", ".join(missing_constraints)},
+                    {
+                        "variant_id": variant.variant_id,
+                        "constraint_ids": ", ".join(missing_constraints),
+                    },
                 )
             )
         missing_objectives = [
@@ -187,7 +196,10 @@ def validate_app_data(
             fatals.append(
                 (
                     "validate.unknown_objective_ids",
-                    {"variant_id": variant.variant_id, "objective_ids": ", ".join(missing_objectives)},
+                    {
+                        "variant_id": variant.variant_id,
+                        "objective_ids": ", ".join(missing_objectives),
+                    },
                 )
             )
         missing_risks = [item for item in variant.risks if item not in risk_ids]
@@ -222,7 +234,10 @@ def validate_app_data(
                     ("validate.bridge_missing_keys", {"keys": ", ".join(missing)})
                 )
                 continue
-            if bridge["from_variant_id"] not in variant_ids or bridge["to_variant_id"] not in variant_ids:
+            if (
+                bridge["from_variant_id"] not in variant_ids
+                or bridge["to_variant_id"] not in variant_ids
+            ):
                 fatals.append(
                     (
                         "validate.bridge_unknown_variant",
@@ -296,7 +311,7 @@ def validate_app_data(
                 f"rulepack:{country_code}.rules",
                 rules_payload,
                 "rule_id",
-                ["rule_id", "title_key", "summary_key"],
+                ["rule_id", "title_key", "summary_key", "applies_if", "effects"],
             )
         )
         fatals.extend(
@@ -304,7 +319,14 @@ def validate_app_data(
                 f"rulepack:{country_code}.compliance_kits",
                 kits_payload,
                 "kit_id",
-                ["kit_id", "title_key", "summary_key"],
+                [
+                    "kit_id",
+                    "title_key",
+                    "summary_key",
+                    "regulated_level",
+                    "checklist",
+                    "applies_to_tags",
+                ],
             )
         )
         if _parse_date(rulepack.reviewed_at) is None:
@@ -371,6 +393,20 @@ def validate_app_data(
     for variant in appdata.variants:
         i18n_keys.add(variant.title_key)
         i18n_keys.add(variant.summary_key)
+        econ = variant.economics
+        if isinstance(econ, dict):
+            margin_key = econ.get("margin_notes_key")
+        else:
+            margin_key = econ.margin_notes_key if econ else None
+        if margin_key:
+            i18n_keys.add(margin_key)
+        legal = variant.legal
+        if isinstance(legal, dict):
+            disclaimer_key = legal.get("disclaimers_key")
+        else:
+            disclaimer_key = legal.disclaimers_key if legal else None
+        if disclaimer_key:
+            i18n_keys.add(disclaimer_key)
     for item in appdata.skills:
         i18n_keys.add(item.title_key)
     for item in appdata.assets:
@@ -385,9 +421,14 @@ def validate_app_data(
         for rule in rulepack.rules:
             i18n_keys.add(rule.title_key)
             i18n_keys.add(rule.summary_key)
+            effects = rule.effects if isinstance(rule.effects, dict) else {}
+            for checklist in effects.get("add_checklist", []) or []:
+                i18n_keys.add(checklist)
         for kit in rulepack.compliance_kits:
             i18n_keys.add(kit.title_key)
             i18n_keys.add(kit.summary_key)
+            for checklist in kit.checklist:
+                i18n_keys.add(checklist)
     missing_i18n = sorted(key for key in i18n_keys if key and key not in en_translations)
     if missing_i18n:
         fatals.append(("validate.missing_i18n_keys", {"keys": ", ".join(missing_i18n)}))

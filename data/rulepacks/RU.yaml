@@ -1,0 +1,32 @@
+{
+  "country_code": "RU",
+  "reviewed_at": "2025-02-10",
+  "rules": [
+    {
+      "rule_id": "RU.placeholder",
+      "title_key": "rulepack.placeholder.rule.title",
+      "summary_key": "rulepack.placeholder.rule.summary",
+      "applies_if": {
+        "country_codes": ["RU"]
+      },
+      "effects": {
+        "add_blockers": ["reason.legal.placeholder_rulepack"],
+        "add_warnings": ["reason.legal.force_check"],
+        "add_checklist": ["rulepack.placeholder.checklist"]
+      }
+    }
+  ],
+  "compliance_kits": [
+    {
+      "kit_id": "placeholder.general",
+      "title_key": "rulepack.placeholder.kit.title",
+      "summary_key": "rulepack.placeholder.kit.summary",
+      "regulated_level": "high",
+      "checklist": [
+        "rulepack.placeholder.checklist"
+      ],
+      "applies_to_tags": ["service", "product", "regulated"],
+      "stale_after_days": 30
+    }
+  ]
+}

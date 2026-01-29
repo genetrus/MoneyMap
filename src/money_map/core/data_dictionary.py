@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 
 @dataclass(frozen=True)
@@ -87,9 +86,30 @@ DATA_DICTIONARY = [
             FieldInfo("cells", "list[string]", True, "Foreign keys to cells."),
             FieldInfo("tags", "list[string]", False, "Tag list for filtering."),
             FieldInfo("review_date", "date", True, "Variant review date."),
-            FieldInfo("feasibility", "object", False, "Feasibility payload."),
-            FieldInfo("economics", "object", False, "Economics payload."),
-            FieldInfo("legal", "object", False, "Legal payload."),
+            FieldInfo(
+                "feasibility",
+                "object",
+                False,
+                "Feasibility payload (prerequisites, complexity, time, mode).",
+            ),
+            FieldInfo(
+                "economics",
+                "object",
+                False,
+                "Economics payload (capex/opex/expected net).",
+            ),
+            FieldInfo(
+                "legal",
+                "object",
+                False,
+                "Legal payload (regulated level, kits, permits).",
+            ),
+            FieldInfo(
+                "evidence",
+                "object",
+                False,
+                "Evidence payload (sources, last verified, confidence).",
+            ),
             FieldInfo("required_skills", "list[string]", False, "Skill references."),
             FieldInfo("required_assets", "list[string]", False, "Asset references."),
             FieldInfo("constraints", "list[string]", False, "Constraint references."),

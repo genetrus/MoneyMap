@@ -11,17 +11,47 @@
     ],
     "tags": [
       "low_capital",
-      "regulated"
+      "regulated",
+      "service"
     ],
-    "review_date": "2025-01-10",
+    "review_date": "2025-02-01",
     "feasibility": {
-      "status": "stub"
+      "prerequisites": [
+        "communication",
+        "basic_it"
+      ],
+      "complexity": 2,
+      "time_to_first_eur_days": 21,
+      "operational_mode": "service"
     },
     "economics": {
-      "status": "stub"
+      "capex_eur": 200,
+      "opex_monthly_eur": 50,
+      "expected_net_monthly_eur_low": 600,
+      "expected_net_monthly_eur_high": 1200,
+      "margin_notes_key": "variant.v001.margin_notes"
     },
     "legal": {
-      "status": "stub"
+      "regulated_level": "light",
+      "required_kits": [
+        "de.business_registration",
+        "de.tax_registration",
+        "de.invoicing_basics",
+        "de.data_privacy"
+      ],
+      "permits": [],
+      "disclaimers_key": "variant.v001.disclaimer"
+    },
+    "evidence": {
+      "sources": [
+        {
+          "type": "interview",
+          "title": "Local SME demand interviews",
+          "note": "Placeholder notes from offline interviews"
+        }
+      ],
+      "last_verified_at": "2025-02-01",
+      "confidence": 3
     },
     "required_skills": [],
     "required_assets": [],
@@ -39,17 +69,45 @@
       "cell_delivery"
     ],
     "tags": [
-      "remote"
+      "remote",
+      "service"
     ],
-    "review_date": "2025-01-12",
+    "review_date": "2025-02-03",
     "feasibility": {
-      "status": "stub"
+      "prerequisites": [
+        "analysis",
+        "communication"
+      ],
+      "complexity": 2,
+      "time_to_first_eur_days": 14,
+      "operational_mode": "service"
     },
     "economics": {
-      "status": "stub"
+      "capex_eur": 100,
+      "opex_monthly_eur": 30,
+      "expected_net_monthly_eur_low": 800,
+      "expected_net_monthly_eur_high": 1500,
+      "margin_notes_key": "variant.v002.margin_notes"
     },
     "legal": {
-      "status": "stub"
+      "regulated_level": "none",
+      "required_kits": [
+        "de.business_registration",
+        "de.invoicing_basics"
+      ],
+      "permits": [],
+      "disclaimers_key": "variant.v002.disclaimer"
+    },
+    "evidence": {
+      "sources": [
+        {
+          "type": "market_scan",
+          "title": "Local consulting demand scan",
+          "note": "Placeholder offline scan"
+        }
+      ],
+      "last_verified_at": "2025-02-03",
+      "confidence": 4
     },
     "required_skills": [],
     "required_assets": [],
@@ -67,17 +125,45 @@
       "cell_marketing"
     ],
     "tags": [
-      "content"
+      "content",
+      "product"
     ],
-    "review_date": "2025-01-11",
+    "review_date": "2025-02-02",
     "feasibility": {
-      "status": "stub"
+      "prerequisites": [
+        "content_creation"
+      ],
+      "complexity": 3,
+      "time_to_first_eur_days": 45,
+      "operational_mode": "product"
     },
     "economics": {
-      "status": "stub"
+      "capex_eur": 300,
+      "opex_monthly_eur": 40,
+      "expected_net_monthly_eur_low": 400,
+      "expected_net_monthly_eur_high": 1200,
+      "margin_notes_key": "variant.v003.margin_notes"
     },
     "legal": {
-      "status": "stub"
+      "regulated_level": "none",
+      "required_kits": [
+        "de.business_registration",
+        "de.invoicing_basics",
+        "de.consumer_protection"
+      ],
+      "permits": [],
+      "disclaimers_key": "variant.v003.disclaimer"
+    },
+    "evidence": {
+      "sources": [
+        {
+          "type": "content_research",
+          "title": "Audience demand notes",
+          "note": "Placeholder from offline research"
+        }
+      ],
+      "last_verified_at": "2025-02-02",
+      "confidence": 3
     },
     "required_skills": [],
     "required_assets": [],
@@ -96,17 +182,51 @@
     ],
     "tags": [
       "finance",
-      "inventory"
+      "inventory",
+      "product",
+      "regulated"
     ],
-    "review_date": "2025-01-09",
+    "review_date": "2025-01-30",
     "feasibility": {
-      "status": "stub"
+      "prerequisites": [
+        "sourcing",
+        "logistics"
+      ],
+      "complexity": 4,
+      "time_to_first_eur_days": 60,
+      "operational_mode": "product"
     },
     "economics": {
-      "status": "stub"
+      "capex_eur": 800,
+      "opex_monthly_eur": 150,
+      "expected_net_monthly_eur_low": 500,
+      "expected_net_monthly_eur_high": 1600,
+      "margin_notes_key": "variant.v004.margin_notes"
     },
     "legal": {
-      "status": "stub"
+      "regulated_level": "medium",
+      "required_kits": [
+        "de.business_registration",
+        "de.tax_registration",
+        "de.invoicing_basics",
+        "de.consumer_protection",
+        "de.product_safety"
+      ],
+      "permits": [
+        "local_trade_permit"
+      ],
+      "disclaimers_key": "variant.v004.disclaimer"
+    },
+    "evidence": {
+      "sources": [
+        {
+          "type": "benchmark",
+          "title": "Marketplace margin benchmarks",
+          "note": "Placeholder offline benchmarks"
+        }
+      ],
+      "last_verified_at": "2025-01-30",
+      "confidence": 2
     },
     "required_skills": [],
     "required_assets": [],
@@ -124,17 +244,45 @@
       "cell_marketing"
     ],
     "tags": [
-      "community"
+      "community",
+      "service"
     ],
-    "review_date": "2025-01-08",
+    "review_date": "2025-02-04",
     "feasibility": {
-      "status": "stub"
+      "prerequisites": [
+        "facilitation"
+      ],
+      "complexity": 3,
+      "time_to_first_eur_days": 30,
+      "operational_mode": "service"
     },
     "economics": {
-      "status": "stub"
+      "capex_eur": 150,
+      "opex_monthly_eur": 60,
+      "expected_net_monthly_eur_low": 500,
+      "expected_net_monthly_eur_high": 1100,
+      "margin_notes_key": "variant.v005.margin_notes"
     },
     "legal": {
-      "status": "stub"
+      "regulated_level": "light",
+      "required_kits": [
+        "de.business_registration",
+        "de.invoicing_basics",
+        "de.insurance_basic"
+      ],
+      "permits": [],
+      "disclaimers_key": "variant.v005.disclaimer"
+    },
+    "evidence": {
+      "sources": [
+        {
+          "type": "pilot",
+          "title": "Workshop pilot notes",
+          "note": "Placeholder offline pilot"
+        }
+      ],
+      "last_verified_at": "2025-02-04",
+      "confidence": 3
     },
     "required_skills": [],
     "required_assets": [],
@@ -152,17 +300,46 @@
       "cell_compliance"
     ],
     "tags": [
-      "automation"
+      "automation",
+      "service"
     ],
-    "review_date": "2025-01-07",
+    "review_date": "2025-01-29",
     "feasibility": {
-      "status": "stub"
+      "prerequisites": [
+        "basic_it",
+        "process_mapping"
+      ],
+      "complexity": 4,
+      "time_to_first_eur_days": 40,
+      "operational_mode": "service"
     },
     "economics": {
-      "status": "stub"
+      "capex_eur": 250,
+      "opex_monthly_eur": 60,
+      "expected_net_monthly_eur_low": 700,
+      "expected_net_monthly_eur_high": 1400,
+      "margin_notes_key": "variant.v006.margin_notes"
     },
     "legal": {
-      "status": "stub"
+      "regulated_level": "light",
+      "required_kits": [
+        "de.business_registration",
+        "de.invoicing_basics",
+        "de.data_privacy"
+      ],
+      "permits": [],
+      "disclaimers_key": "variant.v006.disclaimer"
+    },
+    "evidence": {
+      "sources": [
+        {
+          "type": "case_notes",
+          "title": "Automation case notes",
+          "note": "Placeholder offline notes"
+        }
+      ],
+      "last_verified_at": "2025-01-29",
+      "confidence": 3
     },
     "required_skills": [],
     "required_assets": [],

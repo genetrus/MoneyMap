@@ -11,16 +11,20 @@ except ImportError:  # pragma: no cover - optional dependency
     yaml = None
 
 from money_map.core.model import (
-    Asset,
     AppData,
+    Asset,
     Cell,
     ComplianceKit,
     Constraint,
+    EconomicsSnapshot,
+    Evidence,
+    Feasibility,
+    Legal,
     Meta,
     Objective,
     Risk,
-    RulePack,
     Rule,
+    RulePack,
     Skill,
     StalenessPolicy,
     TaxonomyItem,
@@ -170,18 +174,38 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
     raw_variants = load_yaml(data_dir / "variants.yaml")
     taxonomy_items = [TaxonomyItem.model_validate(item) for item in _ensure_list(raw_taxonomy)]
     cells = [Cell.model_validate(item) for item in _ensure_list(raw_cells)]
-    variants = [Variant.model_validate(item) for item in _ensure_list(raw_variants)]
-    skills = [Skill.model_validate(item) for item in _ensure_list(load_yaml(data_dir / "knowledge" / "skills.yaml"))]
-    assets = [Asset.model_validate(item) for item in _ensure_list(load_yaml(data_dir / "knowledge" / "assets.yaml"))]
+    def _normalize_variant(variant: Variant) -> Variant:
+        if isinstance(variant.feasibility, dict):
+            variant.feasibility = Feasibility.model_validate(variant.feasibility)
+        if isinstance(variant.economics, dict):
+            variant.economics = EconomicsSnapshot.model_validate(variant.economics)
+        if isinstance(variant.legal, dict):
+            variant.legal = Legal.model_validate(variant.legal)
+        if isinstance(variant.evidence, dict):
+            variant.evidence = Evidence.model_validate(variant.evidence)
+        return variant
+
+    variants = [
+        _normalize_variant(Variant.model_validate(item))
+        for item in _ensure_list(raw_variants)
+    ]
+    skills_path = data_dir / "knowledge" / "skills.yaml"
+    assets_path = data_dir / "knowledge" / "assets.yaml"
+    constraints_path = data_dir / "knowledge" / "constraints.yaml"
+    objectives_path = data_dir / "knowledge" / "objectives.yaml"
+    risks_path = data_dir / "knowledge" / "risks.yaml"
+
+    skills = [Skill.model_validate(item) for item in _ensure_list(load_yaml(skills_path))]
+    assets = [Asset.model_validate(item) for item in _ensure_list(load_yaml(assets_path))]
     constraints = [
         Constraint.model_validate(item)
-        for item in _ensure_list(load_yaml(data_dir / "knowledge" / "constraints.yaml"))
+        for item in _ensure_list(load_yaml(constraints_path))
     ]
     objectives = [
         Objective.model_validate(item)
-        for item in _ensure_list(load_yaml(data_dir / "knowledge" / "objectives.yaml"))
+        for item in _ensure_list(load_yaml(objectives_path))
     ]
-    risks = [Risk.model_validate(item) for item in _ensure_list(load_yaml(data_dir / "knowledge" / "risks.yaml"))]
+    risks = [Risk.model_validate(item) for item in _ensure_list(load_yaml(risks_path))]
     bridges = load_yaml(data_dir / "bridges.yaml") or []
     if isinstance(bridges, list):
         bridges = _sort_bridges(bridges)
@@ -200,7 +224,9 @@ def load_app_data(data_dir: Path, country_code: str = "DE") -> AppData:
             rulepack = RulePack.model_validate(raw_pack)
             rulepacks[rulepack.country_code] = rulepack
     if country_code not in rulepacks:
-        rulepacks[country_code] = RulePack.model_validate(load_yaml(rulepacks_dir / f"{country_code}.yaml"))
+        rulepacks[country_code] = RulePack.model_validate(
+            load_yaml(rulepacks_dir / f"{country_code}.yaml")
+        )
     rulepack = rulepacks[country_code]
     return AppData(
         meta=meta,
