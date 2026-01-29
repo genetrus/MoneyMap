@@ -23,12 +23,14 @@ except ImportError:  # pragma: no cover - optional dependency
     Console = None
     Table = None
 
+from money_map.core.data_dictionary import generate_data_dictionary
 from money_map.core.load import load_app_data, load_yaml
 from money_map.core.model import RecommendationResult, UserProfile
 from money_map.core.plan import build_plan
 from money_map.core.recommend import recommend
 from money_map.core.validate import validate_app_data
 from money_map.i18n import t
+from money_map.i18n.audit import audit_i18n, print_audit_report
 from money_map.render.json import to_json
 from money_map.render.md import render_plan_md
 
@@ -105,6 +107,25 @@ def validate_command(data_dir: Path, lang: str, strict: bool) -> int:
         )
     else:
         print(f"{t('cli.validate.ok', lang)} - {t('cli.validate.warn', lang)}: {len(warns)}")
+    return 0
+
+
+def i18n_audit_command(
+    data_dir: Path,
+    lang: str,
+    langs: list[str],
+    strict: bool,
+    strict_dataset: bool,
+) -> int:
+    fatals, warns = audit_i18n(data_dir, langs, strict_dataset=strict_dataset)
+    print_audit_report(fatals, warns, lang)
+    if fatals and strict:
+        return 1
+    return 0
+
+
+def data_docs_command(data_dir: Path, out: Path) -> int:
+    generate_data_dictionary(data_dir, out)
     return 0
 
 
@@ -208,6 +229,37 @@ if typer:
     ) -> None:
         raise typer.Exit(code=export_command(profile, out, data_dir, lang))
 
+    i18n_app = typer.Typer(help="i18n tools")
+    app.add_typer(i18n_app, name="i18n")
+
+    @i18n_app.command("audit")
+    def i18n_audit(
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        lang: str = typer.Option("en", "--lang"),
+        langs: str = typer.Option("en,de,fr,es,pl,ru", "--langs"),
+        strict: bool = typer.Option(False, "--strict"),
+        strict_dataset: bool = typer.Option(False, "--strict-dataset"),
+    ) -> None:
+        raise typer.Exit(
+            code=i18n_audit_command(
+                data_dir,
+                lang,
+                [item for item in langs.split(",") if item.strip()],
+                strict,
+                strict_dataset,
+            )
+        )
+
+    data_app = typer.Typer(help="data tools")
+    app.add_typer(data_app, name="data")
+
+    @data_app.command("docs")
+    def data_docs(
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        out: Path = typer.Option(Path("docs/data_dictionary.md"), "--out"),
+    ) -> None:
+        raise typer.Exit(code=data_docs_command(data_dir, out))
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="money_map")
@@ -231,6 +283,21 @@ def _build_parser() -> argparse.ArgumentParser:
     export_parser.add_argument("--profile", default="profiles/demo_fast_start.yaml")
     export_parser.add_argument("--out", default="exports")
     export_parser.add_argument("--data-dir", default="data")
+
+    i18n_parser = subparsers.add_parser("i18n")
+    i18n_subparsers = i18n_parser.add_subparsers(dest="i18n_command")
+    audit_parser = i18n_subparsers.add_parser("audit")
+    audit_parser.add_argument("--data-dir", default="data")
+    audit_parser.add_argument("--lang", default="en")
+    audit_parser.add_argument("--langs", default="en,de,fr,es,pl,ru")
+    audit_parser.add_argument("--strict", action="store_true")
+    audit_parser.add_argument("--strict-dataset", action="store_true")
+
+    data_parser = subparsers.add_parser("data")
+    data_subparsers = data_parser.add_subparsers(dest="data_command")
+    docs_parser = data_subparsers.add_parser("docs")
+    docs_parser.add_argument("--data-dir", default="data")
+    docs_parser.add_argument("--out", default="docs/data_dictionary.md")
 
     return parser
 
@@ -257,6 +324,16 @@ def main(argv: list[str] | None = None) -> int:
         return recommend_command(Path(args.profile), args.top, Path(args.data_dir), args.lang)
     if args.command == "export":
         return export_command(Path(args.profile), Path(args.out), Path(args.data_dir), args.lang)
+    if args.command == "i18n" and args.i18n_command == "audit":
+        return i18n_audit_command(
+            Path(args.data_dir),
+            args.lang,
+            [item for item in args.langs.split(",") if item.strip()],
+            args.strict,
+            args.strict_dataset,
+        )
+    if args.command == "data" and args.data_command == "docs":
+        return data_docs_command(Path(args.data_dir), Path(args.out))
 
     parser.print_help()
     return 0

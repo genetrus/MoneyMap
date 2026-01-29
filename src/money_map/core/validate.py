@@ -4,8 +4,8 @@ from datetime import date, datetime
 from pathlib import Path
 
 from money_map.core.load import load_app_data, load_yaml
-
-EXPECTED_SCHEMA_VERSION = "2026-01-27"
+from money_map.core.schema_version import EXPECTED_SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS
+from money_map.i18n.i18n import load_lang
 
 REQUIRED_FILES = [
     "meta.yaml",
@@ -30,6 +30,15 @@ def _to_date(value: date | str) -> date:
         return datetime.fromisoformat(value).date()
     except ValueError:
         return date.today()
+
+
+def _parse_date(value: date | str) -> date | None:
+    if isinstance(value, date):
+        return value
+    try:
+        return datetime.fromisoformat(value).date()
+    except ValueError:
+        return None
 
 
 def validate_files_exist(data_dir: Path, strict: bool) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]]]:
@@ -89,13 +98,17 @@ def validate_app_data(
 
     if not appdata.meta.schema_version:
         fatals.append(("validate.schema_version_required", {}))
-    elif appdata.meta.schema_version != EXPECTED_SCHEMA_VERSION:
+    elif appdata.meta.schema_version not in SUPPORTED_SCHEMA_VERSIONS:
         fatals.append(
             (
                 "validate.schema_version_mismatch",
                 {"expected": EXPECTED_SCHEMA_VERSION, "actual": appdata.meta.schema_version},
             )
         )
+    if not appdata.meta.dataset_version:
+        fatals.append(("validate.dataset_version_required", {}))
+    if _parse_date(appdata.meta.reviewed_at) is None:
+        fatals.append(("validate.invalid_date", {"context": "meta.reviewed_at"}))
 
     variant_ids = [variant.variant_id for variant in appdata.variants]
     if len(set(variant_ids)) != len(variant_ids):
@@ -103,6 +116,11 @@ def validate_app_data(
 
     taxonomy_ids = {item.taxonomy_id for item in appdata.taxonomy}
     cell_ids = {cell.cell_id for cell in appdata.cells}
+    skill_ids = {item.skill_id for item in appdata.skills}
+    asset_ids = {item.asset_id for item in appdata.assets}
+    constraint_ids = {item.constraint_id for item in appdata.constraints}
+    objective_ids = {item.objective_id for item in appdata.objectives}
+    risk_ids = {item.risk_id for item in appdata.risks}
 
     for variant in appdata.variants:
         fatals.extend(
@@ -117,6 +135,11 @@ def validate_app_data(
                     "cells",
                     "tags",
                     "review_date",
+                    "required_skills",
+                    "required_assets",
+                    "constraints",
+                    "objectives",
+                    "risks",
                 ],
             )
         )
@@ -125,6 +148,54 @@ def validate_app_data(
                 (
                     "validate.unknown_taxonomy_id",
                     {"variant_id": variant.variant_id},
+                )
+            )
+        if _parse_date(variant.review_date) is None:
+            fatals.append(
+                ("validate.invalid_date", {"context": f"variant:{variant.variant_id}.review_date"})
+            )
+        missing_skills = [item for item in variant.required_skills if item not in skill_ids]
+        if missing_skills:
+            fatals.append(
+                (
+                    "validate.unknown_skill_ids",
+                    {"variant_id": variant.variant_id, "skill_ids": ", ".join(missing_skills)},
+                )
+            )
+        missing_assets = [item for item in variant.required_assets if item not in asset_ids]
+        if missing_assets:
+            fatals.append(
+                (
+                    "validate.unknown_asset_ids",
+                    {"variant_id": variant.variant_id, "asset_ids": ", ".join(missing_assets)},
+                )
+            )
+        missing_constraints = [
+            item for item in variant.constraints if item not in constraint_ids
+        ]
+        if missing_constraints:
+            fatals.append(
+                (
+                    "validate.unknown_constraint_ids",
+                    {"variant_id": variant.variant_id, "constraint_ids": ", ".join(missing_constraints)},
+                )
+            )
+        missing_objectives = [
+            item for item in variant.objectives if item not in objective_ids
+        ]
+        if missing_objectives:
+            fatals.append(
+                (
+                    "validate.unknown_objective_ids",
+                    {"variant_id": variant.variant_id, "objective_ids": ", ".join(missing_objectives)},
+                )
+            )
+        missing_risks = [item for item in variant.risks if item not in risk_ids]
+        if missing_risks:
+            fatals.append(
+                (
+                    "validate.unknown_risk_ids",
+                    {"variant_id": variant.variant_id, "risk_ids": ", ".join(missing_risks)},
                 )
             )
         missing_cells = [cell for cell in variant.cells if cell not in cell_ids]
@@ -202,15 +273,48 @@ def validate_app_data(
         )
     )
 
-    fatals.extend(
-        _ensure_keys(
-            "rulepack",
-            appdata.rulepack.model_dump()
-            if hasattr(appdata.rulepack, "model_dump")
-            else appdata.rulepack.__dict__,
-            ["country_code", "reviewed_at", "rules", "compliance_kits"],
+    for country_code, rulepack in appdata.rulepacks.items():
+        fatals.extend(
+            _ensure_keys(
+                f"rulepack:{country_code}",
+                rulepack.model_dump()
+                if hasattr(rulepack, "model_dump")
+                else rulepack.__dict__,
+                ["country_code", "reviewed_at", "rules", "compliance_kits"],
+            )
         )
-    )
+        rules_payload = [
+            rule.model_dump() if hasattr(rule, "model_dump") else rule.__dict__
+            for rule in rulepack.rules
+        ]
+        kits_payload = [
+            kit.model_dump() if hasattr(kit, "model_dump") else kit.__dict__
+            for kit in rulepack.compliance_kits
+        ]
+        fatals.extend(
+            _validate_lookup_list(
+                f"rulepack:{country_code}.rules",
+                rules_payload,
+                "rule_id",
+                ["rule_id", "title_key", "summary_key"],
+            )
+        )
+        fatals.extend(
+            _validate_lookup_list(
+                f"rulepack:{country_code}.compliance_kits",
+                kits_payload,
+                "kit_id",
+                ["kit_id", "title_key", "summary_key"],
+            )
+        )
+        if _parse_date(rulepack.reviewed_at) is None:
+            fatals.append(
+                ("validate.invalid_date", {"context": f"rulepack:{country_code}.reviewed_at"})
+            )
+        if rulepack.country_code != country_code:
+            fatals.append(
+                ("validate.rulepack_country_mismatch", {"country_code": country_code})
+            )
 
     fatals.extend(
         _ensure_keys(
@@ -248,5 +352,44 @@ def validate_app_data(
                         {"variant_id": variant.variant_id},
                     )
                 )
+
+    if appdata.meta.supported_countries:
+        missing_rulepacks = [
+            code for code in appdata.meta.supported_countries if code not in appdata.rulepacks
+        ]
+        if missing_rulepacks:
+            fatals.append(
+                ("validate.missing_rulepack", {"country_codes": ", ".join(missing_rulepacks)})
+            )
+
+    en_translations = load_lang("en")
+    i18n_keys: set[str] = set()
+    for taxonomy in appdata.taxonomy:
+        i18n_keys.add(taxonomy.title_key)
+    for cell in appdata.cells:
+        i18n_keys.add(cell.title_key)
+    for variant in appdata.variants:
+        i18n_keys.add(variant.title_key)
+        i18n_keys.add(variant.summary_key)
+    for item in appdata.skills:
+        i18n_keys.add(item.title_key)
+    for item in appdata.assets:
+        i18n_keys.add(item.title_key)
+    for item in appdata.constraints:
+        i18n_keys.add(item.title_key)
+    for item in appdata.objectives:
+        i18n_keys.add(item.title_key)
+    for item in appdata.risks:
+        i18n_keys.add(item.title_key)
+    for rulepack in appdata.rulepacks.values():
+        for rule in rulepack.rules:
+            i18n_keys.add(rule.title_key)
+            i18n_keys.add(rule.summary_key)
+        for kit in rulepack.compliance_kits:
+            i18n_keys.add(kit.title_key)
+            i18n_keys.add(kit.summary_key)
+    missing_i18n = sorted(key for key in i18n_keys if key and key not in en_translations)
+    if missing_i18n:
+        fatals.append(("validate.missing_i18n_keys", {"keys": ", ".join(missing_i18n)}))
 
     return fatals, warns

@@ -27,7 +27,7 @@ def _parse_flat_yaml(text: str) -> dict[str, Any]:
 
 
 @lru_cache(maxsize=None)
-def _load_lang(lang: str) -> dict[str, Any]:
+def load_lang(lang: str) -> dict[str, Any]:
     if lang not in SUPPORTED_LANGS:
         lang = "en"
     with (
@@ -42,8 +42,8 @@ def _load_lang(lang: str) -> dict[str, Any]:
 
 
 def t(key: str, lang: str, **kwargs: Any) -> str:
-    selected = _load_lang(lang)
-    en = _load_lang("en")
+    selected = load_lang(lang)
+    en = load_lang("en")
     value = selected.get(key) or en.get(key) or key
     if not isinstance(value, str):
         value = str(value)
