@@ -6,5 +6,9 @@
   "skills": ["communication", "analysis"],
   "assets": ["laptop"],
   "constraints": ["evenings"],
-  "objective_preset": "fast_start"
+  "objective_preset": "fast_start",
+  "risk_tolerance": "medium",
+  "horizon_months": 6,
+  "target_net_monthly_eur": 900,
+  "preferred_modes": ["service"]
 }

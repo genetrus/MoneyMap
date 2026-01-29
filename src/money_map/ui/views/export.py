@@ -12,7 +12,26 @@ from money_map.core.plan import build_plan
 from money_map.core.recommend import recommend
 from money_map.i18n import t
 from money_map.render.json import to_json
-from money_map.render.md import render_plan_md
+from money_map.render.md import render_checklist_md, render_plan_md
+
+
+def _result_payload(result, lang: str, appdata) -> dict:
+    variant_by_id = {variant.variant_id: variant for variant in appdata.variants}
+    ranked = []
+    for item in result.ranked_variants:
+        payload = item.model_dump() if hasattr(item, "model_dump") else item
+        variant = variant_by_id[payload["variant_id"]]
+        payload = {
+            **payload,
+            "title": t(variant.title_key, lang),
+            "summary": t(variant.summary_key, lang),
+            "pros": [t(reason, lang) for reason in payload.get("pros", [])],
+            "cons": [t(reason, lang) for reason in payload.get("cons", [])],
+            "blockers": [t(reason, lang) for reason in payload.get("blockers", [])],
+            "assumptions": [t(reason, lang) for reason in payload.get("assumptions", [])],
+        }
+        ranked.append(payload)
+    return {"ranked_variants": ranked, "diagnostics": result.diagnostics}
 
 
 def render(data_dir: Path, lang: str) -> None:
@@ -26,12 +45,15 @@ def render(data_dir: Path, lang: str) -> None:
 
     if st.button(t("common.export", lang)):
         result = recommend(profile, appdata, top_n=5)
-        variant_id = result.ranked_variants[0]["variant_id"]
+        top_item = result.ranked_variants[0]
+        variant_id = top_item.variant_id if hasattr(top_item, "variant_id") else top_item["variant_id"]
         plan = build_plan(variant_id, profile, appdata)
 
         profile_bytes = yaml.safe_dump(profile.model_dump(), sort_keys=True).encode("utf-8")
-        result_bytes = to_json(result.model_dump()).encode("utf-8")
-        plan_bytes = render_plan_md(plan).encode("utf-8")
+        result_payload = _result_payload(result, lang, appdata)
+        result_bytes = to_json(result_payload).encode("utf-8")
+        plan_bytes = render_plan_md(plan, lang).encode("utf-8")
+        checklist_bytes = render_checklist_md(plan.compliance_checklist, lang).encode("utf-8")
 
         st.download_button(
             t("ui.export.download_profile", lang),
@@ -47,4 +69,9 @@ def render(data_dir: Path, lang: str) -> None:
             t("ui.export.download_plan", lang),
             data=io.BytesIO(plan_bytes),
             file_name="plan.md",
+        )
+        st.download_button(
+            t("ui.export.download_checklist", lang),
+            data=io.BytesIO(checklist_bytes),
+            file_name="checklist.md",
         )

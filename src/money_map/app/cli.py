@@ -32,7 +32,7 @@ from money_map.core.validate import validate_app_data
 from money_map.i18n import t
 from money_map.i18n.audit import audit_i18n, print_audit_report
 from money_map.render.json import to_json
-from money_map.render.md import render_plan_md
+from money_map.render.md import render_checklist_md, render_plan_md
 
 if typer:
     app = typer.Typer(add_completion=False)
@@ -47,17 +47,26 @@ def _load_profile(path: Path) -> UserProfile:
     return UserProfile.model_validate(data)
 
 
+def _translate_list(items: list[str], lang: str) -> list[str]:
+    return [t(item, lang) for item in items]
+
+
 def _result_payload(result: RecommendationResult, lang: str, appdata) -> dict[str, Any]:
     translated: list[dict[str, Any]] = []
     variant_by_id = {variant.variant_id: variant for variant in appdata.variants}
     for item in result.ranked_variants:
-        variant_id = item["variant_id"]
+        item_payload = item.model_dump() if hasattr(item, "model_dump") else item
+        variant_id = item_payload["variant_id"]
         variant = variant_by_id[variant_id]
         translated.append(
             {
-                **item,
+                **item_payload,
                 "title": t(variant.title_key, lang),
                 "summary": t(variant.summary_key, lang),
+                "pros": _translate_list(item_payload.get("pros", []), lang),
+                "cons": _translate_list(item_payload.get("cons", []), lang),
+                "blockers": _translate_list(item_payload.get("blockers", []), lang),
+                "assumptions": _translate_list(item_payload.get("assumptions", []), lang),
             }
         )
     return {"ranked_variants": translated, "diagnostics": result.diagnostics}
@@ -129,12 +138,51 @@ def data_docs_command(data_dir: Path, out: Path) -> int:
     return 0
 
 
-def recommend_command(profile: Path, top: int, data_dir: Path, lang: str) -> int:
+def _print_recommendations(result: RecommendationResult, appdata, lang: str) -> None:
+    variant_by_id = {variant.variant_id: variant for variant in appdata.variants}
+    if Table and console:
+        table = Table(title=t("app.title", lang))
+        table.add_column(t("cli.recommend.rank", lang))
+        table.add_column(t("cli.recommend.title", lang))
+        table.add_column(t("cli.recommend.score", lang))
+        table.add_column(t("cli.recommend.top_pro", lang))
+        table.add_column(t("cli.recommend.top_blocker", lang))
+        for index, item in enumerate(result.ranked_variants, start=1):
+            variant = variant_by_id[item.variant_id]
+            top_pro = item.pros[0] if item.pros else t("cli.recommend.none", lang)
+            top_blocker = (
+                item.blockers[0] if item.blockers else t("cli.recommend.none", lang)
+            )
+            table.add_row(
+                str(index),
+                t(variant.title_key, lang),
+                f"{item.score_total:.2f}",
+                t(top_pro, lang),
+                t(top_blocker, lang),
+            )
+        console.print(table)
+        return
+
+    for index, item in enumerate(result.ranked_variants, start=1):
+        variant = variant_by_id[item.variant_id]
+        top_pro = item.pros[0] if item.pros else t("cli.recommend.none", lang)
+        top_blocker = item.blockers[0] if item.blockers else t("cli.recommend.none", lang)
+        print(
+            f"{index}. {t(variant.title_key, lang)} | "
+            f"{t('cli.recommend.score', lang)}: {item.score_total:.2f} | "
+            f"{t('cli.recommend.top_pro', lang)}: {t(top_pro, lang)} | "
+            f"{t('cli.recommend.top_blocker', lang)}: {t(top_blocker, lang)}"
+        )
+
+
+def recommend_command(profile: Path, top: int, data_dir: Path, lang: str, explain: bool) -> int:
     appdata = load_app_data(data_dir)
     user_profile = _load_profile(profile)
     result = recommend(user_profile, appdata, top)
-    payload = _result_payload(result, lang, appdata)
-    print(json.dumps(payload, ensure_ascii=False))
+    _print_recommendations(result, appdata, lang)
+    if explain:
+        payload = _result_payload(result, lang, appdata)
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -151,6 +199,7 @@ def export_command(profile: Path, out: Path, data_dir: Path, lang: str) -> int:
     profile_path = out / "profile.yaml"
     result_path = out / "result.json"
     plan_path = out / "plan.md"
+    checklist_path = out / "checklist.md"
 
     with profile_path.open("w", encoding="utf-8") as handle:
         handle.write(_dump_yaml(user_profile.model_dump()))
@@ -159,7 +208,10 @@ def export_command(profile: Path, out: Path, data_dir: Path, lang: str) -> int:
         handle.write(to_json(payload))
 
     with plan_path.open("w", encoding="utf-8") as handle:
-        handle.write(render_plan_md(plan))
+        handle.write(render_plan_md(plan, lang))
+
+    with checklist_path.open("w", encoding="utf-8") as handle:
+        handle.write(render_checklist_md(plan.compliance_checklist, lang))
 
     message = t("cli.export.done", lang, path=str(out))
     if console:
@@ -217,8 +269,9 @@ if typer:
         top: int = typer.Option(10, "--top"),
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
         lang: str = typer.Option("en", "--lang"),
+        explain: bool = typer.Option(False, "--explain"),
     ) -> None:
-        raise typer.Exit(code=recommend_command(profile, top, data_dir, lang))
+        raise typer.Exit(code=recommend_command(profile, top, data_dir, lang, explain))
 
     @app.command()
     def export(
@@ -278,6 +331,7 @@ def _build_parser() -> argparse.ArgumentParser:
     recommend_parser.add_argument("--profile", default="profiles/demo_fast_start.yaml")
     recommend_parser.add_argument("--top", type=int, default=10)
     recommend_parser.add_argument("--data-dir", default="data")
+    recommend_parser.add_argument("--explain", action="store_true")
 
     export_parser = subparsers.add_parser("export")
     export_parser.add_argument("--profile", default="profiles/demo_fast_start.yaml")
@@ -321,7 +375,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "ui":
         return ui_command(Path(args.data_dir), args.port)
     if args.command == "recommend":
-        return recommend_command(Path(args.profile), args.top, Path(args.data_dir), args.lang)
+        return recommend_command(
+            Path(args.profile),
+            args.top,
+            Path(args.data_dir),
+            args.lang,
+            getattr(args, "explain", False),
+        )
     if args.command == "export":
         return export_command(Path(args.profile), Path(args.out), Path(args.data_dir), args.lang)
     if args.command == "i18n" and args.i18n_command == "audit":

@@ -27,3 +27,9 @@ jobs:
       - name: Data dictionary
         run: |
           python -m money_map data docs --data-dir data --out docs/data_dictionary.md
+      - name: Recommend sample
+        run: |
+          python -m money_map recommend --profile profiles/demo_fast_start.yaml --top 5 --lang en
+      - name: Export sample
+        run: |
+          python -m money_map export --profile profiles/demo_fast_start.yaml --out exports --lang en

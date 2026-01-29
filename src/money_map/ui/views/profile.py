@@ -43,6 +43,26 @@ def render(data_dir: Path, lang: str) -> None:
         constraints = st.text_input(
             t("ui.profile.constraints", lang), ", ".join(profile.constraints)
         )
+        risk_tolerance = st.selectbox(
+            t("ui.profile.risk_tolerance", lang),
+            options=["low", "medium", "high"],
+            index=["low", "medium", "high"].index(profile.risk_tolerance),
+        )
+        horizon_months = st.number_input(
+            t("ui.profile.horizon_months", lang),
+            min_value=1,
+            max_value=36,
+            value=profile.horizon_months,
+        )
+        target_net = st.number_input(
+            t("ui.profile.target_net_monthly", lang),
+            min_value=0,
+            max_value=100_000,
+            value=profile.target_net_monthly_eur or 0,
+        )
+        preferred_modes = st.text_input(
+            t("ui.profile.preferred_modes", lang), ", ".join(profile.preferred_modes)
+        )
         objective_preset = st.text_input(
             t("ui.profile.objective_preset", lang), profile.objective_preset
         )
@@ -57,6 +77,10 @@ def render(data_dir: Path, lang: str) -> None:
             skills=[item.strip() for item in skills.split(",") if item.strip()],
             assets=[item.strip() for item in assets.split(",") if item.strip()],
             constraints=[item.strip() for item in constraints.split(",") if item.strip()],
+            risk_tolerance=risk_tolerance,
+            horizon_months=int(horizon_months),
+            target_net_monthly_eur=int(target_net) or None,
+            preferred_modes=[item.strip() for item in preferred_modes.split(",") if item.strip()],
             objective_preset=objective_preset,
         )
         st.success(t("ui.profile.saved", lang))
