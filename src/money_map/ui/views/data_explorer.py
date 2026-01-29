@@ -6,12 +6,14 @@ from pathlib import Path
 import streamlit as st
 
 from money_map.core.evidence import load_registry
-from money_map.core.load import load_app_data, load_yaml
+from money_map.core.load import load_yaml
 from money_map.core.validate import REQUIRED_FILES, validate_app_data
-from money_map.core.workspace import get_workspace_paths
+from money_map.core.workspace import detect_workspace_conflicts, get_workspace_paths
 from money_map.i18n import t
 from money_map.i18n.locale import format_int
 from money_map.i18n.audit import audit_i18n
+from money_map.ui.cache import appdata_signature, load_app_data_cached
+from money_map.core.rulepack_authoring import lint_rulepack, scaffold_rulepack, validate_rulepack_structure
 
 
 def _entity_options(appdata) -> dict[str, list]:
@@ -44,14 +46,19 @@ def _serialize(entity) -> str:
 def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.data_explorer.header", lang))
 
-    appdata = load_app_data(data_dir, workspace=workspace)
+    signature = appdata_signature(data_dir, workspace)
+    appdata = load_app_data_cached(
+        str(data_dir), "DE", str(workspace) if workspace else None, signature
+    )
 
     tabs = [
         t("ui.data_explorer.tab_entities", lang),
         t("ui.data_explorer.tab_rulepacks", lang),
     ]
     if workspace is not None:
-        tabs.append(t("ui.data_explorer.tab_evidence", lang))
+        tabs.extend(
+            [t("ui.data_explorer.tab_evidence", lang), t("ui.data_explorer.tab_conflicts", lang)]
+        )
     tab_entities, tab_rulepacks, *rest = st.tabs(tabs)
 
     with tab_entities:
@@ -155,6 +162,47 @@ def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
         for rule in rulepack.rules:
             st.write(f"- {t(rule.title_key, lang)} ({rule.rule_id})")
 
+        st.subheader(t("ui.data_explorer.rulepack_authoring_header", lang))
+        author_country = st.selectbox(
+            t("ui.data_explorer.rulepack_authoring_country", lang),
+            options=sorted(appdata.rulepacks.keys()),
+            key="rulepack_authoring_country",
+        )
+        author_rulepack = appdata.rulepacks[author_country]
+        if st.button(t("ui.data_explorer.rulepack_authoring_validate", lang)):
+            issues = validate_rulepack_structure(
+                author_rulepack.model_dump()
+                if hasattr(author_rulepack, "model_dump")
+                else author_rulepack
+            )
+            if issues:
+                st.error([t(issue.key, lang, **issue.params) for issue in issues])
+            else:
+                st.success(t("ui.data_explorer.rulepack_authoring_valid", lang))
+        if st.button(t("ui.data_explorer.rulepack_authoring_lint", lang)):
+            warnings = lint_rulepack(
+                author_rulepack.model_dump()
+                if hasattr(author_rulepack, "model_dump")
+                else author_rulepack
+            )
+            if warnings:
+                st.warning([t(item.key, lang, **item.params) for item in warnings])
+            else:
+                st.success(t("ui.data_explorer.rulepack_authoring_clean", lang))
+        if workspace is not None:
+            if st.button(t("ui.data_explorer.rulepack_authoring_scaffold", lang)):
+                out_path = get_workspace_paths(workspace).overlay_rulepacks / f"{author_country}.yaml"
+                scaffold_rulepack(author_country, out_path, placeholder=True)
+                st.success(
+                    t(
+                        "ui.data_explorer.rulepack_authoring_scaffolded",
+                        lang,
+                        path=str(out_path),
+                    )
+                )
+        else:
+            st.info(t("ui.data_explorer.rulepack_authoring_workspace_required", lang))
+
     if rest:
         tab_evidence = rest[0]
         with tab_evidence:
@@ -174,3 +222,26 @@ def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
                     }
                 )
             st.dataframe(rows, use_container_width=True)
+
+        if len(rest) > 1:
+            tab_conflicts = rest[1]
+            with tab_conflicts:
+                st.subheader(t("ui.data_explorer.conflicts_header", lang))
+                conflicts = detect_workspace_conflicts(data_dir, workspace)
+                if not conflicts:
+                    st.success(t("ui.data_explorer.conflicts_none", lang))
+                else:
+                    rows = []
+                    for item in conflicts:
+                        rows.append(
+                            {
+                                t("ui.data_explorer.conflict_entity", lang): item.entity_ref,
+                                t("ui.data_explorer.conflict_type", lang): t(
+                                    f"conflict.{item.conflict_type}", lang
+                                ),
+                                t("ui.data_explorer.conflict_action", lang): t(
+                                    f"conflict.action.{item.suggested_action}", lang
+                                ),
+                            }
+                        )
+                    st.dataframe(rows, use_container_width=True)

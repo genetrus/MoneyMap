@@ -4,6 +4,7 @@ import ast
 import json
 from pathlib import Path
 from typing import Any
+from functools import lru_cache
 
 try:
     import yaml
@@ -126,7 +127,15 @@ def _safe_load_basic(text: str) -> Any:
     return parsed
 
 
-def load_mapping(path: Path) -> Any:
+def _file_signature(path: Path) -> tuple[str, int, int]:
+    stat = path.stat()
+    return (str(path.resolve()), stat.st_mtime_ns, stat.st_size)
+
+
+@lru_cache(maxsize=512)
+def _load_mapping_cached(path_str: str, mtime_ns: int, size: int) -> Any:
+    _ = (mtime_ns, size)
+    path = Path(path_str)
     with path.open("r", encoding="utf-8") as handle:
         content = handle.read()
     try:
@@ -137,6 +146,11 @@ def load_mapping(path: Path) -> Any:
         raise ValueError(
             "PyYAML not installed; either install pyyaml or make data files JSON-compatible YAML."
         ) from None
+
+
+def load_mapping(path: Path) -> Any:
+    path_str, mtime_ns, size = _file_signature(path)
+    return _load_mapping_cached(path_str, mtime_ns, size)
 
 
 def load_yaml(path: Path) -> Any:
@@ -165,6 +179,13 @@ def _sort_bridges(bridges: list[Any]) -> list[Any]:
     return sorted(bridges, key=_bridge_key)
 
 
+def _overlay_files(overlay_dir: Path, prefix: str) -> list[Path]:
+    files = sorted(overlay_dir.glob(f"{prefix}*.yaml"))
+    resolved = [path for path in files if ".resolved" in path.stem]
+    regular = [path for path in files if ".resolved" not in path.stem]
+    return regular + resolved
+
+
 def load_app_data(
     data_dir: Path, country_code: str = "DE", workspace: Path | None = None
 ) -> AppData:
@@ -183,19 +204,22 @@ def load_app_data(
     raw_cells = load_yaml(data_dir / "cells.yaml")
     raw_variants = load_yaml(data_dir / "variants.yaml")
     if overlay_dir and overlay_dir.exists():
-        overlay_taxonomy = load_yaml(overlay_dir / "taxonomy.yaml") or []
-        overlay_cells = load_yaml(overlay_dir / "cells.yaml") or []
-        overlay_variants = load_yaml(overlay_dir / "variants.yaml") or []
-        if isinstance(raw_taxonomy, list) and isinstance(overlay_taxonomy, list):
-            raw_taxonomy = merge_by_id(
-                raw_taxonomy, overlay_taxonomy, "taxonomy_id", sources, "taxonomy"
-            )
-        if isinstance(raw_cells, list) and isinstance(overlay_cells, list):
-            raw_cells = merge_by_id(raw_cells, overlay_cells, "cell_id", sources, "cell")
-        if isinstance(raw_variants, list) and isinstance(overlay_variants, list):
-            raw_variants = merge_by_id(
-                raw_variants, overlay_variants, "variant_id", sources, "variant"
-            )
+        for path in _overlay_files(overlay_dir, "taxonomy"):
+            overlay_taxonomy = load_yaml(path) or []
+            if isinstance(raw_taxonomy, list) and isinstance(overlay_taxonomy, list):
+                raw_taxonomy = merge_by_id(
+                    raw_taxonomy, overlay_taxonomy, "taxonomy_id", sources, "taxonomy"
+                )
+        for path in _overlay_files(overlay_dir, "cells"):
+            overlay_cells = load_yaml(path) or []
+            if isinstance(raw_cells, list) and isinstance(overlay_cells, list):
+                raw_cells = merge_by_id(raw_cells, overlay_cells, "cell_id", sources, "cell")
+        for path in _overlay_files(overlay_dir, "variants"):
+            overlay_variants = load_yaml(path) or []
+            if isinstance(raw_variants, list) and isinstance(overlay_variants, list):
+                raw_variants = merge_by_id(
+                    raw_variants, overlay_variants, "variant_id", sources, "variant"
+                )
     taxonomy_items = [TaxonomyItem.model_validate(item) for item in _ensure_list(raw_taxonomy)]
     cells = [Cell.model_validate(item) for item in _ensure_list(raw_cells)]
     def _normalize_variant(variant: Variant) -> Variant:
@@ -232,20 +256,22 @@ def load_app_data(
     ]
     raw_presets = load_yaml(presets_path)
     if overlay_dir and overlay_dir.exists():
-        overlay_presets = load_yaml(overlay_dir / "presets.yaml") or []
-        if isinstance(raw_presets, list) and isinstance(overlay_presets, list):
-            raw_presets = merge_by_id(
-                raw_presets, overlay_presets, "preset_id", sources, "preset"
-            )
+        for path in _overlay_files(overlay_dir, "presets"):
+            overlay_presets = load_yaml(path) or []
+            if isinstance(raw_presets, list) and isinstance(overlay_presets, list):
+                raw_presets = merge_by_id(
+                    raw_presets, overlay_presets, "preset_id", sources, "preset"
+                )
     presets = [
         ObjectivePreset.model_validate(item) for item in _ensure_list(raw_presets)
     ]
     risks = [Risk.model_validate(item) for item in _ensure_list(load_yaml(risks_path))]
     bridges = load_yaml(data_dir / "bridges.yaml") or []
     if overlay_dir and overlay_dir.exists():
-        overlay_bridges = load_yaml(overlay_dir / "bridges.yaml") or []
-        if isinstance(bridges, list) and isinstance(overlay_bridges, list):
-            bridges = merge_bridges(bridges, overlay_bridges, sources)
+        for path in _overlay_files(overlay_dir, "bridges"):
+            overlay_bridges = load_yaml(path) or []
+            if isinstance(bridges, list) and isinstance(overlay_bridges, list):
+                bridges = merge_bridges(bridges, overlay_bridges, sources)
     if isinstance(bridges, list):
         bridges = _sort_bridges(bridges)
     rulepacks_dir = data_dir / "rulepacks"
@@ -268,7 +294,10 @@ def load_app_data(
         )
     if overlay_dir and (overlay_dir / "rulepacks").exists():
         overlay_rulepacks_dir = overlay_dir / "rulepacks"
-        for path in sorted(overlay_rulepacks_dir.glob("*.yaml")):
+        overlay_paths = sorted(overlay_rulepacks_dir.glob("*.yaml"))
+        resolved = [path for path in overlay_paths if ".resolved" in path.stem]
+        overlay_paths = [path for path in overlay_paths if ".resolved" not in path.stem] + resolved
+        for path in overlay_paths:
             overlay_pack = load_yaml(path) or {}
             if not isinstance(overlay_pack, dict):
                 continue

@@ -193,6 +193,8 @@ class ComplianceKit(BaseModel):
 class RulePack(BaseModel):
     country_code: str
     reviewed_at: date | str
+    is_placeholder: bool = False
+    placeholder_notice_key: str | None = None
     rules: list[Rule] = Field(default_factory=list)
     compliance_kits: list[ComplianceKit] = Field(default_factory=list)
 

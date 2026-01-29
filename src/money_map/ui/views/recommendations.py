@@ -5,7 +5,7 @@ from pathlib import Path
 import streamlit as st
 
 from datetime import date
-from money_map.core.load import load_app_data
+from money_map.core.evidence import load_registry
 from money_map.core.model import UserProfile
 from money_map.core.recommend import recommend
 from money_map.core.reviews import load_reviews
@@ -13,16 +13,22 @@ from money_map.core.simulate import simulate_variant
 from money_map.core.workspace import get_workspace_paths
 from money_map.i18n import t
 from money_map.i18n.locale import format_currency, format_percent
+from money_map.ui.cache import appdata_signature, load_app_data_cached
 
 
 def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     st.header(t("ui.reco.header", lang))
-    appdata = load_app_data(data_dir, workspace=workspace)
-
     profile: UserProfile = st.session_state.get("profile")
     if profile is None:
         st.info(t("ui.common.load_profile_first", lang))
         return
+    signature = appdata_signature(data_dir, workspace)
+    appdata = load_app_data_cached(
+        str(data_dir),
+        profile.country_code,
+        str(workspace) if workspace else None,
+        signature,
+    )
 
     presets = appdata.presets
     preset_ids = [preset.preset_id for preset in presets]
@@ -47,9 +53,18 @@ def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
     if st.button(t("common.recommend", lang)):
         profile.objective_preset = objective
         reviews = None
+        evidence_registry = None
         if workspace is not None:
-            reviews = load_reviews(get_workspace_paths(workspace).reviews / "reviews.yaml")
-        result = recommend(profile, appdata, top_n=5, reviews=reviews)
+            paths = get_workspace_paths(workspace)
+            reviews = load_reviews(paths.reviews / "reviews.yaml")
+            evidence_registry = load_registry(paths.evidence / "registry.yaml")
+        result = recommend(
+            profile,
+            appdata,
+            top_n=5,
+            reviews=reviews,
+            evidence_registry=evidence_registry,
+        )
         st.session_state["recommendations"] = result
 
     result = st.session_state.get("recommendations")

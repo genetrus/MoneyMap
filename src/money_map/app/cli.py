@@ -20,7 +20,12 @@ except ImportError:  # pragma: no cover - optional dependency
     Table = None
 
 from money_map.core.data_dictionary import generate_data_dictionary
-from money_map.core.evidence import add_file_evidence, add_note_evidence, load_registry, validate_registry
+from money_map.core.evidence import (
+    add_file_evidence,
+    add_note_evidence,
+    load_registry,
+    validate_registry,
+)
 from money_map.core.load import load_app_data, load_yaml
 from money_map.core.model import RecommendationResult, UserProfile
 from money_map.core.plan import build_plan
@@ -31,9 +36,22 @@ from money_map.core.reviews import (
     load_reviews,
     save_reviews,
 )
+from money_map.core.rulepack_authoring import (
+    RulepackIssue,
+    lint_rulepack,
+    scaffold_kit,
+    scaffold_rulepack,
+    validate_rulepack_structure,
+)
 from money_map.core.simulate import simulation_to_json_text, simulation_to_markdown, simulate_variant
 from money_map.core.validate import validate_app_data
-from money_map.core.workspace import get_workspace_paths, init_workspace, workspace_status
+from money_map.core.workspace import (
+    detect_workspace_conflicts,
+    get_workspace_paths,
+    init_workspace,
+    resolve_workspace_conflict,
+    workspace_status,
+)
 from money_map.core.yaml_utils import dump_yaml
 from money_map.i18n import t
 from money_map.i18n.audit import audit_i18n, print_audit_report
@@ -104,10 +122,22 @@ def _print_validation_report(
             print(f"{t('cli.validate.warn', lang)}: {t(key, lang, **params)}")
 
 
+def _print_rulepack_issues(issues: list[RulepackIssue], lang: str, level_key: str) -> None:
+    for issue in issues:
+        message = t(issue.key, lang, **issue.params)
+        print(f"{t(level_key, lang)}: {message}")
+
+
 def validate_command(
-    data_dir: Path, lang: str, strict: bool, workspace: Path | None = None
+    data_dir: Path,
+    lang: str,
+    strict: bool,
+    workspace: Path | None = None,
+    incremental: bool = False,
 ) -> int:
-    fatals, warns = validate_app_data(data_dir, strict=strict, workspace=workspace)
+    fatals, warns = validate_app_data(
+        data_dir, strict=strict, workspace=workspace, incremental=incremental
+    )
     _print_validation_report(fatals, warns, lang)
     if fatals:
         return 1
@@ -145,6 +175,100 @@ def i18n_audit_command(
 
 def data_docs_command(data_dir: Path, out: Path) -> int:
     generate_data_dictionary(data_dir, out)
+    return 0
+
+
+def rulepack_scaffold_command(
+    country_code: str, out: Path, placeholder: bool, lang: str
+) -> int:
+    rulepack = scaffold_rulepack(country_code, out, placeholder=placeholder)
+    print(t("cli.rulepack.scaffold.done", lang, country=rulepack["country_code"], path=str(out)))
+    return 0
+
+
+def rulepack_kit_add_command(
+    country_code: str,
+    kit_id: str,
+    title_key: str,
+    summary_key: str,
+    regulated_level: str,
+    data_dir: Path,
+    lang: str,
+) -> int:
+    path = data_dir / "rulepacks" / f"{country_code.upper()}.yaml"
+    if not path.exists():
+        print(t("cli.rulepack.not_found", lang, country=country_code.upper()))
+        return 1
+    rulepack = load_yaml(path) or {}
+    kits = rulepack.get("compliance_kits") if isinstance(rulepack, dict) else None
+    if not isinstance(kits, list):
+        kits = []
+    kits.append(scaffold_kit(kit_id, title_key, summary_key, regulated_level))
+    rulepack["compliance_kits"] = kits
+    path.write_text(dump_yaml(rulepack), encoding="utf-8")
+    print(t("cli.rulepack.kit_added", lang, kit_id=kit_id, country=country_code.upper()))
+    return 0
+
+
+def rulepack_validate_command(
+    country_code: str, data_dir: Path, lang: str, strict: bool
+) -> int:
+    path = data_dir / "rulepacks" / f"{country_code.upper()}.yaml"
+    if not path.exists():
+        print(t("cli.rulepack.not_found", lang, country=country_code.upper()))
+        return 1
+    rulepack = load_yaml(path)
+    issues = validate_rulepack_structure(rulepack)
+    if issues:
+        _print_rulepack_issues(issues, lang, "cli.validate.fatal")
+        if strict:
+            return 1
+    print(t("cli.rulepack.validate_ok", lang, country=country_code.upper()))
+    return 0
+
+
+def rulepack_lint_command(country_code: str, data_dir: Path, lang: str) -> int:
+    path = data_dir / "rulepacks" / f"{country_code.upper()}.yaml"
+    if not path.exists():
+        print(t("cli.rulepack.not_found", lang, country=country_code.upper()))
+        return 1
+    rulepack = load_yaml(path)
+    issues = lint_rulepack(rulepack)
+    if issues:
+        _print_rulepack_issues(issues, lang, "cli.validate.warn")
+    print(t("cli.rulepack.lint_done", lang, country=country_code.upper()))
+    return 0
+
+
+def workspace_conflicts_command(data_dir: Path, workspace: Path, lang: str) -> int:
+    conflicts = detect_workspace_conflicts(data_dir, workspace)
+    if Table and console:
+        table = Table(title=t("cli.workspace.conflicts_header", lang))
+        table.add_column(t("cli.workspace.conflict_entity", lang))
+        table.add_column(t("cli.workspace.conflict_type", lang))
+        table.add_column(t("cli.workspace.conflict_action", lang))
+        for item in conflicts:
+            table.add_row(
+                item.entity_ref,
+                t(f"conflict.{item.conflict_type}", lang),
+                t(f"conflict.action.{item.suggested_action}", lang),
+            )
+        console.print(table)
+    else:
+        for item in conflicts:
+            print(
+                f"{item.entity_ref}: "
+                f"{t(f'conflict.{item.conflict_type}', lang)} "
+                f"({t(f'conflict.action.{item.suggested_action}', lang)})"
+            )
+    return 0
+
+
+def workspace_resolve_command(
+    data_dir: Path, workspace: Path, entity_ref: str, use: str, lang: str
+) -> int:
+    target = resolve_workspace_conflict(data_dir, workspace, entity_ref, use)
+    print(t("cli.workspace.resolved", lang, entity_ref=entity_ref, path=str(target)))
     return 0
 
 
@@ -317,9 +441,18 @@ def doctor_command(data_dir: Path, lang: str, workspace: Path | None = None) -> 
         profile = _load_profile(profile_path)
         appdata = load_app_data(data_dir, workspace=workspace)
         reviews = None
+        evidence_registry = None
         if workspace is not None:
-            reviews = load_reviews(get_workspace_paths(workspace).reviews / "reviews.yaml")
-        result = recommend(profile, appdata, top_n=3, reviews=reviews)
+            paths = get_workspace_paths(workspace)
+            reviews = load_reviews(paths.reviews / "reviews.yaml")
+            evidence_registry = load_registry(paths.evidence / "registry.yaml")
+        result = recommend(
+            profile,
+            appdata,
+            top_n=3,
+            reviews=reviews,
+            evidence_registry=evidence_registry,
+        )
         add_check(t("cli.doctor.recommend", lang), "PASS", profile_path.name)
     except Exception as exc:  # pragma: no cover - safety
         add_check(t("cli.doctor.recommend", lang), "FAIL", str(exc))
@@ -460,16 +593,25 @@ def recommend_command(
     appdata = load_app_data(data_dir, workspace=workspace)
     user_profile = _load_profile(profile)
     reviews = None
+    evidence_registry = None
     if workspace is not None:
         paths = get_workspace_paths(workspace)
         reviews = load_reviews(paths.reviews / "reviews.yaml")
+        evidence_registry = load_registry(paths.evidence / "registry.yaml")
     today_date = None
     if today:
         try:
             today_date = datetime.fromisoformat(today).date()
         except ValueError:
             today_date = None
-    result = recommend(user_profile, appdata, top, today=today_date, reviews=reviews)
+    result = recommend(
+        user_profile,
+        appdata,
+        top,
+        today=today_date,
+        reviews=reviews,
+        evidence_registry=evidence_registry,
+    )
     _print_recommendations(result, appdata, lang)
     if explain:
         payload = _result_payload(result, lang, appdata)
@@ -499,10 +641,19 @@ def export_command(
             today_date = None
 
     reviews = None
+    evidence_registry = None
     if workspace is not None:
         paths = get_workspace_paths(workspace)
         reviews = load_reviews(paths.reviews / "reviews.yaml")
-    result = recommend(user_profile, appdata, top_n=10, today=today_date, reviews=reviews)
+        evidence_registry = load_registry(paths.evidence / "registry.yaml")
+    result = recommend(
+        user_profile,
+        appdata,
+        top_n=10,
+        today=today_date,
+        reviews=reviews,
+        evidence_registry=evidence_registry,
+    )
     payload = _result_payload(result, lang, appdata)
     selected_variant_id = payload["ranked_variants"][0]["variant_id"]
     plan = build_plan(selected_variant_id, user_profile, appdata, today=today_date)
@@ -806,9 +957,10 @@ if typer:
         data_dir: Path = typer.Option(Path("data"), "--data-dir"),
         lang: str = typer.Option("en", "--lang", "-l"),
         strict: bool = typer.Option(False, "--strict"),
+        incremental: bool = typer.Option(False, "--incremental"),
         workspace: Path | None = typer.Option(None, "--workspace"),
     ) -> None:
-        raise typer.Exit(code=validate_command(data_dir, lang, strict, workspace))
+        raise typer.Exit(code=validate_command(data_dir, lang, strict, workspace, incremental))
 
     @app.command()
     def ui(
@@ -912,6 +1064,61 @@ if typer:
         merge_translations(source, lang, write=write)
         raise typer.Exit(code=0)
 
+    rulepack_app = typer.Typer(help="rulepack tools")
+    app.add_typer(rulepack_app, name="rulepack")
+
+    @rulepack_app.command("scaffold")
+    def rulepack_scaffold(
+        country_code: str = typer.Argument(...),
+        out: Path = typer.Option(None, "--out"),
+        placeholder: bool = typer.Option(True, "--placeholder"),
+        realistic: bool = typer.Option(False, "--realistic"),
+        lang: str = typer.Option("en", "--lang", "-l"),
+    ) -> None:
+        target = out or Path("data") / "rulepacks" / f"{country_code.upper()}.yaml"
+        placeholder_flag = placeholder and not realistic
+        raise typer.Exit(
+            code=rulepack_scaffold_command(country_code, target, placeholder_flag, lang)
+        )
+
+    kit_app = typer.Typer(help="rulepack kit tools")
+    rulepack_app.add_typer(kit_app, name="kit")
+
+    @kit_app.command("add")
+    def rulepack_kit_add(
+        country_code: str = typer.Option(..., "--country"),
+        kit_id: str = typer.Option(..., "--kit-id"),
+        title_key: str = typer.Option(..., "--title-key"),
+        summary_key: str = typer.Option(..., "--summary-key"),
+        regulated_level: str = typer.Option("none", "--regulated-level"),
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        lang: str = typer.Option("en", "--lang", "-l"),
+    ) -> None:
+        raise typer.Exit(
+            code=rulepack_kit_add_command(
+                country_code, kit_id, title_key, summary_key, regulated_level, data_dir, lang
+            )
+        )
+
+    @rulepack_app.command("validate")
+    def rulepack_validate(
+        country_code: str = typer.Option(..., "--country"),
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        strict: bool = typer.Option(False, "--strict"),
+        lang: str = typer.Option("en", "--lang", "-l"),
+    ) -> None:
+        raise typer.Exit(
+            code=rulepack_validate_command(country_code, data_dir, lang, strict)
+        )
+
+    @rulepack_app.command("lint")
+    def rulepack_lint(
+        country_code: str = typer.Option(..., "--country"),
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        lang: str = typer.Option("en", "--lang", "-l"),
+    ) -> None:
+        raise typer.Exit(code=rulepack_lint_command(country_code, data_dir, lang))
+
     workspace_app = typer.Typer(help="workspace tools")
     app.add_typer(workspace_app, name="workspace")
 
@@ -925,6 +1132,26 @@ if typer:
         lang: str = typer.Option("en", "--lang"),
     ) -> None:
         raise typer.Exit(code=workspace_status_command(workspace, lang))
+
+    @workspace_app.command("conflicts")
+    def workspace_conflicts_cmd(
+        workspace: Path = typer.Option(..., "--workspace"),
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        lang: str = typer.Option("en", "--lang"),
+    ) -> None:
+        raise typer.Exit(code=workspace_conflicts_command(data_dir, workspace, lang))
+
+    @workspace_app.command("resolve")
+    def workspace_resolve_cmd(
+        entity_ref: str = typer.Argument(...),
+        use: str = typer.Option(..., "--use"),
+        workspace: Path = typer.Option(..., "--workspace"),
+        data_dir: Path = typer.Option(Path("data"), "--data-dir"),
+        lang: str = typer.Option("en", "--lang"),
+    ) -> None:
+        raise typer.Exit(
+            code=workspace_resolve_command(data_dir, workspace, entity_ref, use, lang)
+        )
 
     review_app = typer.Typer(help="review tools")
     app.add_typer(review_app, name="review")
@@ -1065,6 +1292,7 @@ def _build_parser() -> argparse.ArgumentParser:
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("--data-dir", default="data")
     validate_parser.add_argument("--strict", action="store_true")
+    validate_parser.add_argument("--incremental", action="store_true")
     validate_parser.add_argument("--workspace")
 
     ui_parser = subparsers.add_parser("ui")
@@ -1117,6 +1345,34 @@ def _build_parser() -> argparse.ArgumentParser:
     merge_parser.add_argument("--lang", default="en")
     merge_parser.add_argument("--write", action="store_true")
 
+    rulepack_parser = subparsers.add_parser("rulepack")
+    rulepack_subparsers = rulepack_parser.add_subparsers(dest="rulepack_command")
+    scaffold_parser = rulepack_subparsers.add_parser("scaffold")
+    scaffold_parser.add_argument("country_code")
+    scaffold_parser.add_argument("--out")
+    scaffold_parser.add_argument("--placeholder", action="store_true")
+    scaffold_parser.add_argument("--realistic", action="store_true")
+    scaffold_parser.add_argument("--lang", default="en")
+    kit_parser = rulepack_subparsers.add_parser("kit")
+    kit_subparsers = kit_parser.add_subparsers(dest="kit_command")
+    kit_add_parser = kit_subparsers.add_parser("add")
+    kit_add_parser.add_argument("--country", required=True)
+    kit_add_parser.add_argument("--kit-id", required=True)
+    kit_add_parser.add_argument("--title-key", required=True)
+    kit_add_parser.add_argument("--summary-key", required=True)
+    kit_add_parser.add_argument("--regulated-level", default="none")
+    kit_add_parser.add_argument("--data-dir", default="data")
+    kit_add_parser.add_argument("--lang", default="en")
+    rulepack_validate_parser = rulepack_subparsers.add_parser("validate")
+    rulepack_validate_parser.add_argument("--country", required=True)
+    rulepack_validate_parser.add_argument("--data-dir", default="data")
+    rulepack_validate_parser.add_argument("--strict", action="store_true")
+    rulepack_validate_parser.add_argument("--lang", default="en")
+    rulepack_lint_parser = rulepack_subparsers.add_parser("lint")
+    rulepack_lint_parser.add_argument("--country", required=True)
+    rulepack_lint_parser.add_argument("--data-dir", default="data")
+    rulepack_lint_parser.add_argument("--lang", default="en")
+
     workspace_parser = subparsers.add_parser("workspace")
     workspace_subparsers = workspace_parser.add_subparsers(dest="workspace_command")
     workspace_init_parser = workspace_subparsers.add_parser("init")
@@ -1125,6 +1381,16 @@ def _build_parser() -> argparse.ArgumentParser:
     workspace_status_parser = workspace_subparsers.add_parser("status")
     workspace_status_parser.add_argument("--workspace", required=True)
     workspace_status_parser.add_argument("--lang", default="en")
+    workspace_conflicts_parser = workspace_subparsers.add_parser("conflicts")
+    workspace_conflicts_parser.add_argument("--workspace", required=True)
+    workspace_conflicts_parser.add_argument("--data-dir", default="data")
+    workspace_conflicts_parser.add_argument("--lang", default="en")
+    workspace_resolve_parser = workspace_subparsers.add_parser("resolve")
+    workspace_resolve_parser.add_argument("entity_ref")
+    workspace_resolve_parser.add_argument("--use", required=True)
+    workspace_resolve_parser.add_argument("--workspace", required=True)
+    workspace_resolve_parser.add_argument("--data-dir", default="data")
+    workspace_resolve_parser.add_argument("--lang", default="en")
 
     review_parser = subparsers.add_parser("review")
     review_subparsers = review_parser.add_subparsers(dest="review_command")
@@ -1216,7 +1482,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "validate":
         workspace = Path(args.workspace) if getattr(args, "workspace", None) else None
-        return validate_command(Path(args.data_dir), args.lang, args.strict, workspace)
+        return validate_command(
+            Path(args.data_dir), args.lang, args.strict, workspace, args.incremental
+        )
     if args.command == "ui":
         return ui_command(Path(args.data_dir), args.port, args.lang)
     if args.command == "recommend":
@@ -1261,10 +1529,44 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "i18n" and args.i18n_command == "merge":
         merge_translations(Path(args.source), args.lang, write=args.write)
         return 0
+    if args.command == "rulepack" and args.rulepack_command == "scaffold":
+        out = Path(args.out) if getattr(args, "out", None) else Path("data") / "rulepacks" / f"{args.country_code.upper()}.yaml"
+        placeholder_flag = bool(getattr(args, "placeholder", False)) or not bool(
+            getattr(args, "realistic", False)
+        )
+        return rulepack_scaffold_command(args.country_code, out, placeholder_flag, args.lang)
+    if (
+        args.command == "rulepack"
+        and args.rulepack_command == "kit"
+        and args.kit_command == "add"
+    ):
+        return rulepack_kit_add_command(
+            args.country,
+            args.kit_id,
+            args.title_key,
+            args.summary_key,
+            args.regulated_level,
+            Path(args.data_dir),
+            args.lang,
+        )
+    if args.command == "rulepack" and args.rulepack_command == "validate":
+        return rulepack_validate_command(
+            args.country, Path(args.data_dir), args.lang, args.strict
+        )
+    if args.command == "rulepack" and args.rulepack_command == "lint":
+        return rulepack_lint_command(args.country, Path(args.data_dir), args.lang)
     if args.command == "workspace" and args.workspace_command == "init":
         return workspace_init_command(Path(args.path), args.lang)
     if args.command == "workspace" and args.workspace_command == "status":
         return workspace_status_command(Path(args.workspace), args.lang)
+    if args.command == "workspace" and args.workspace_command == "conflicts":
+        return workspace_conflicts_command(
+            Path(args.data_dir), Path(args.workspace), args.lang
+        )
+    if args.command == "workspace" and args.workspace_command == "resolve":
+        return workspace_resolve_command(
+            Path(args.data_dir), Path(args.workspace), args.entity_ref, args.use, args.lang
+        )
     if args.command == "review" and args.review_command == "list":
         return review_list_command(
             Path(args.workspace),

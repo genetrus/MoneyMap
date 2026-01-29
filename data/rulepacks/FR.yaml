@@ -1,32 +1,110 @@
-{
-  "country_code": "FR",
-  "reviewed_at": "2025-02-10",
-  "rules": [
-    {
-      "rule_id": "FR.placeholder",
-      "title_key": "rulepack.placeholder.rule.title",
-      "summary_key": "rulepack.placeholder.rule.summary",
-      "applies_if": {
-        "country_codes": ["FR"]
-      },
-      "effects": {
-        "add_blockers": ["reason.legal.placeholder_rulepack"],
-        "add_warnings": ["reason.legal.force_check"],
-        "add_checklist": ["rulepack.placeholder.checklist"]
-      }
-    }
-  ],
-  "compliance_kits": [
-    {
-      "kit_id": "placeholder.general",
-      "title_key": "rulepack.placeholder.kit.title",
-      "summary_key": "rulepack.placeholder.kit.summary",
-      "regulated_level": "high",
-      "checklist": [
-        "rulepack.placeholder.checklist"
-      ],
-      "applies_to_tags": ["service", "product", "regulated"],
-      "stale_after_days": 30
-    }
-  ]
-}
+country_code: FR
+reviewed_at: "2025-02-10"
+is_placeholder: true
+placeholder_notice_key: rulepack.placeholder.notice
+rules:
+  - rule_id: fr.regulated.verify
+    title_key: rule.fr.regulated.title
+    summary_key: rule.fr.regulated.summary
+    applies_if:
+      tags_any: [regulated, finance, health]
+    effects:
+      add_kits: [fr.registration, fr.taxes, fr.permits]
+      add_blockers: [reason.review.requires_verification, reason.legal.placeholder_rulepack]
+      add_checklist:
+        - rulepack.fr.verify.registration
+        - rulepack.fr.verify.taxes
+        - rulepack.fr.verify.permits
+  - rule_id: fr.invoicing.basics
+    title_key: rule.fr.invoicing.title
+    summary_key: rule.fr.invoicing.summary
+    applies_if:
+      tags_any: [service, product, inventory]
+    effects:
+      add_kits: [fr.invoicing]
+      add_checklist:
+        - rulepack.fr.verify.invoicing
+  - rule_id: fr.data.coverage
+    title_key: rule.fr.data.title
+    summary_key: rule.fr.data.summary
+    applies_if:
+      tags_any: [remote, automation]
+    effects:
+      add_kits: [fr.data_protection]
+      add_checklist:
+        - rulepack.fr.verify.data_protection
+  - rule_id: fr.employment.contracting
+    title_key: rule.fr.employment.title
+    summary_key: rule.fr.employment.summary
+    applies_if:
+      tags_any: [community, service]
+    effects:
+      add_kits: [fr.employment, fr.insurance]
+      add_checklist:
+        - rulepack.fr.verify.employment
+        - rulepack.fr.verify.insurance
+compliance_kits:
+  - kit_id: fr.registration
+    title_key: kit.fr.registration.title
+    summary_key: kit.fr.registration.summary
+    regulated_level: light
+    checklist:
+      - kit.fr.registration.check_1
+      - kit.fr.registration.check_2
+    applies_to_tags: [service, product, regulated]
+  - kit_id: fr.invoicing
+    title_key: kit.fr.invoicing.title
+    summary_key: kit.fr.invoicing.summary
+    regulated_level: light
+    checklist:
+      - kit.fr.invoicing.check_1
+      - kit.fr.invoicing.check_2
+    applies_to_tags: [service, product, inventory]
+  - kit_id: fr.taxes
+    title_key: kit.fr.taxes.title
+    summary_key: kit.fr.taxes.summary
+    regulated_level: medium
+    checklist:
+      - kit.fr.taxes.check_1
+      - kit.fr.taxes.check_2
+    applies_to_tags: [regulated, finance, inventory]
+  - kit_id: fr.insurance
+    title_key: kit.fr.insurance.title
+    summary_key: kit.fr.insurance.summary
+    regulated_level: light
+    checklist:
+      - kit.fr.insurance.check_1
+      - kit.fr.insurance.check_2
+    applies_to_tags: [service, community]
+  - kit_id: fr.safety
+    title_key: kit.fr.safety.title
+    summary_key: kit.fr.safety.summary
+    regulated_level: medium
+    checklist:
+      - kit.fr.safety.check_1
+      - kit.fr.safety.check_2
+    applies_to_tags: [product, inventory]
+  - kit_id: fr.permits
+    title_key: kit.fr.permits.title
+    summary_key: kit.fr.permits.summary
+    regulated_level: medium
+    checklist:
+      - kit.fr.permits.check_1
+      - kit.fr.permits.check_2
+    applies_to_tags: [community, regulated]
+  - kit_id: fr.data_protection
+    title_key: kit.fr.data_protection.title
+    summary_key: kit.fr.data_protection.summary
+    regulated_level: medium
+    checklist:
+      - kit.fr.data_protection.check_1
+      - kit.fr.data_protection.check_2
+    applies_to_tags: [remote, automation]
+  - kit_id: fr.employment
+    title_key: kit.fr.employment.title
+    summary_key: kit.fr.employment.summary
+    regulated_level: medium
+    checklist:
+      - kit.fr.employment.check_1
+      - kit.fr.employment.check_2
+    applies_to_tags: [community, service]

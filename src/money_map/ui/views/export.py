@@ -6,7 +6,7 @@ from pathlib import Path
 import streamlit as st
 import yaml
 
-from money_map.core.load import load_app_data
+from money_map.core.evidence import load_registry
 from money_map.core.model import UserProfile
 from money_map.core.plan import build_plan
 from money_map.core.recommend import recommend
@@ -15,6 +15,7 @@ from money_map.core.workspace import get_workspace_paths
 from money_map.i18n import t
 from money_map.render.json import to_json
 from money_map.render.md import render_checklist_md, render_plan_md
+from money_map.ui.cache import appdata_signature, load_app_data_cached
 
 
 def _result_payload(result, lang: str, appdata) -> dict:
@@ -43,13 +44,27 @@ def render(data_dir: Path, lang: str, workspace: Path | None = None) -> None:
         st.info(t("ui.common.load_profile_first", lang))
         return
 
-    appdata = load_app_data(data_dir, workspace=workspace)
-
     if st.button(t("common.export", lang)):
+        signature = appdata_signature(data_dir, workspace)
+        appdata = load_app_data_cached(
+            str(data_dir),
+            profile.country_code,
+            str(workspace) if workspace else None,
+            signature,
+        )
         reviews = None
+        evidence_registry = None
         if workspace is not None:
-            reviews = load_reviews(get_workspace_paths(workspace).reviews / "reviews.yaml")
-        result = recommend(profile, appdata, top_n=5, reviews=reviews)
+            paths = get_workspace_paths(workspace)
+            reviews = load_reviews(paths.reviews / "reviews.yaml")
+            evidence_registry = load_registry(paths.evidence / "registry.yaml")
+        result = recommend(
+            profile,
+            appdata,
+            top_n=5,
+            reviews=reviews,
+            evidence_registry=evidence_registry,
+        )
         top_item = result.ranked_variants[0]
         variant_id = (
             top_item.variant_id if hasattr(top_item, "variant_id") else top_item["variant_id"]
