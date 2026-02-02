@@ -14,6 +14,22 @@
   ```
 These commands create `.venv`, install editable dependencies (including the UI extra), and run `money-map --help` as a smoke check. (Money_Map_Spec_Packet.pdf p.11, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
+## Local quality gates (Step 4)
+Run the local format/lint/tests gates as a single command. (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1; Money_Map_Spec_Packet.pdf p.14)
+
+- **Windows (PowerShell):**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts/quality.ps1
+  ```
+- **Linux/macOS (bash):**
+  ```bash
+  ./scripts/quality.sh
+  ```
+- **Linux/macOS (Make):**
+  ```bash
+  make gates
+  ```
+
 ## Editable installs
 - Core editable install:
   ```bash
