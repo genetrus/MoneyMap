@@ -1,0 +1,20 @@
+reviewed_at: "2026-01-01"
+staleness_policy:
+  stale_after_days: 180
+compliance_kits:
+  tax_basics:
+    - Track invoices and receipts weekly
+    - Keep an income/expense log
+  invoicing_basics:
+    - Include service description and date
+    - Store invoice copies for records
+  insurance_basics:
+    - Review liability coverage needs
+    - Note renewal dates
+regulated_domains:
+  - regulated
+rules:
+  - rule_id: "de.legal.regulated.require_check_if_stale"
+    reason: "Regulated work requires extra checks when rulepack is stale."
+  - rule_id: "de.legal.blocked.default"
+    reason: "Blocked variants must not proceed without review."

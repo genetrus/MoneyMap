@@ -1,0 +1,3 @@
+dataset_version: "0.0.1"
+staleness_policy:
+  stale_after_days: 180
