@@ -1,5 +1,5 @@
 /exports/*
-!/exports/__init__.py
+!/exports/.gitkeep
 /.venv/
 __pycache__/
 .pytest_cache/

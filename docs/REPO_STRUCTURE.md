@@ -1,8 +1,7 @@
 # Repository structure
 
 ## Current structure (as-is)
-Top-level entries captured from `ls -a`:
-- `.git/`
+Top-level entries captured from git-tracked files:
 - `.gitattributes`
 - `.gitignore`
 - `AGENTS.md`
@@ -10,7 +9,7 @@ Top-level entries captured from `ls -a`:
 - `README.md`
 - `data/` (placeholder data artifacts)
 - `docs/` (includes `DEV.md`, `DECISIONS.md`, `releases/`, and `spec/` PDFs)
-- `exports/` (placeholder exports location)
+- `exports/` (placeholder exports location; artifacts are gitignored, placeholder kept)
 - `pyproject.toml`
 - `scripts/` (PowerShell + bash dev scripts)
 - `src/` (Python package `money_map`)
