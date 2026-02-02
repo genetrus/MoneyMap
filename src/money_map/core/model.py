@@ -85,6 +85,9 @@ class EconomicsResult:
     time_to_first_money_days_range: list[int]
     typical_net_month_eur_range: list[int]
     costs_eur_range: list[int]
+    volatility_or_seasonality: str | None
+    variable_costs: str | None
+    scaling_ceiling: str | None
     confidence: str
 
 
@@ -102,6 +105,7 @@ class RecommendationVariant:
     feasibility: FeasibilityResult
     economics: EconomicsResult
     legal: LegalResult
+    stale: bool
     pros: list[str]
     cons: list[str]
 

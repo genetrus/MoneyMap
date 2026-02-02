@@ -45,7 +45,15 @@ def recommend_variants(
 ):
     app_data = load_app_data(data_dir)
     profile = _resolve_profile(profile_path, profile_data)
-    return recommend(profile, app_data.variants, app_data.rulepack, objective, filters, top_n)
+    return recommend(
+        profile,
+        app_data.variants,
+        app_data.rulepack,
+        app_data.meta.staleness_policy,
+        objective,
+        filters,
+        top_n,
+    )
 
 
 def plan_variant(
@@ -56,7 +64,9 @@ def plan_variant(
 ):
     app_data = load_app_data(data_dir)
     profile = _resolve_profile(profile_path, profile_data)
-    variant = next(v for v in app_data.variants if v.variant_id == variant_id)
+    variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
+    if variant is None:
+        raise ValueError(f"Variant '{variant_id}' not found.")
     plan = build_plan(profile, variant, app_data.rulepack)
     return plan
 
@@ -70,9 +80,24 @@ def export_bundle(
 ) -> dict[str, str]:
     app_data = load_app_data(data_dir)
     profile = _resolve_profile(profile_path, profile_data)
-    recommendations = recommend(profile, app_data.variants, app_data.rulepack, "fastest_money", {}, 10)
-    selected = next(r for r in recommendations.ranked_variants if r.variant.variant_id == variant_id)
-    plan = build_plan(profile, selected.variant, app_data.rulepack)
+    variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
+    if variant is None:
+        raise ValueError(f"Variant '{variant_id}' not found.")
+    recommendations = recommend(
+        profile,
+        app_data.variants,
+        app_data.rulepack,
+        app_data.meta.staleness_policy,
+        "fastest_money",
+        {},
+        len(app_data.variants),
+    )
+    selected = next(
+        (r for r in recommendations.ranked_variants if r.variant.variant_id == variant_id), None
+    )
+    if selected is None:
+        raise ValueError(f"Variant '{variant_id}' not found in recommendations.")
+    plan = build_plan(profile, variant, app_data.rulepack)
 
     out_dir = Path(out_dir)
     plan_path = out_dir / "plan.md"

@@ -37,6 +37,7 @@ def validate(app_data: AppData) -> ValidationReport:
     if not app_data.variants:
         fatals.append("VARIANTS_EMPTY")
 
+    stale_variants: list[str] = []
     for variant in app_data.variants:
         if not variant.variant_id:
             fatals.append("VARIANT_ID_MISSING")
@@ -45,9 +46,14 @@ def validate(app_data: AppData) -> ValidationReport:
         if not variant.summary:
             warns.append(f"VARIANT_SUMMARY_MISSING:{variant.variant_id}")
         if not variant.economics:
-            fatals.append(f"VARIANT_ECONOMICS_MISSING:{variant.variant_id}")
+            warns.append(f"VARIANT_ECONOMICS_MISSING:{variant.variant_id}")
         if not variant.legal:
             warns.append(f"VARIANT_LEGAL_MISSING:{variant.variant_id}")
+        review_date = _parse_date(variant.review_date)
+        if review_date:
+            stale_after = timedelta(days=app_data.meta.staleness_policy.stale_after_days)
+            if date.today() - review_date > stale_after:
+                stale_variants.append(variant.variant_id)
 
     stale = False
     if reviewed_date:
@@ -55,6 +61,8 @@ def validate(app_data: AppData) -> ValidationReport:
         stale = date.today() - reviewed_date > stale_after
         if stale:
             warns.append("STALE_RULEPACK")
+    if stale_variants:
+        warns.append(f"STALE_VARIANTS:{', '.join(sorted(stale_variants))}")
 
     status = "invalid" if fatals else "valid"
     return ValidationReport(

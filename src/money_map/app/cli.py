@@ -68,7 +68,11 @@ def plan(
     data_dir: str = typer.Option("data", "--data", help="Data directory"),
 ) -> None:
     """Generate a route plan for a selected variant."""
-    plan_data = plan_variant(profile, variant_id, data_dir=data_dir)
+    try:
+        plan_data = plan_variant(profile, variant_id, data_dir=data_dir)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
     typer.echo(f"Plan for {plan_data.variant_id} with {len(plan_data.steps)} steps ready.")
 
 
@@ -80,7 +84,11 @@ def export(
     data_dir: str = typer.Option("data", "--data", help="Data directory"),
 ) -> None:
     """Export plan artifacts."""
-    paths = export_bundle(profile, variant_id, out_dir=out_dir, data_dir=data_dir)
+    try:
+        paths = export_bundle(profile, variant_id, out_dir=out_dir, data_dir=data_dir)
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(code=1) from exc
     typer.echo("Exported:")
     typer.echo(f"- {paths['plan']}")
     typer.echo(f"- {paths['result']}")
