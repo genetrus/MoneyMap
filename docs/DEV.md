@@ -31,6 +31,8 @@ Run the local format/lint/tests gates as a single command. (Блок-схема_
   ```
   > If `make` cannot find `ruff`/`pytest`, activate `.venv` first or use `scripts/quality.*`.
 
+CI runs the same gates on every push/PR (ruff format check, ruff lint, pytest). (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1; Money_Map_Spec_Packet.pdf p.13–14)
+
 ## Editable installs
 - Core editable install:
   ```bash
