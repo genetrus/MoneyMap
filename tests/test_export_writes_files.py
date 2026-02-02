@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from money_map.app.api import export_bundle, recommend_variants
+from money_map.app.api import export_bundle, plan_variant, recommend_variants
 from money_map.core.load import load_app_data
 
 
@@ -14,6 +14,12 @@ def test_export_writes_files(tmp_path: Path):
     assert Path(paths["plan"]).exists()
     assert Path(paths["result"]).exists()
     assert Path(paths["profile"]).exists()
+    plan = plan_variant(
+        profile_path="profiles/demo_fast_start.yaml",
+        variant_id="de.fast.freelance_writer",
+    )
+    for artifact in plan.artifacts:
+        assert (tmp_path / artifact).exists()
 
 
 def test_export_works_outside_top_n(tmp_path: Path):

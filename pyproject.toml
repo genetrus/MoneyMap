@@ -23,7 +23,7 @@ dev = [
 ]
 
 [project.scripts]
-money-map = "money_map.app.cli:app"
+money-map = "money_map.app.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

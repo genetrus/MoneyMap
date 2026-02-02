@@ -8,9 +8,13 @@ from money_map.core.rules import evaluate_legal
 
 def build_plan(profile: dict, variant: Variant, rulepack) -> RoutePlan:
     legal = evaluate_legal(rulepack, variant)
+    prep_detail = (
+        "; ".join(variant.prep_steps) if variant.prep_steps else "No prep tasks provided."
+    )
     steps = [
         PlanStep("Confirm scope", f"Review summary: {variant.summary}"),
         PlanStep("Assess feasibility", "Validate time, capital, and assets requirements."),
+        PlanStep("Prep tasks", prep_detail),
         PlanStep("Prepare assets", "Gather required assets and tooling."),
         PlanStep("Compliance check", "Complete compliance checklist before launch."),
         PlanStep("Setup operations", "Create basic workflow and tracking sheet."),
@@ -20,9 +24,6 @@ def build_plan(profile: dict, variant: Variant, rulepack) -> RoutePlan:
         PlanStep("Launch week", "Start serving first customers."),
         PlanStep("Review results", "Record early performance and decide next steps."),
     ]
-
-    if variant.prep_steps:
-        steps.insert(2, PlanStep("Prep tasks", "; ".join(variant.prep_steps)))
 
     artifacts = [
         "artifacts/checklist.md",

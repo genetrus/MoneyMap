@@ -103,10 +103,41 @@ def export_bundle(
     plan_path = out_dir / "plan.md"
     result_path = out_dir / "result.json"
     profile_path_out = out_dir / "profile.yaml"
+    artifacts_dir = out_dir / "artifacts"
+    checklist_path = artifacts_dir / "checklist.md"
+    budget_path = artifacts_dir / "budget.yaml"
+    outreach_path = artifacts_dir / "outreach_message.txt"
 
     write_text(plan_path, render_plan_md(plan))
     write_json(result_path, render_result_json(profile, selected, plan))
     write_yaml(profile_path_out, profile)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    checklist_lines = ["# Compliance Checklist", "", f"Legal gate: {plan.legal_gate}", ""]
+    checklist_lines.extend([f"- {item}" for item in plan.compliance])
+    write_text(checklist_path, "\n".join(checklist_lines) + "\n")
+    write_yaml(
+        budget_path,
+        {
+            "currency": "EUR",
+            "budget_items": [
+                {"item": "Initial tools", "estimated_cost_eur": 0},
+                {"item": "Marketing", "estimated_cost_eur": 0},
+            ],
+            "notes": "Fill in actual costs based on your plan.",
+        },
+    )
+    outreach_lines = [
+        "Subject: Quick intro",
+        "",
+        f"Hi there, I am starting {variant.title}.",
+        f"{variant.summary}",
+        "",
+        "Would you be open to a short chat to validate the offer?",
+        "",
+        "Thanks,",
+        profile.get("name", "Your name"),
+    ]
+    write_text(outreach_path, "\n".join(outreach_lines) + "\n")
 
     return {
         "plan": str(plan_path),

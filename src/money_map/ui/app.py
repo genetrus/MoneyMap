@@ -29,7 +29,6 @@ DEFAULT_PROFILE = {
 
 def _init_state() -> None:
     st.session_state.setdefault("profile", DEFAULT_PROFILE.copy())
-    st.session_state.setdefault("objective", "fastest_money")
     st.session_state.setdefault("filters", {"exclude_blocked": True})
     st.session_state.setdefault("selected_variant_id", "")
     st.session_state.setdefault("plan", None)
@@ -121,10 +120,11 @@ def run_app() -> None:
         profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
 
         if not quick_mode:
+            objective_options = ["fastest_money", "max_net"]
             profile["objective"] = st.selectbox(
                 "Objective",
-                ["fastest_money", "max_net"],
-                index=0,
+                objective_options,
+                index=objective_options.index(profile.get("objective", "fastest_money")),
             )
 
         st.session_state["profile"] = profile
@@ -132,23 +132,38 @@ def run_app() -> None:
 
     elif page == "Recommendations":
         st.header("Recommendations")
-        st.session_state["objective"] = st.selectbox(
-            "Objective preset", ["fastest_money", "max_net"], index=0
+        profile = st.session_state["profile"]
+        objective_options = ["fastest_money", "max_net"]
+        current_objective = profile.get("objective", "fastest_money")
+        selected_objective = st.selectbox(
+            "Objective preset",
+            objective_options,
+            index=objective_options.index(current_objective),
         )
+        profile["objective"] = selected_objective
+        st.session_state["profile"] = profile
         top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
-        max_time = st.number_input("Max time to first money (days)", value=60)
+        max_time = st.number_input(
+            "Max time to first money (days)",
+            value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
+        )
         st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
-        st.session_state["filters"]["exclude_blocked"] = st.checkbox("Exclude blocked", value=True)
+        st.session_state["filters"]["exclude_blocked"] = st.checkbox(
+            "Exclude blocked",
+            value=st.session_state["filters"].get("exclude_blocked", True),
+        )
 
-        if st.button("Run recommendations"):
-            profile = st.session_state["profile"]
+        def _run_recommendations() -> None:
             result = _get_recommendations(
                 json.dumps(profile, ensure_ascii=False),
-                st.session_state["objective"],
+                profile["objective"],
                 st.session_state["filters"],
                 top_n,
             )
             st.session_state["last_recommendations"] = result
+
+        if st.button("Run recommendations"):
+            _run_recommendations()
 
         result = st.session_state.get("last_recommendations")
         if result is None:
@@ -164,6 +179,13 @@ def run_app() -> None:
                     f"Feasibility: {rec.feasibility.status} | "
                     f"Legal: {rec.legal.legal_gate}{stale_label}"
                 )
+                if rec.stale or rec.legal.legal_gate != "ok":
+                    warnings = []
+                    if rec.stale:
+                        warnings.append("Variant data is stale")
+                    if rec.legal.legal_gate != "ok":
+                        warnings.append(f"Legal gate: {rec.legal.legal_gate}")
+                    st.warning(" | ".join(warnings))
                 st.write("Why: " + "; ".join(rec.pros))
                 if rec.cons:
                     st.write("Concerns: " + "; ".join(rec.cons))
@@ -183,18 +205,15 @@ def run_app() -> None:
             if st.button("Startable in 2 weeks"):
                 st.session_state["filters"]["max_time_to_money_days"] = 14
                 st.session_state["filters"]["exclude_blocked"] = True
-                result = _get_recommendations(
-                    json.dumps(st.session_state["profile"], ensure_ascii=False),
-                    st.session_state["objective"],
-                    st.session_state["filters"],
-                    top_n,
-                )
-                st.session_state["last_recommendations"] = result
+                _run_recommendations()
             if st.button("Focus on fastest money"):
-                st.session_state["objective"] = "fastest_money"
+                profile["objective"] = "fastest_money"
                 st.session_state["filters"]["max_time_to_money_days"] = 30
+                st.session_state["profile"] = profile
+                _run_recommendations()
             if st.button("Reduce legal friction"):
                 st.session_state["filters"]["exclude_blocked"] = True
+                _run_recommendations()
 
     elif page == "Plan":
         st.header("Plan")
@@ -208,6 +227,25 @@ def run_app() -> None:
             except ValueError as exc:
                 st.error(str(exc))
             else:
+                last_result = st.session_state.get("last_recommendations")
+                if last_result is not None:
+                    selected = next(
+                        (
+                            rec
+                            for rec in last_result.ranked_variants
+                            if rec.variant.variant_id == variant_id
+                        ),
+                        None,
+                    )
+                else:
+                    selected = None
+                if plan.legal_gate != "ok" or (selected and selected.stale):
+                    warnings = []
+                    if plan.legal_gate != "ok":
+                        warnings.append(f"Legal gate: {plan.legal_gate}")
+                    if selected and selected.stale:
+                        warnings.append("Variant data is stale")
+                    st.warning(" | ".join(warnings))
                 st.session_state["plan"] = plan
                 st.write(f"Plan for {variant_id}")
                 st.write("Steps")
@@ -233,7 +271,7 @@ def run_app() -> None:
                 app_data.variants,
                 app_data.rulepack,
                 app_data.meta.staleness_policy,
-                st.session_state.get("objective", "fastest_money"),
+                profile.get("objective", "fastest_money"),
                 {},
                 len(app_data.variants),
             )

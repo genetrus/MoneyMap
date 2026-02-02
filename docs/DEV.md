@@ -2,6 +2,7 @@
 
 ## Supported platforms
 - Windows is the primary development platform; Linux/macOS are optional. (Money_Map_Spec_Packet.pdf p.11)
+- Release scope, MVP flows, and quality gates are summarized in `docs/releases/0.1-brief.md`. (Money_Map_Spec_Packet.pdf p.13–14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
 ## One-command setup/run
 - **Windows (PowerShell):**
