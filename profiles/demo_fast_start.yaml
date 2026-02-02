@@ -1,0 +1,10 @@
+name: "Demo"
+objective: "fastest_money"
+language_level: "B1"
+capital_eur: 300
+time_per_week: 15
+assets:
+  - "laptop"
+  - "phone"
+  - "internet"
+location: "Berlin"

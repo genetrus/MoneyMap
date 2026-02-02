@@ -49,3 +49,6 @@ The UI extra lives in `pyproject.toml` under `project.optional-dependencies`; in
   - PowerShell: `.\.venv\Scripts\Activate.ps1`
   - Bash: `source .venv/bin/activate`
 - **Execution policy**: if PowerShell blocks scripts, use the provided one-command run with `-ExecutionPolicy Bypass`. (Money_Map_Spec_Packet.pdf p.11)
+
+## Walking skeleton note
+Step 7 (walking skeleton) is implemented; follow Step 8+ for full end-to-end test suite and release activities. (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)

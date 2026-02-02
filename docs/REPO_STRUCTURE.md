@@ -19,16 +19,21 @@ Top-level entries captured from git-tracked files:
 Reference: Money_Map_Spec_Packet.pdf p.12.
 
 - `data/` (exists; placeholders only)
-  - `meta.yaml` (missing; to be added later)
-  - `rulepacks/` (exists; placeholders only)
+  - `meta.yaml`
+  - `variants.yaml`
+  - `rulepacks/`
+    - `DE.yaml`
 - `exports/` (exists; gitignored output folder placeholder)
 - `scripts/` (exists)
 - `src/money_map/` (exists)
   - `core/` (exists; placeholder package)
   - `render/` (exists; placeholder package)
   - `app/` (exists; placeholder package; CLI entrypoint in `app/cli.py`)
+  - `storage/` (filesystem helpers)
   - `ui/` (exists; placeholder package)
+    - `app.py` (Streamlit UI)
 - `tests/` (exists; minimal smoke test)
 - `docs/` (exists)
   - `releases/` (exists)
   - `spec/` (exists)
+- `profiles/` (demo profiles)

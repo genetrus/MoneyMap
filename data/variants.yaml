@@ -1,0 +1,98 @@
+variants:
+  - variant_id: "de.fast.freelance_writer"
+    title: "Freelance micro-writing"
+    summary: "Offer short-form writing services to local businesses."
+    tags: ["writing", "remote"]
+    feasibility:
+      min_language_level: "B1"
+      min_capital: 100
+      min_time_per_week: 8
+      required_assets: ["laptop", "internet"]
+    prep_steps:
+      - "Create 3 writing samples (2h)"
+      - "Set up a simple pricing sheet (1h)"
+    economics:
+      time_to_first_money_days_range: [7, 21]
+      typical_net_month_eur_range: [400, 900]
+      costs_eur_range: [20, 80]
+      confidence: "medium"
+    legal:
+      legal_gate: "ok"
+      checklist:
+        - "Confirm freelance registration requirements"
+        - "Prepare invoice template"
+      required_docs:
+        - "ID"
+    review_date: "2026-01-01"
+
+  - variant_id: "de.local.errand_helper"
+    title: "Local errand helper"
+    summary: "Provide quick errands and delivery support within your district."
+    tags: ["local", "physical"]
+    feasibility:
+      min_language_level: "A2"
+      min_capital: 50
+      min_time_per_week: 6
+      required_assets: ["phone"]
+    prep_steps:
+      - "Draft a service checklist (1h)"
+      - "Prepare simple ID badge (1h)"
+    economics:
+      time_to_first_money_days_range: [3, 14]
+      typical_net_month_eur_range: [300, 700]
+      costs_eur_range: [10, 50]
+      confidence: "medium"
+    legal:
+      legal_gate: "ok"
+      checklist:
+        - "Confirm local permit rules"
+    review_date: "2026-01-01"
+
+  - variant_id: "de.regulated.childcare_assist"
+    title: "Childcare assistant"
+    summary: "Assist families with childcare support (regulated activities)."
+    tags: ["regulated", "local"]
+    feasibility:
+      min_language_level: "B2"
+      min_capital: 200
+      min_time_per_week: 10
+      required_assets: ["phone", "transport"]
+    prep_steps:
+      - "Collect reference letters (1w)"
+      - "Draft safety checklist (2h)"
+    economics:
+      time_to_first_money_days_range: [14, 30]
+      typical_net_month_eur_range: [600, 1200]
+      costs_eur_range: [50, 150]
+      confidence: "low"
+    legal:
+      legal_gate: "require_check"
+      checklist:
+        - "Verify childcare regulations"
+        - "Prepare background check documents"
+      required_docs:
+        - "Background check"
+    review_date: "2026-01-01"
+
+  - variant_id: "de.remote.translation"
+    title: "Translation mini-projects"
+    summary: "Translate short documents for local NGOs and small firms."
+    tags: ["remote", "writing"]
+    feasibility:
+      min_language_level: "B2"
+      min_capital: 120
+      min_time_per_week: 8
+      required_assets: ["laptop", "internet"]
+    prep_steps:
+      - "Assemble translation samples (2h)"
+      - "Build glossary template (1h)"
+    economics:
+      time_to_first_money_days_range: [10, 25]
+      typical_net_month_eur_range: [500, 1100]
+      costs_eur_range: [30, 90]
+      confidence: "medium"
+    legal:
+      legal_gate: "ok"
+      checklist:
+        - "Confirm invoicing requirements"
+    review_date: "2026-01-01"
