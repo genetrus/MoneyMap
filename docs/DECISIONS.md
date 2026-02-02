@@ -17,5 +17,5 @@
 - Decision: Treat only `docs/spec/source/*.pdf` as requirements; use `docs/spec/index.md` for navigation only; require PDF+page citations in decisions/PRs when behavior changes.
 - Alternatives: Use README/index as co-equal requirements or allow implicit requirements from chat.
 - Consequences: All implementation notes must point to PDF pages; decisions and PRs will carry citations.
-- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.2, p.13–14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.1, p.13–14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
