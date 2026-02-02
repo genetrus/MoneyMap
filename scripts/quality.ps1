@@ -11,7 +11,7 @@ if (-not (Test-Path $VenvDir)) {
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 
 & $VenvPython -m pip install --upgrade pip
-& $VenvPython -m pip install -e ".[dev]"
+& $VenvPython -m pip install -e ".[dev,ui]"
 
 & $VenvPython -m ruff format --check .
 & $VenvPython -m ruff check .

@@ -12,7 +12,7 @@
   ```bash
   ./scripts/dev.sh
   ```
-These commands create `.venv`, install editable dependencies (including UI dependencies via the `dev` extra), and run `money-map --help` as a smoke check. (Money_Map_Spec_Packet.pdf p.11, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
+These commands create `.venv`, install editable dependencies (including UI dependencies via the `ui` extra), and run `money-map --help` as a smoke check. If you also want the quality tools in the same environment, install `.[dev,ui]`. (Money_Map_Spec_Packet.pdf p.11, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
 ## Local quality gates (Step 4)
 Run the local format/lint/tests gates as a single command. (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1; Money_Map_Spec_Packet.pdf p.14)
@@ -29,6 +29,7 @@ Run the local format/lint/tests gates as a single command. (Блок-схема_
   ```bash
   make gates
   ```
+  > If `make` cannot find `ruff`/`pytest`, activate `.venv` first or use `scripts/quality.*`.
 
 ## Editable installs
 - Core editable install:
@@ -37,9 +38,9 @@ Run the local format/lint/tests gates as a single command. (Блок-схема_
   ```
 - Editable install with dev + UI dependencies:
   ```bash
-  pip install -e ".[dev]"
+  pip install -e ".[dev,ui]"
   ```
-The UI extra lives in `pyproject.toml` under `project.optional-dependencies`, and the `dev` extra includes UI dependencies so local gates match the future UI imports. (Money_Map_Spec_Packet.pdf p.11, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
+The UI extra lives in `pyproject.toml` under `project.optional-dependencies`; install `.[ui]` for Streamlit, and add `.[dev]` when you need quality tools. (Money_Map_Spec_Packet.pdf p.11, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
 ## Troubleshooting
 - **Activate the venv manually** if you want to run commands interactively:
