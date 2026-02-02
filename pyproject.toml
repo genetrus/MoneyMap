@@ -20,10 +20,11 @@ ui = [
 dev = [
   "ruff>=0.6.0",
   "pytest>=8.0.0",
+  "streamlit>=1.32.0",
 ]
 
 [project.scripts]
-money-map = "money_map.cli:app"
+money-map = "money_map.app.cli:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

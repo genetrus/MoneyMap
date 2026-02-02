@@ -2,7 +2,6 @@ import importlib.util
 import sys
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_PATH = PROJECT_ROOT / "src"
 if str(SRC_PATH) not in sys.path:
@@ -16,4 +15,5 @@ def test_smoke_imports():
 
     if importlib.util.find_spec("money_map.ui") is not None:
         import money_map.ui
+
         assert money_map.ui.__name__ == "money_map.ui"
