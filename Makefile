@@ -1,10 +1,15 @@
-.PHONY: dev format lint test gates
+.PHONY: dev fmt format format-check lint test gates
 
 dev:
 	./scripts/dev.sh
 
-format:
+fmt:
 	ruff format .
+
+format: fmt
+
+format-check:
+	ruff format --check .
 
 lint:
 	ruff check .
@@ -12,4 +17,4 @@ lint:
 test:
 	pytest -q
 
-gates: format lint test
+gates: format-check lint test

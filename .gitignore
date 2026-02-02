@@ -1,4 +1,5 @@
-/exports/
+/exports/*
+!/exports/__init__.py
 /.venv/
 __pycache__/
 .pytest_cache/
