@@ -6,7 +6,12 @@ from datetime import date, datetime, timedelta
 
 from money_map.core.economics import assess_economics
 from money_map.core.feasibility import assess_feasibility
-from money_map.core.model import RecommendationResult, RecommendationVariant, StalenessPolicy, Variant
+from money_map.core.model import (
+    RecommendationResult,
+    RecommendationVariant,
+    StalenessPolicy,
+    Variant,
+)
 from money_map.core.rules import evaluate_legal
 
 _DATE_FORMATS = ["%Y-%m-%d"]
@@ -82,8 +87,12 @@ def recommend(
             diagnostics["warnings"].setdefault("missing_economics", 0)
             diagnostics["warnings"]["missing_economics"] += 1
         pros = [
-            f"Estimated net {economics.typical_net_month_eur_range[0]}–{economics.typical_net_month_eur_range[1]} €/mo",
-            f"Time to first money {economics.time_to_first_money_days_range[0]}–{economics.time_to_first_money_days_range[1]} days",
+            "Estimated net "
+            f"{economics.typical_net_month_eur_range[0]}–"
+            f"{economics.typical_net_month_eur_range[1]} €/mo",
+            "Time to first money "
+            f"{economics.time_to_first_money_days_range[0]}–"
+            f"{economics.time_to_first_money_days_range[1]} days",
             f"Confidence: {economics.confidence}",
         ]
         cons = []

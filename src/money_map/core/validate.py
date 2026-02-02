@@ -6,7 +6,6 @@ from datetime import date, datetime, timedelta
 
 from money_map.core.model import AppData, ValidationReport
 
-
 _DATE_FORMATS = ["%Y-%m-%d"]
 
 

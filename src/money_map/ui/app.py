@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-import os
+from collections import Counter
 
 import streamlit as st
 import yaml
@@ -135,7 +135,7 @@ def run_app() -> None:
         st.session_state["objective"] = st.selectbox(
             "Objective preset", ["fastest_money", "max_net"], index=0
         )
-        top_n = st.slider("Top N", min_value=1, max_value=5, value=3)
+        top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
         max_time = st.number_input("Max time to first money (days)", value=60)
         st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
         st.session_state["filters"]["exclude_blocked"] = st.checkbox("Exclude blocked", value=True)
@@ -173,12 +173,23 @@ def run_app() -> None:
                     st.session_state["selected_variant_id"] = rec.variant.variant_id
 
             st.subheader("Reality Check")
-            top_blockers = []
+            blocker_counts = Counter()
             for rec in result.ranked_variants:
-                top_blockers.extend(rec.feasibility.blockers)
-            top_blockers = top_blockers[:3]
+                blocker_counts.update(rec.feasibility.blockers)
+            top_blockers = blocker_counts.most_common(3)
             if top_blockers:
-                st.warning("Top blockers: " + ", ".join(top_blockers))
+                formatted = ", ".join([f"{name} ({count})" for name, count in top_blockers])
+                st.warning("Top blockers: " + formatted)
+            if st.button("Startable in 2 weeks"):
+                st.session_state["filters"]["max_time_to_money_days"] = 14
+                st.session_state["filters"]["exclude_blocked"] = True
+                result = _get_recommendations(
+                    json.dumps(st.session_state["profile"], ensure_ascii=False),
+                    st.session_state["objective"],
+                    st.session_state["filters"],
+                    top_n,
+                )
+                st.session_state["last_recommendations"] = result
             if st.button("Focus on fastest money"):
                 st.session_state["objective"] = "fastest_money"
                 st.session_state["filters"]["max_time_to_money_days"] = 30
@@ -223,7 +234,7 @@ def run_app() -> None:
                 app_data.rulepack,
                 app_data.meta.staleness_policy,
                 st.session_state.get("objective", "fastest_money"),
-                st.session_state.get("filters", {}),
+                {},
                 len(app_data.variants),
             )
             selected_rec = next(
@@ -277,5 +288,5 @@ def run_app() -> None:
             )
 
 
-if os.environ.get("PYTEST_CURRENT_TEST") is None:
+if __name__ == "__main__":
     run_app()

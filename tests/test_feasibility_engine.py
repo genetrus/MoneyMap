@@ -30,3 +30,4 @@ def test_feasibility_language_ordering_and_status():
     assert result.status == "feasible_with_prep"
     assert result.blockers
     assert len(result.blockers) <= 3
+    assert result.estimated_prep_weeks_range == [1, 2]

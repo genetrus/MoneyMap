@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -78,6 +78,7 @@ class FeasibilityResult:
     status: str
     blockers: list[str]
     prep_steps: list[str]
+    estimated_prep_weeks_range: list[int]
 
 
 @dataclass(frozen=True)

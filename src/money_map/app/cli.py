@@ -51,10 +51,7 @@ def recommend(
     """Recommend top variants."""
     result = recommend_variants(profile, objective=objective, top_n=top, data_dir=data_dir)
     for idx, rec in enumerate(result.ranked_variants, start=1):
-        typer.echo(
-            f"{idx}. {rec.variant.variant_id} | score={rec.score:.2f} | "
-            f"{rec.variant.title}"
-        )
+        typer.echo(f"{idx}. {rec.variant.variant_id} | score={rec.score:.2f} | {rec.variant.title}")
         typer.echo(f"   Pros: {'; '.join(rec.pros)}")
         if rec.cons:
             typer.echo(f"   Cons: {'; '.join(rec.cons)}")

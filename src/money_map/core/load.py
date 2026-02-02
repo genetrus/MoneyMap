@@ -24,7 +24,9 @@ def _load_rulepack(rulepack_path: Path, meta_policy: StalenessPolicy) -> Rulepac
     raw = read_yaml(rulepack_path)
     staleness_policy_raw = raw.get("staleness_policy") or {}
     staleness_policy = StalenessPolicy(
-        stale_after_days=int(staleness_policy_raw.get("stale_after_days", meta_policy.stale_after_days))
+        stale_after_days=int(
+            staleness_policy_raw.get("stale_after_days", meta_policy.stale_after_days)
+        )
     )
     rules = [Rule(rule_id=r["rule_id"], reason=r.get("reason", "")) for r in raw.get("rules", [])]
     return Rulepack(

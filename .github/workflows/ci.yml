@@ -45,6 +45,6 @@ jobs:
         run: python -m pytest -q
 
       - name: CLI validate
-        run: python -m money_map.app.cli validate
+        run: money-map validate
 
       # TODO: Add data contract tests in CI when scheduled. (Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2)
