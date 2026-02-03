@@ -13,6 +13,14 @@ from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import write_json, write_text, write_yaml
 
+_VALIDATION_FATALS_MESSAGE = "Validation failed with fatals"
+
+
+class ValidationFatalsError(ValueError):
+    def __init__(self, fatals: list[str]) -> None:
+        self.fatals = fatals
+        super().__init__(f"{_VALIDATION_FATALS_MESSAGE}: {', '.join(fatals)}")
+
 
 def validate_data(data_dir: str | Path = "data") -> dict[str, Any]:
     app_data = load_app_data(data_dir)
@@ -26,6 +34,11 @@ def validate_data(data_dir: str | Path = "data") -> dict[str, Any]:
         "stale": report.stale,
         "staleness": report.staleness,
     }
+
+
+def _raise_on_fatals(report) -> None:
+    if report.fatals:
+        raise ValidationFatalsError(report.fatals)
 
 
 def _resolve_profile(profile_path: str | Path | None, profile_data: dict | None) -> dict:
@@ -45,6 +58,8 @@ def recommend_variants(
     profile_data: dict | None = None,
 ):
     app_data = load_app_data(data_dir)
+    report = validate(app_data)
+    _raise_on_fatals(report)
     profile = _resolve_profile(profile_path, profile_data)
     return recommend(
         profile,
@@ -64,6 +79,8 @@ def plan_variant(
     profile_data: dict | None = None,
 ):
     app_data = load_app_data(data_dir)
+    report = validate(app_data)
+    _raise_on_fatals(report)
     profile = _resolve_profile(profile_path, profile_data)
     variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
     if variant is None:
@@ -80,6 +97,8 @@ def export_bundle(
     profile_data: dict | None = None,
 ) -> dict[str, str]:
     app_data = load_app_data(data_dir)
+    report = validate(app_data)
+    _raise_on_fatals(report)
     profile = _resolve_profile(profile_path, profile_data)
     variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
     if variant is None:

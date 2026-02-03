@@ -321,6 +321,20 @@ epics:
               - "Regulated domains downgrade legal gate to require_check when stale."
             repo_touches: []
             notes: ""
+          - task_id: "T-M3-02-03"
+            title: "Treat invalid/missing reviewed_at as unknown freshness for regulated gating"
+            priority: "P0"
+            status: "done"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "11" }
+            acceptance_criteria:
+              - "Invalid/missing variant review_date forces regulated legal_gate=require_check."
+              - "Rulepack reviewed_at invalid remains a validation fatal and stops recommend/plan/export."
+              - "Checklist includes DATA_STALE or DATE_INVALID marker for unknown freshness."
+            repo_touches: []
+            notes: ""
   - epic_id: "E-M4"
     title: "Feasibility, economics, recommendation objectives"
     priority: "P0"
@@ -594,11 +608,12 @@ epics:
           - task_id: "T-M7-01-02"
             title: "Ensure CI runs pytest and money-map validate"
             priority: "P0"
-            status: "next"
+            status: "done"
             spec_refs:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
             acceptance_criteria:
-              - "CI executes pytest and money-map validate in GitHub Actions."
+              - "CI executes python -m pytest -q on ubuntu and windows."
+              - "CI executes PYTHONPATH=src python -m money_map.app.cli validate --data-dir data."
             repo_touches: []
             notes: ""
       - story_id: "S-M7-02"

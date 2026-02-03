@@ -229,6 +229,14 @@ Canonical backlog: `docs/backlog.yaml`.
   - Spec refs: Money_Map_Spec_Packet.pdf p.6-7.
   - Acceptance criteria: Regulated domains downgrade legal gate to require_check when stale.
   - Repo touches: []
+- **T-M3-02-03** — Treat invalid/missing reviewed_at as unknown freshness for regulated gating
+  - Priority: P0 | Status: done
+  - Spec refs: Money_Map_Spec_Packet.pdf p.6-7, p.7, p.11.
+  - Acceptance criteria:
+    - Invalid/missing variant review_date forces regulated legal_gate=require_check.
+    - Rulepack reviewed_at invalid remains a validation fatal and stops recommend/plan/export.
+    - Checklist includes DATA_STALE or DATE_INVALID marker for unknown freshness.
+  - Repo touches: []
 
 ## Epic E-M4 — Feasibility, economics, recommendation objectives
 - **Priority**: P0
@@ -402,9 +410,11 @@ Canonical backlog: `docs/backlog.yaml`.
   - Acceptance criteria: UI modules import without executing Streamlit runtime.
   - Repo touches: []
 - **T-M7-01-02** — Ensure CI runs pytest and money-map validate
-  - Priority: P0 | Status: next
+  - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.14.
-  - Acceptance criteria: CI executes pytest and money-map validate in GitHub Actions.
+  - Acceptance criteria:
+    - CI executes python -m pytest -q on ubuntu and windows.
+    - CI executes PYTHONPATH=src python -m money_map.app.cli validate --data-dir data.
   - Repo touches: []
 
 ### Story S-M7-02 — Demo profiles and fixture data

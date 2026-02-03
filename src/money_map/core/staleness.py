@@ -19,6 +19,10 @@ class StalenessResult:
     message: str
 
 
+def is_freshness_unknown(result: StalenessResult) -> bool:
+    return result.age_days is None
+
+
 def _parse_date(value: str) -> date | None:
     for fmt in _DATE_FORMATS:
         try:
@@ -32,6 +36,7 @@ def evaluate_staleness(
     reviewed_at: object,
     policy: StalenessPolicy,
     label: str = "data",
+    invalid_severity: str = "fatal",
 ) -> StalenessResult:
     if reviewed_at is None:
         parsed = None
@@ -50,7 +55,7 @@ def evaluate_staleness(
             is_stale=False,
             age_days=None,
             threshold_days=threshold,
-            severity="fatal",
+            severity=invalid_severity,
             message=f"{label} reviewed_at is missing or invalid.",
         )
 

@@ -20,15 +20,9 @@ def test_smoke_imports():
 
 
 def test_cli_validate_smoke():
-    env = dict(**os.environ)
     repo_src = Path(__file__).resolve().parents[1] / "src"
-    try:
-        import money_map
-    except ModuleNotFoundError:
-        env["PYTHONPATH"] = str(repo_src)
-    else:
-        if Path(money_map.__file__ or "").resolve().is_relative_to(repo_src):
-            env["PYTHONPATH"] = str(repo_src)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_src)
     result = subprocess.run(
         [sys.executable, "-m", "money_map.app.cli", "validate", "--data-dir", "data"],
         check=False,
