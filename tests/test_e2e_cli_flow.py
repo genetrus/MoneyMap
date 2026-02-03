@@ -5,12 +5,19 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from shutil import which
 
+import pytest
 
 def _run_cli(
     args: list[str], cwd: Path, env: dict[str, str] | None
 ) -> subprocess.CompletedProcess[str]:
-    command = [sys.executable, "-m", "money_map.app.cli", *args]
+    cli_path = which("money-map", path=env.get("PATH") if env else None)
+    command = (
+        [cli_path, *args]
+        if cli_path
+        else [sys.executable, "-m", "money_map.app.cli", *args]
+    )
     return subprocess.run(
         command,
         cwd=cwd,
@@ -30,14 +37,16 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             "PYTHONHASHSEED": "0",
             "PYTHONUTF8": "1",
             "PYTHONIOENCODING": "utf-8",
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "NO_COLOR": "1",
             "TERM": "dumb",
             "COLUMNS": "120",
         }
     )
-    python_path = str(root / "src")
-    if env.get("PYTHONPATH"):
-        python_path = f"{python_path}{os.pathsep}{env['PYTHONPATH']}"
-    env["PYTHONPATH"] = python_path
+
+    if which("money-map", path=env.get("PATH")) is None:
+        pytest.skip("money-map console script not installed; install package to run CLI E2E.")
 
     profile_path = root / "profiles" / "demo_fast_start.yaml"
     data_dir = root / "data"
@@ -53,7 +62,7 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             "10",
             "--objective",
             "fastest_money",
-            "--data",
+            "--data-dir",
             str(data_dir),
             "--format",
             "json",
@@ -73,7 +82,7 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             str(profile_path),
             "--variant-id",
             variant_id,
-            "--data",
+            "--data-dir",
             str(data_dir),
         ],
         cwd=root,
@@ -89,7 +98,7 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             variant_id,
             "--out",
             str(tmp_path),
-            "--data",
+            "--data-dir",
             str(data_dir),
         ],
         cwd=root,

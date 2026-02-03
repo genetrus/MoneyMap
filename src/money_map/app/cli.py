@@ -56,7 +56,9 @@ def _format_report(report: dict) -> str:
 
 
 @app.command()
-def validate(data_dir: str = "data") -> None:
+def validate(
+    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory")
+) -> None:
     """Validate datasets and rules."""
     report = validate_data(data_dir)
     typer.echo(_format_report(report))
@@ -69,7 +71,7 @@ def recommend(
     profile: str = typer.Option(..., "--profile", help="Path to profile YAML"),
     top: int = typer.Option(5, "--top", help="Top N variants"),
     objective: str = typer.Option("fastest_money", "--objective", help="Objective preset"),
-    data_dir: str = typer.Option("data", "--data", help="Data directory"),
+    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
     output_format: str = typer.Option("text", "--format", help="Output format: text or json"),
     output_path: str | None = typer.Option(None, "--output", help="Write JSON output to file"),
 ) -> None:
@@ -96,10 +98,10 @@ def recommend(
     }
 
     if output_path:
-        write_json(output_path, payload)
+        write_json(output_path, payload, default=str)
 
     if output_format == "json":
-        typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        typer.echo(json.dumps(payload, ensure_ascii=False, indent=2, default=str))
         return
 
     for idx, rec in enumerate(result.ranked_variants, start=1):
@@ -107,14 +109,21 @@ def recommend(
         typer.echo(f"   Pros: {'; '.join(rec.pros)}")
         if rec.cons:
             typer.echo(f"   Cons: {'; '.join(rec.cons)}")
-    typer.echo(json.dumps({"diagnostics": result.diagnostics}, ensure_ascii=False, indent=2))
+    typer.echo(
+        json.dumps(
+            {"diagnostics": result.diagnostics},
+            ensure_ascii=False,
+            indent=2,
+            default=str,
+        )
+    )
 
 
 @app.command()
 def plan(
     profile: str = typer.Option(..., "--profile", help="Path to profile YAML"),
     variant_id: str = typer.Option(..., "--variant-id", help="Variant ID"),
-    data_dir: str = typer.Option("data", "--data", help="Data directory"),
+    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
 ) -> None:
     """Generate a route plan for a selected variant."""
     try:
@@ -130,7 +139,7 @@ def export(
     profile: str = typer.Option(..., "--profile", help="Path to profile YAML"),
     variant_id: str = typer.Option(..., "--variant-id", help="Variant ID"),
     out_dir: str = typer.Option("exports", "--out", help="Output directory"),
-    data_dir: str = typer.Option("data", "--data", help="Data directory"),
+    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
 ) -> None:
     """Export plan artifacts."""
     try:

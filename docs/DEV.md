@@ -37,16 +37,20 @@ CI runs the same gates on every push/PR (ruff format check, ruff lint, pytest). 
 ## E2E smoke tests (Step 8)
 Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_Map_Spec_Packet.pdf p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
-- **One-command run (validate + E2E):**
-  ```bash
-  make e2e
-  ```
+- **Recommended (Windows, PowerShell):**
   ```powershell
   powershell -ExecutionPolicy Bypass -File scripts/e2e.ps1
   ```
-  ```bash
-  ./scripts/e2e.sh
-  ```
+  > Creates `.venv`, installs `.[dev]`, runs validate + E2E. (Money_Map_Spec_Packet.pdf p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
+- **Alternatives:**
+  - **Linux/macOS (bash):**
+    ```bash
+    ./scripts/e2e.sh
+    ```
+  - **Make (if available):**
+    ```bash
+    make e2e
+    ```
 - **Run only the E2E tests:**
   ```bash
   MONEY_MAP_DISABLE_NETWORK=1 python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
@@ -59,13 +63,17 @@ Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_M
   ```bash
   MONEY_MAP_DISABLE_NETWORK=1 python -m money_map.app.cli validate --data-dir data
   ```
-  > If the console script is installed, `money-map validate --data-dir data` is equivalent.
+  > If the console script is installed, `money-map validate --data-dir data` is equivalent. The canonical form is `python -m money_map.app.cli ...`. (Money_Map_Spec_Packet.pdf p.14)
 
 - **Machine-readable CLI output (recommend):**
   ```bash
-  python -m money_map.app.cli recommend --profile profiles/demo_fast_start.yaml --format json
+  python -m money_map.app.cli recommend --profile profiles/demo_fast_start.yaml --data-dir data --format json
   ```
-  Use `--output path/to/recommend.json` to write JSON to disk. (Money_Map_Spec_Packet.pdf p.14)
+  Use `--output path/to/recommend.json` to write JSON to disk, for example:
+  ```bash
+  python -m money_map.app.cli recommend --profile profiles/demo_fast_start.yaml --data-dir data --format json --output exports/recommend.json
+  ```
+  (Money_Map_Spec_Packet.pdf p.14)
 
 Demo profiles live in `profiles/`, with `profiles/demo_fast_start.yaml` used by the E2E tests.
 
