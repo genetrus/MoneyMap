@@ -2,6 +2,7 @@ import importlib.util
 import os
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 
 
@@ -40,10 +41,14 @@ def test_cli_validate_smoke():
 
 def test_console_script_validate_smoke():
     script_name = "money-map.exe" if os.name == "nt" else "money-map"
-    cli_path = Path(sys.executable).parent / script_name
-    assert cli_path.exists(), (
-        f"Expected console script at {cli_path}. Ensure the package is installed in the "
-        "test environment."
+    candidates = [
+        Path(sysconfig.get_path("scripts") or "") / script_name,
+        Path(sys.executable).parent / script_name,
+    ]
+    cli_path = next((path for path in candidates if path.exists()), None)
+    assert cli_path is not None, (
+        "Expected console script in the Python scripts directory. Ensure the package is "
+        "installed in the test environment."
     )
     result = subprocess.run(
         [str(cli_path), "validate", "--data-dir", "data"],

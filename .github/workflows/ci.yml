@@ -76,4 +76,4 @@ jobs:
         run: python -m pip install -e ".[ui]"
 
       - name: UI smoke imports
-        run: python -c "import streamlit; import money_map.ui"
+        run: python -m pytest -q -k ui_import

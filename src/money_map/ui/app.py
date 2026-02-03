@@ -141,6 +141,7 @@ def run_app() -> None:
             objective_options,
             index=objective_options.index(current_objective),
         )
+        st.caption("Objective preset affects ranking and diagnostics.")
         profile["objective"] = selected_objective
         st.session_state["profile"] = profile
         top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
@@ -223,6 +224,7 @@ def run_app() -> None:
             st.info("Select a variant in Recommendations.")
         else:
             profile = st.session_state["profile"]
+            st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
             try:
                 plan = _ensure_plan(profile, variant_id)
             except ValueError as exc:
