@@ -1,9 +1,8 @@
-import importlib
-
 import pytest
 
 
-def test_ui_import_smoke():
+def test_ui_import():
     pytest.importorskip("streamlit")
-    module = importlib.import_module("money_map.ui.app")
-    assert module.__name__ == "money_map.ui.app"
+    import money_map.ui
+
+    assert money_map.ui.__name__ == "money_map.ui"

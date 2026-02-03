@@ -51,5 +51,34 @@ The UI extra lives in `pyproject.toml` under `project.optional-dependencies`; in
   - Bash: `source .venv/bin/activate`
 - **Execution policy**: if PowerShell blocks scripts, use the provided one-command run with `-ExecutionPolicy Bypass`. (Money_Map_Spec_Packet.pdf p.11)
 
+## Installing behind a proxy / restricted network
+If you are on a corporate network or behind a proxy, configure the proxy for PowerShell and pip before running installs.
+
+### PowerShell: HTTP(S) proxy environment variables
+```powershell
+$env:HTTP_PROXY = "http://proxy.example.com:8080"
+$env:HTTPS_PROXY = "http://proxy.example.com:8080"
+```
+
+### pip config: mirror index + trusted host
+```powershell
+pip config set global.index-url https://mirror.example.com/simple
+pip config set global.trusted-host mirror.example.com
+```
+
+### Offline install via a wheelhouse
+Use a machine with internet access to download wheels into a local folder, then install from that folder.
+
+```powershell
+# On an online machine
+@"
+money-map[dev,ui]
+"@ | Out-File -Encoding utf8 requirements-offline.txt
+python -m pip download -d wheelhouse -r requirements-offline.txt
+
+# On the offline machine (from the repo root)
+python -m pip install --no-index --find-links=wheelhouse -e ".[dev,ui]"
+```
+
 ## Walking skeleton note
 Step 7 (walking skeleton) is implemented; follow Step 8+ for full end-to-end test suite and release activities. (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)

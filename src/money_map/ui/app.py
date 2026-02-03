@@ -78,6 +78,14 @@ def _ensure_plan(profile: dict, variant_id: str):
     return build_plan(profile, variant, app_data.rulepack)
 
 
+def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
+    current = profile.get("objective")
+    if current not in objective_options:
+        current = "fastest_money"
+        profile["objective"] = current
+    return current
+
+
 def run_app() -> None:
     _init_state()
 
@@ -120,13 +128,6 @@ def run_app() -> None:
             )
             profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
 
-            objective_options = ["fastest_money", "max_net"]
-            profile["objective"] = st.selectbox(
-                "Objective",
-                objective_options,
-                index=objective_options.index(profile.get("objective", "fastest_money")),
-            )
-
         st.session_state["profile"] = profile
         st.success("Profile ready" if profile["name"] else "Profile draft")
 
@@ -134,12 +135,13 @@ def run_app() -> None:
         st.header("Recommendations")
         profile = st.session_state["profile"]
         objective_options = ["fastest_money", "max_net"]
-        current_objective = profile.get("objective", "fastest_money")
+        current_objective = _ensure_objective(profile, objective_options)
         selected_objective = st.selectbox(
             "Objective preset",
             objective_options,
             index=objective_options.index(current_objective),
         )
+        st.caption("Objective preset affects ranking and diagnostics.")
         profile["objective"] = selected_objective
         st.session_state["profile"] = profile
         top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
@@ -222,6 +224,7 @@ def run_app() -> None:
             st.info("Select a variant in Recommendations.")
         else:
             profile = st.session_state["profile"]
+            st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
             try:
                 plan = _ensure_plan(profile, variant_id)
             except ValueError as exc:
