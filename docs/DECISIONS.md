@@ -29,3 +29,13 @@
 - Consequences: Week plans are consistent, and exported bundles match listed artifacts; users see explicit absence of prep tasks rather than missing steps.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.6–7
 - Owner: team
+
+## 2026-02-05 — Quick vs Advanced profile fields use existing profile schema
+- Date: 2026-02-05
+- Title: Quick vs Advanced profile fields use existing profile schema
+- Context: The UX spec calls for a Quick profile entry mode with fewer fields and an Advanced mode with additional fields, but the current profile schema only defines name, location, language level, capital, time per week, assets, and objective.
+- Decision: Implement Quick mode with the five core fields (name, location, language level, capital, time per week) and show assets and objective only in Advanced mode to satisfy the Quick/Advanced split without inventing new profile fields.
+- Alternatives: (1) Add new profile fields not present in the current schema. (2) Keep Quick mode but show all fields.
+- Consequences: Quick mode stays lightweight while Advanced mode exposes all existing profile inputs; no schema changes are introduced.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
+- Owner: team

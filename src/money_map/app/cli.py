@@ -17,6 +17,7 @@ app = typer.Typer(help="MoneyMap CLI.")
 
 def _format_report(report: dict) -> str:
     lines = [
+        "validation report",
         f"status: {report['status']}",
         f"dataset_version: {report['dataset_version']}",
         f"reviewed_at: {report['reviewed_at']}",
