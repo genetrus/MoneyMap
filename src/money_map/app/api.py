@@ -100,6 +100,7 @@ def export_bundle(
     plan = build_plan(profile, variant, app_data.rulepack)
 
     out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
     plan_path = out_dir / "plan.md"
     result_path = out_dir / "result.json"
     profile_path_out = out_dir / "profile.yaml"

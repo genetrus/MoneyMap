@@ -3,9 +3,6 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from shutil import which
-
-import pytest
 
 
 def test_smoke_imports():
@@ -42,11 +39,14 @@ def test_cli_validate_smoke():
 
 
 def test_console_script_validate_smoke():
-    cli_path = which("money-map")
-    if cli_path is None:
-        pytest.skip("money-map console script not available in PATH")
+    script_name = "money-map.exe" if os.name == "nt" else "money-map"
+    cli_path = Path(sys.executable).parent / script_name
+    assert cli_path.exists(), (
+        f"Expected console script at {cli_path}. Ensure the package is installed in the "
+        "test environment."
+    )
     result = subprocess.run(
-        [cli_path, "validate", "--data-dir", "data"],
+        [str(cli_path), "validate", "--data-dir", "data"],
         check=False,
         capture_output=True,
         text=True,
