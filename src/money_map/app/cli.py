@@ -27,6 +27,7 @@ def _disable_network() -> None:
         raise RuntimeError(message)
 
     socket.socket.connect = _blocked  # type: ignore[assignment]
+    socket.socket.connect_ex = _blocked  # type: ignore[assignment]
     socket.create_connection = _blocked  # type: ignore[assignment]
 
 
