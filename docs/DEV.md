@@ -34,6 +34,24 @@ Run the local format/lint/tests gates as a single command. (Блок-схема_
 
 CI runs the same gates on every push/PR (ruff format check, ruff lint, pytest). (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1; Money_Map_Spec_Packet.pdf p.13–14)
 
+## E2E smoke tests (Step 8)
+Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_Map_Spec_Packet.pdf p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
+
+- **Run only the E2E tests:**
+  ```bash
+  python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
+  ```
+- **Run the full test suite:**
+  ```bash
+  python -m pytest -q
+  ```
+- **Run the CLI validation gate:**
+  ```bash
+  money-map validate --data-dir data
+  ```
+
+Demo profiles live in `profiles/`, with `profiles/demo_fast_start.yaml` used by the E2E tests.
+
 ## Editable installs
 - Core editable install:
   ```bash
