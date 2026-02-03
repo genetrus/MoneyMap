@@ -24,6 +24,7 @@ def validate_data(data_dir: str | Path = "data") -> dict[str, Any]:
         "dataset_version": report.dataset_version,
         "reviewed_at": report.reviewed_at,
         "stale": report.stale,
+        "staleness": report.staleness,
     }
 
 
@@ -67,7 +68,7 @@ def plan_variant(
     variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
     if variant is None:
         raise ValueError(f"Variant '{variant_id}' not found.")
-    plan = build_plan(profile, variant, app_data.rulepack)
+    plan = build_plan(profile, variant, app_data.rulepack, app_data.meta.staleness_policy)
     return plan
 
 
@@ -97,7 +98,7 @@ def export_bundle(
     )
     if selected is None:
         raise ValueError(f"Variant '{variant_id}' not found in recommendations.")
-    plan = build_plan(profile, variant, app_data.rulepack)
+    plan = build_plan(profile, variant, app_data.rulepack, app_data.meta.staleness_policy)
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

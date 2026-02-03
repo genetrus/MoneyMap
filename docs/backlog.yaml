@@ -302,7 +302,7 @@ epics:
           - task_id: "T-M3-02-01"
             title: "Calculate staleness from reviewed_at and policy"
             priority: "P0"
-            status: "next"
+            status: "done"
             spec_refs:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "11" }
@@ -313,7 +313,7 @@ epics:
           - task_id: "T-M3-02-02"
             title: "Force require_check when data is stale for regulated domains"
             priority: "P0"
-            status: "next"
+            status: "done"
             spec_refs:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
@@ -507,7 +507,7 @@ epics:
           - task_id: "T-M6-01-01"
             title: "Implement Data status and Profile entry screens"
             priority: "P0"
-            status: "next"
+            status: "done"
             spec_refs:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
             acceptance_criteria:
@@ -517,7 +517,7 @@ epics:
           - task_id: "T-M6-01-02"
             title: "Implement Recommendations, Plan, Export screens and transitions"
             priority: "P0"
-            status: "next"
+            status: "done"
             spec_refs:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
             acceptance_criteria:
@@ -579,6 +579,16 @@ epics:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
             acceptance_criteria:
               - "Test suite covers validation, engines, and UI import smoke tests."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M7-01-03"
+            title: "Add UI import smoke test"
+            priority: "P0"
+            status: "done"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
+            acceptance_criteria:
+              - "UI modules import without executing Streamlit runtime."
             repo_touches: []
             notes: ""
           - task_id: "T-M7-01-02"

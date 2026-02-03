@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from pathlib import Path
 
 import streamlit as st
 import yaml
@@ -15,6 +16,7 @@ from money_map.core.recommend import is_variant_stale, recommend
 from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
+from money_map.storage.fs import read_yaml
 
 DEFAULT_PROFILE = {
     "name": "Demo",
@@ -34,6 +36,7 @@ def _init_state() -> None:
     st.session_state.setdefault("plan", None)
     st.session_state.setdefault("last_recommendations", None)
     st.session_state.setdefault("export_paths", None)
+    st.session_state.setdefault("profile_source", "Demo profile")
 
 
 @st.cache_resource
@@ -52,6 +55,7 @@ def _get_validation() -> dict:
         "dataset_version": report.dataset_version,
         "reviewed_at": report.reviewed_at,
         "stale": report.stale,
+        "staleness": report.staleness,
     }
 
 
@@ -75,7 +79,7 @@ def _ensure_plan(profile: dict, variant_id: str):
     variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
     if variant is None:
         raise ValueError(f"Variant '{variant_id}' not found.")
-    return build_plan(profile, variant, app_data.rulepack)
+    return build_plan(profile, variant, app_data.rulepack, app_data.meta.staleness_policy)
 
 
 def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
@@ -102,15 +106,50 @@ def run_app() -> None:
         st.metric("Reviewed at", report["reviewed_at"])
         st.metric("Status", report["status"])
         st.write(f"Stale: {report['stale']}")
+        st.caption(
+            f"Staleness policy: {report['staleness']['rulepack'].get('threshold_days')} days"
+        )
         if report["fatals"]:
             st.error("Fatals: " + ", ".join(report["fatals"]))
         if report["warns"]:
             st.warning("Warnings: " + ", ".join(report["warns"]))
+        st.subheader("Staleness detail")
+        st.write(report["staleness"]["rulepack"].get("message"))
+        stale_variants = [
+            variant_id
+            for variant_id, detail in report["staleness"]["variants"].items()
+            if detail.get("is_stale")
+        ]
+        if stale_variants:
+            st.warning("Stale variants: " + ", ".join(sorted(stale_variants)))
 
     elif page == "Profile":
         st.header("Profile")
+        repo_root = Path(__file__).resolve().parents[3]
+        profiles_dir = repo_root / "profiles"
+        demo_profiles = sorted([path.name for path in profiles_dir.glob("*.yaml")])
+        if demo_profiles:
+            selected = st.selectbox(
+                "Load demo profile",
+                ["Demo profile"] + demo_profiles,
+                index=0,
+            )
+            if selected != st.session_state.get("profile_source"):
+                st.session_state["profile_source"] = selected
+                if selected != "Demo profile":
+                    try:
+                        st.session_state["profile"] = read_yaml(profiles_dir / selected)
+                    except ValueError as exc:
+                        st.error(str(exc))
+        st.caption(f"Profile source: {st.session_state['profile_source']}")
         quick_mode = st.toggle("Quick mode", value=True)
         profile = st.session_state["profile"]
+        profile.setdefault("name", "")
+        profile.setdefault("location", "")
+        profile.setdefault("language_level", "B1")
+        profile.setdefault("capital_eur", 0)
+        profile.setdefault("time_per_week", 0)
+        profile.setdefault("assets", [])
 
         profile["name"] = st.text_input("Name", value=profile["name"])
         profile["location"] = st.text_input("Location", value=profile["location"])

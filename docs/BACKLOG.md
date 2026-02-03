@@ -220,12 +220,12 @@ Canonical backlog: `docs/backlog.yaml`.
 
 **Tasks**
 - **T-M3-02-01** — Calculate staleness from reviewed_at and policy
-  - Priority: P0 | Status: next
+  - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.7, p.11.
   - Acceptance criteria: Staleness evaluation returns status and warning metadata.
   - Repo touches: []
 - **T-M3-02-02** — Force require_check when data is stale for regulated domains
-  - Priority: P0 | Status: next
+  - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.6-7.
   - Acceptance criteria: Regulated domains downgrade legal gate to require_check when stale.
   - Repo touches: []
@@ -349,12 +349,12 @@ Canonical backlog: `docs/backlog.yaml`.
 
 **Tasks**
 - **T-M6-01-01** — Implement Data status and Profile entry screens
-  - Priority: P0 | Status: next
+  - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.8.
   - Acceptance criteria: Data status shows dataset_version, reviewed_at, warnings.
   - Repo touches: []
 - **T-M6-01-02** — Implement Recommendations, Plan, Export screens and transitions
-  - Priority: P0 | Status: next
+  - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.8.
   - Acceptance criteria: Flow proceeds without errors from profile to export.
   - Repo touches: []
@@ -395,6 +395,11 @@ Canonical backlog: `docs/backlog.yaml`.
   - Priority: P0 | Status: next
   - Spec refs: Money_Map_Spec_Packet.pdf p.14.
   - Acceptance criteria: Test suite covers validation, engines, and UI import smoke tests.
+  - Repo touches: []
+- **T-M7-01-03** — Add UI import smoke test
+  - Priority: P0 | Status: done
+  - Spec refs: Money_Map_Spec_Packet.pdf p.14.
+  - Acceptance criteria: UI modules import without executing Streamlit runtime.
   - Repo touches: []
 - **T-M7-01-02** — Ensure CI runs pytest and money-map validate
   - Priority: P0 | Status: next
@@ -472,4 +477,3 @@ Canonical backlog: `docs/backlog.yaml`.
 - **Taxonomy/cells definitions are not explicitly specified** (E-X / S-X-01). Spec refs: Money_Map_Spec_Packet.pdf p.9. See backlog item T-X-01-01.
 - **Bridge/path metadata requirements are unclear** (E-X / S-X-01). Spec refs: Money_Map_Spec_Packet.pdf p.9. See backlog item T-X-01-02.
 - **Objective presets and quick-fix behaviors lack concrete definitions** (E-X / S-X-02). Spec refs: Money_Map_Spec_Packet.pdf p.6, p.8. See backlog items T-X-02-01 and T-X-02-02.
-

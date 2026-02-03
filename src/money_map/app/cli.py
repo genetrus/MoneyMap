@@ -44,6 +44,7 @@ def _format_report(report: dict) -> str:
         f"dataset_version: {report['dataset_version']}",
         f"reviewed_at: {report['reviewed_at']}",
         f"stale: {report['stale']}",
+        f"staleness_policy_days: {report['staleness']['rulepack'].get('threshold_days')}",
         f"fatals: {len(report['fatals'])}",
         f"warns: {len(report['warns'])}",
     ]
@@ -53,6 +54,20 @@ def _format_report(report: dict) -> str:
     if report["warns"]:
         lines.append("WARNS:")
         lines.extend([f"- {warn}" for warn in report["warns"]])
+    staleness = report.get("staleness", {})
+    if staleness:
+        lines.append("STALENESS:")
+        rulepack = staleness.get("rulepack", {})
+        if rulepack:
+            lines.append(f"- rulepack: {rulepack.get('message')}")
+        variant_map = staleness.get("variants", {})
+        stale_variants = [
+            variant_id
+            for variant_id, detail in variant_map.items()
+            if detail.get("is_stale")
+        ]
+        if stale_variants:
+            lines.append(f"- stale_variants: {', '.join(sorted(stale_variants))}")
     return "\n".join(lines)
 
 
@@ -92,6 +107,10 @@ def recommend(
                 "title": rec.variant.title,
                 "pros": rec.pros,
                 "cons": rec.cons,
+                "stale": rec.stale,
+                "staleness": rec.staleness,
+                "legal_gate": rec.legal.legal_gate,
+                "legal_checklist": rec.legal.checklist,
             }
             for rec in result.ranked_variants
         ],
@@ -110,6 +129,10 @@ def recommend(
         typer.echo(f"   Pros: {'; '.join(rec.pros)}")
         if rec.cons:
             typer.echo(f"   Cons: {'; '.join(rec.cons)}")
+        if rec.stale:
+            typer.echo("   Warning: data is stale")
+        if rec.legal.legal_gate != "ok":
+            typer.echo(f"   Legal gate: {rec.legal.legal_gate}")
     typer.echo(
         json.dumps(
             {"diagnostics": result.diagnostics},
