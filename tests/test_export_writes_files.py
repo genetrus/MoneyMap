@@ -14,6 +14,8 @@ def test_export_writes_files(tmp_path: Path):
     assert Path(paths["plan"]).exists()
     assert Path(paths["result"]).exists()
     assert Path(paths["profile"]).exists()
+    for artifact_path in paths["artifacts"]:
+        assert Path(artifact_path).exists()
 
 
 def test_export_works_outside_top_n(tmp_path: Path):

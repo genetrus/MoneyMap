@@ -103,13 +103,58 @@ def export_bundle(
     plan_path = out_dir / "plan.md"
     result_path = out_dir / "result.json"
     profile_path_out = out_dir / "profile.yaml"
+    artifacts_dir = out_dir / "artifacts"
 
     write_text(plan_path, render_plan_md(plan))
     write_json(result_path, render_result_json(profile, selected, plan))
     write_yaml(profile_path_out, profile)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    checklist_lines = ["# Compliance Checklist", "", f"Legal gate: {plan.legal_gate}", ""]
+    checklist_lines.extend([f"- {item}" for item in plan.compliance])
+    budget_payload = {
+        "currency": "EUR",
+        "budget_items": [
+            {"item": "Initial tools", "estimated_cost_eur": 0},
+            {"item": "Marketing", "estimated_cost_eur": 0},
+        ],
+        "notes": "Fill in actual costs based on your plan.",
+    }
+    outreach_lines = [
+        "Subject: Quick intro",
+        "",
+        f"Hi there, I am starting {selected.variant.title}.",
+        f"{selected.variant.summary}",
+        "",
+        "Would you be open to a short chat to validate the offer?",
+        "",
+        "Thanks,",
+        profile.get("name", "Your name"),
+    ]
+
+    artifact_paths = []
+    for artifact in plan.artifacts:
+        artifact_path = out_dir / artifact
+        if artifact_path.name == "checklist.md":
+            write_text(artifact_path, "\n".join(checklist_lines) + "\n")
+        elif artifact_path.name == "budget.yaml":
+            write_yaml(artifact_path, budget_payload)
+        elif artifact_path.name == "outreach_message.txt":
+            write_text(artifact_path, "\n".join(outreach_lines) + "\n")
+        elif not artifact_path.exists():
+            if artifact_path.suffix in {".yaml", ".yml"}:
+                write_yaml(artifact_path, {"placeholder": True})
+            elif artifact_path.suffix == ".md":
+                write_text(artifact_path, "# Placeholder\n")
+            elif artifact_path.suffix == ".txt":
+                write_text(artifact_path, "Placeholder\n")
+            else:
+                write_text(artifact_path, "")
+        artifact_paths.append(str(artifact_path))
 
     return {
         "plan": str(plan_path),
         "result": str(result_path),
         "profile": str(profile_path_out),
+        "artifacts": artifact_paths,
     }

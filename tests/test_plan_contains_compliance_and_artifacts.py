@@ -9,5 +9,9 @@ def test_plan_contains_compliance_and_artifacts():
     )
     assert len(plan.steps) >= 10
     assert len(plan.artifacts) >= 3
+    step_titles = {step.title for step in plan.steps}
+    for items in plan.week_plan.values():
+        for item in items:
+            assert item in step_titles
     rendered = render_plan_md(plan)
     assert "## Compliance" in rendered

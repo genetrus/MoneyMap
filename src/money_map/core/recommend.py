@@ -34,6 +34,10 @@ def _is_variant_stale(variant: Variant, policy: StalenessPolicy) -> bool:
     return date.today() - review_date > stale_after
 
 
+def is_variant_stale(variant: Variant, policy: StalenessPolicy) -> bool:
+    return _is_variant_stale(variant, policy)
+
+
 def _score_variant(variant: Variant, objective: str) -> float:
     economics = variant.economics
     time_range = economics.get("time_to_first_money_days_range", [0, 0])
