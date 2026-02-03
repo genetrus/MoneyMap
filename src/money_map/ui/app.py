@@ -126,6 +126,14 @@ def run_app() -> None:
                 objective_options,
                 index=objective_options.index(profile.get("objective", "fastest_money")),
             )
+        else:
+            objective_options = ["fastest_money", "max_net"]
+            st.selectbox(
+                "Objective (preset)",
+                objective_options,
+                index=objective_options.index(profile.get("objective", "fastest_money")),
+                disabled=True,
+            )
 
         st.session_state["profile"] = profile
         st.success("Profile ready" if profile["name"] else "Profile draft")
