@@ -19,6 +19,7 @@ def render_result_json(
         "variant_id": variant.variant_id,
         "variant_title": variant.title,
         "score": recommendation.score,
+        "staleness": recommendation.staleness,
         "feasibility": asdict(recommendation.feasibility),
         "economics": asdict(recommendation.economics),
         "legal": {
@@ -30,5 +31,6 @@ def render_result_json(
             "steps": [step.title for step in plan.steps],
             "artifacts": plan.artifacts,
             "week_plan": plan.week_plan,
+            "staleness": plan.staleness,
         },
     }

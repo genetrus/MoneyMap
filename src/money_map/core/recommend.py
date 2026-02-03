@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from dataclasses import asdict
 
 from money_map.core.economics import assess_economics
 from money_map.core.feasibility import assess_feasibility
@@ -13,29 +13,11 @@ from money_map.core.model import (
     Variant,
 )
 from money_map.core.rules import evaluate_legal
-
-_DATE_FORMATS = ["%Y-%m-%d"]
-
-
-def _parse_date(value: str) -> date | None:
-    for fmt in _DATE_FORMATS:
-        try:
-            return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-def _is_variant_stale(variant: Variant, policy: StalenessPolicy) -> bool:
-    review_date = _parse_date(variant.review_date)
-    if not review_date:
-        return False
-    stale_after = timedelta(days=policy.stale_after_days)
-    return date.today() - review_date > stale_after
+from money_map.core.staleness import evaluate_staleness
 
 
 def is_variant_stale(variant: Variant, policy: StalenessPolicy) -> bool:
-    return _is_variant_stale(variant, policy)
+    return evaluate_staleness(variant.review_date, policy, label="variant").is_stale
 
 
 def _score_variant(variant: Variant, objective: str) -> float:
@@ -66,8 +48,13 @@ def recommend(
     for variant in variants:
         feasibility = assess_feasibility(profile, variant)
         economics = assess_economics(variant)
-        legal = evaluate_legal(rulepack, variant)
-        stale = _is_variant_stale(variant, staleness_policy)
+        legal = evaluate_legal(rulepack, variant, staleness_policy)
+        staleness = evaluate_staleness(
+            variant.review_date,
+            staleness_policy,
+            label=f"variant:{variant.variant_id}",
+        )
+        stale = staleness.is_stale
 
         if stale:
             diagnostics["warnings"].setdefault("stale_variant", 0)
@@ -113,6 +100,7 @@ def recommend(
                 economics=economics,
                 legal=legal,
                 stale=stale,
+                staleness=asdict(staleness),
                 pros=pros,
                 cons=cons[:2],
             )

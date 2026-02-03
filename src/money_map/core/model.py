@@ -71,6 +71,7 @@ class ValidationReport:
     dataset_version: str
     reviewed_at: str
     stale: bool
+    staleness: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,7 @@ class RecommendationVariant:
     economics: EconomicsResult
     legal: LegalResult
     stale: bool
+    staleness: dict[str, Any]
     pros: list[str]
     cons: list[str]
 
@@ -132,6 +134,7 @@ class RoutePlan:
     compliance: list[str]
     legal_gate: str
     applied_rules: list[Rule]
+    staleness: dict[str, Any]
 
 
 @dataclass

@@ -28,4 +28,18 @@ def render_plan_md(plan: RoutePlan) -> str:
     for item in plan.compliance:
         lines.append(f"- {item}")
 
+    lines.extend(["", "## Staleness"])
+    rulepack = plan.staleness.get("rulepack", {})
+    variant = plan.staleness.get("variant", {})
+    if rulepack:
+        lines.append(
+            f"- Rulepack: {rulepack.get('message', 'n/a')} "
+            f"(severity: {rulepack.get('severity', 'n/a')})"
+        )
+    if variant:
+        lines.append(
+            f"- Variant: {variant.get('message', 'n/a')} "
+            f"(severity: {variant.get('severity', 'n/a')})"
+        )
+
     return "\n".join(lines) + "\n"

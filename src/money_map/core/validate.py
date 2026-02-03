@@ -2,20 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from dataclasses import asdict
 
 from money_map.core.model import AppData, ValidationReport
-
-_DATE_FORMATS = ["%Y-%m-%d"]
-
-
-def _parse_date(value: str) -> date | None:
-    for fmt in _DATE_FORMATS:
-        try:
-            return datetime.strptime(value, fmt).date()
-        except ValueError:
-            continue
-    return None
+from money_map.core.staleness import evaluate_staleness
 
 
 def validate(app_data: AppData) -> ValidationReport:
@@ -26,8 +16,12 @@ def validate(app_data: AppData) -> ValidationReport:
         fatals.append("META_DATASET_VERSION_MISSING")
 
     reviewed_at = app_data.rulepack.reviewed_at
-    reviewed_date = _parse_date(reviewed_at)
-    if not reviewed_date:
+    rulepack_staleness = evaluate_staleness(
+        reviewed_at,
+        app_data.meta.staleness_policy,
+        label="rulepack",
+    )
+    if rulepack_staleness.severity == "fatal":
         fatals.append("RULEPACK_REVIEWED_AT_INVALID")
 
     if not app_data.rulepack.rules:
@@ -37,6 +31,7 @@ def validate(app_data: AppData) -> ValidationReport:
         fatals.append("VARIANTS_EMPTY")
 
     stale_variants: list[str] = []
+    variant_staleness_by_id: dict[str, dict] = {}
     for variant in app_data.variants:
         if not variant.variant_id:
             fatals.append("VARIANT_ID_MISSING")
@@ -48,18 +43,21 @@ def validate(app_data: AppData) -> ValidationReport:
             warns.append(f"VARIANT_ECONOMICS_MISSING:{variant.variant_id}")
         if not variant.legal:
             warns.append(f"VARIANT_LEGAL_MISSING:{variant.variant_id}")
-        review_date = _parse_date(variant.review_date)
-        if review_date:
-            stale_after = timedelta(days=app_data.meta.staleness_policy.stale_after_days)
-            if date.today() - review_date > stale_after:
-                stale_variants.append(variant.variant_id)
+        variant_staleness = evaluate_staleness(
+            variant.review_date,
+            app_data.meta.staleness_policy,
+            label=f"variant:{variant.variant_id}",
+        )
+        if variant_staleness.severity == "fatal":
+            warns.append(f"VARIANT_REVIEW_DATE_INVALID:{variant.variant_id}")
+        if variant_staleness.is_stale:
+            stale_variants.append(variant.variant_id)
+        variant_staleness_by_id[variant.variant_id] = asdict(variant_staleness)
 
     stale = False
-    if reviewed_date:
-        stale_after = timedelta(days=app_data.rulepack.staleness_policy.stale_after_days)
-        stale = date.today() - reviewed_date > stale_after
-        if stale:
-            warns.append("STALE_RULEPACK")
+    if rulepack_staleness.is_stale:
+        stale = True
+        warns.append("STALE_RULEPACK")
     if stale_variants:
         warns.append(f"STALE_VARIANTS:{', '.join(sorted(stale_variants))}")
 
@@ -71,4 +69,8 @@ def validate(app_data: AppData) -> ValidationReport:
         dataset_version=app_data.meta.dataset_version,
         reviewed_at=app_data.rulepack.reviewed_at,
         stale=stale,
+        staleness={
+            "rulepack": asdict(rulepack_staleness),
+            "variants": variant_staleness_by_id,
+        },
     )

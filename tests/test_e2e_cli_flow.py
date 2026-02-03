@@ -174,13 +174,12 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
     applied_rules = legal_payload.get("applied_rules", [])
     assert applied_rules, "Expected applied_rules to be present and non-empty."
     legal_gate = str(legal_payload.get("legal_gate", ""))
-    if any(
-        term in legal_gate
-        for term in ("regulated", "require_check", "registration", "license", "blocked")
-    ):
-        checklist = legal_payload.get("checklist", [])
-        assert checklist, "Expected non-empty legal checklist for regulated/blocked gate."
-        for kit_name in rulepack_payload.get("compliance_kits", {}):
-            assert any(str(item).startswith(f"{kit_name}:") for item in checklist), (
-                f"Expected compliance kit {kit_name} in checklist."
-            )
+    checklist = legal_payload.get("checklist", [])
+    assert checklist, "Expected non-empty legal checklist."
+    for kit_name in rulepack_payload.get("compliance_kits", {}):
+        assert any(str(item).startswith(f"{kit_name}:") for item in checklist), (
+            f"Expected compliance kit {kit_name} in checklist."
+        )
+    if variant_id in regulated_variants:
+        assert legal_gate == "require_check"
+        assert any("DATA_STALE" in str(item) for item in checklist)
