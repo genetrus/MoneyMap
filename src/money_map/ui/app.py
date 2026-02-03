@@ -119,21 +119,12 @@ def run_app() -> None:
         )
         profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
 
-        if not quick_mode:
-            objective_options = ["fastest_money", "max_net"]
-            profile["objective"] = st.selectbox(
-                "Objective",
-                objective_options,
-                index=objective_options.index(profile.get("objective", "fastest_money")),
-            )
-        else:
-            objective_options = ["fastest_money", "max_net"]
-            st.selectbox(
-                "Objective (preset)",
-                objective_options,
-                index=objective_options.index(profile.get("objective", "fastest_money")),
-                disabled=True,
-            )
+        objective_options = ["fastest_money", "max_net"]
+        profile["objective"] = st.selectbox(
+            "Objective",
+            objective_options,
+            index=objective_options.index(profile.get("objective", "fastest_money")),
+        )
 
         st.session_state["profile"] = profile
         st.success("Profile ready" if profile["name"] else "Profile draft")

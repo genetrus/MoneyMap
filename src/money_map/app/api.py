@@ -139,8 +139,11 @@ def export_bundle(
     ]
     write_text(outreach_path, "\n".join(outreach_lines) + "\n")
 
+    artifact_paths = [str(out_dir / artifact) for artifact in plan.artifacts]
+
     return {
         "plan": str(plan_path),
         "result": str(result_path),
         "profile": str(profile_path_out),
+        "artifacts": artifact_paths,
     }
