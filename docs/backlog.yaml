@@ -1,0 +1,690 @@
+version: 1
+priority_scheme:
+  P0: "must-have (MVP / milestone blocker)"
+  P1: "should-have (next iteration)"
+  P2: "nice-to-have"
+status_scheme: ["done", "next", "later"]
+epics:
+  - epic_id: "E-M0"
+    title: "Repo scaffold, CLI/UI stubs, CI baseline"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+      - { pdf: "Блок-схема_старт_разработки_A4_FINAL_v3.pdf", pages: "1" }
+    stories:
+      - story_id: "S-M0-01"
+        title: "Repository skeleton and packaging"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+        acceptance_criteria:
+          - "Editable install works and package metadata is defined."
+        tasks:
+          - task_id: "T-M0-01-01"
+            title: "Define package layout and metadata (src/ layout, scripts)"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+            acceptance_criteria:
+              - "Project installs with `pip install -e .` and exposes the package."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M0-01-02"
+            title: "Wire CLI entrypoint for help output"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+            acceptance_criteria:
+              - "`money-map --help` responds without errors."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M0-02"
+        title: "UI stub and CI quality gates"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+          - { pdf: "Блок-схема_старт_разработки_A4_FINAL_v3.pdf", pages: "1" }
+        acceptance_criteria:
+          - "UI stub launches and CI runs format/lint/tests gates."
+        tasks:
+          - task_id: "T-M0-02-01"
+            title: "Create Streamlit UI stub entrypoint"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "1" }
+            acceptance_criteria:
+              - "`money-map ui` opens a basic Streamlit screen."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M0-02-02"
+            title: "Set up CI with format, lint, and tests"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_старт_разработки_A4_FINAL_v3.pdf", pages: "1" }
+            acceptance_criteria:
+              - "CI executes formatting, linting, and test steps on push/PR."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M1"
+    title: "Golden dataset v0, meta, DE rulepack, load/validate"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "9" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "15" }
+      - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1-2" }
+    stories:
+      - story_id: "S-M1-01"
+        title: "Data inventory, dictionary, and relationships"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1" }
+        acceptance_criteria:
+          - "Data inventory, dictionary, ER, producer/consumer matrix, and policies are documented."
+        tasks:
+          - task_id: "T-M1-01-01"
+            title: "Compile data inventory covering use cases, UX, and runtime data"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1" }
+            acceptance_criteria:
+              - "Every data item is listed with category and purpose."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M1-01-02"
+            title: "Define data dictionary (types, sources, rules, PII)"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1" }
+            acceptance_criteria:
+              - "Each field has type, source, validation, and PII classification."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M1-01-03"
+            title: "Document ER relationships and producer/consumer matrix"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1" }
+            acceptance_criteria:
+              - "ER relationships and producer/consumer ownership are explicit for all data items."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M1-01-04"
+            title: "Define data policies (roles, retention, access, contracts)"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1" }
+            acceptance_criteria:
+              - "Policies cover permissions, retention, and data contracts."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M1-02"
+        title: "Seed dataset, meta, rulepack, and validation"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "15" }
+          - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "2" }
+        acceptance_criteria:
+          - "Golden dataset v0 loads and validates for DE with rulepack and meta."
+        tasks:
+          - task_id: "T-M1-02-01"
+            title: "Create dataset meta with versioning and staleness policy"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "15" }
+            acceptance_criteria:
+              - "meta.yaml includes dataset_version and staleness_policy."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M1-02-02"
+            title: "Build DE rulepack with legal gates and compliance kits"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "15" }
+            acceptance_criteria:
+              - "Rulepack defines legal gate statuses and compliance kit outputs."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M1-02-03"
+            title: "Populate variants with feasibility, economics, legal, and review dates"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "15" }
+            acceptance_criteria:
+              - "Each variant includes feasibility/economics/legal fields and reviewed_at."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M1-02-04"
+            title: "Implement dataset validation with FATAL/WARN reporting"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "Validation reports issues with severity and semantic checks."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M2"
+    title: "Query/search and exploration"
+    priority: "P1"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+    stories:
+      - story_id: "S-M2-01"
+        title: "Search/query API with indexes"
+        priority: "P1"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+        acceptance_criteria:
+          - "Search returns relevant results across taxonomy, cells, and tags."
+        tasks:
+          - task_id: "T-M2-01-01"
+            title: "Build indexes for taxonomy, cells, tags, and keywords"
+            priority: "P1"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+            acceptance_criteria:
+              - "Indexes enable fast lookup by taxonomy/cell/tag."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M2-01-02"
+            title: "Expose search in CLI/UI with relevance ordering"
+            priority: "P1"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+            acceptance_criteria:
+              - "CLI/UI search returns ordered, explainable results."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M2-02"
+        title: "Explore mode (matrix, taxonomy graph, bridges/paths)"
+        priority: "P1"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+        acceptance_criteria:
+          - "Explore view supports browsing matrix, taxonomy graph, and routes."
+        tasks:
+          - task_id: "T-M2-02-01"
+            title: "Render matrix and taxonomy graph views"
+            priority: "P1"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Users can browse the 2x2x2 matrix and taxonomy graph."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M2-02-02"
+            title: "Add bridges/paths explorer with filters"
+            priority: "P1"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Routes can be filtered and inspected without running a recommendation."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M3"
+    title: "Legal gate, compliance kits, staleness"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+    stories:
+      - story_id: "S-M3-01"
+        title: "Legal evaluation and compliance kits"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+        acceptance_criteria:
+          - "Each variant yields legal gate status with checklists and kits."
+        tasks:
+          - task_id: "T-M3-01-01"
+            title: "Implement legal_gate statuses and checklist rendering"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Legal gate output includes ok/require_check/registration/license/blocked."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M3-01-02"
+            title: "Surface compliance kits in outputs and exports"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Compliance kits (tax, invoicing, insurance) appear in plan/results."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M3-02"
+        title: "Staleness policy enforcement"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "11" }
+        acceptance_criteria:
+          - "Stale data triggers warnings and cautious legal gating."
+        tasks:
+          - task_id: "T-M3-02-01"
+            title: "Calculate staleness from reviewed_at and policy"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "11" }
+            acceptance_criteria:
+              - "Staleness evaluation returns status and warning metadata."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M3-02-02"
+            title: "Force require_check when data is stale for regulated domains"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Regulated domains downgrade legal gate to require_check when stale."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M4"
+    title: "Feasibility, economics, recommendation objectives"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+    stories:
+      - story_id: "S-M4-01"
+        title: "Feasibility engine with blockers and prep steps"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+        acceptance_criteria:
+          - "Feasibility status includes blockers, prep steps, and prep duration."
+        tasks:
+          - task_id: "T-M4-01-01"
+            title: "Compute feasibility status and top 3 blockers"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Outputs are feasible/feasible_with_prep/not_feasible with max 3 blockers."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M4-01-02"
+            title: "Generate prep steps and estimated prep weeks range"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Prep steps include concrete actions and estimated weeks range."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M4-02"
+        title: "Economics snapshot with ranges and confidence"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6-7" }
+        acceptance_criteria:
+          - "Economics includes time-to-first-money, net range, costs, and confidence."
+        tasks:
+          - task_id: "T-M4-02-01"
+            title: "Compute time_to_first_money and net_month ranges"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Economics snapshot uses ranges (not promises) for money/time."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M4-02-02"
+            title: "Add volatility, costs, scaling ceiling, and confidence"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
+            acceptance_criteria:
+              - "Economics snapshot includes volatility, costs, scaling ceiling, confidence."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M4-03"
+        title: "Recommendation engine with objectives and explanations"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+        acceptance_criteria:
+          - "Ranking is deterministic, objective-driven, and explainable."
+        tasks:
+          - task_id: "T-M4-03-01"
+            title: "Implement candidate filtering, scoring, and deterministic tie-breakers"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "Top-N results are stable for identical inputs."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M4-03-02"
+            title: "Return explanations (3 pros, 1-2 cons) and diagnostics"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "Each result lists explanations and diagnostics of filters applied."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M5"
+    title: "Route plan, 4-week plan, exports"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "10" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+    stories:
+      - story_id: "S-M5-01"
+        title: "Route plan and 4-week launch plan"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+        acceptance_criteria:
+          - "Route plan provides steps, artifacts, checklists, and 4-week view."
+        tasks:
+          - task_id: "T-M5-01-01"
+            title: "Generate route steps from bridges/paths with artifacts"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "Route steps list outputs/artifacts per step."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M5-01-02"
+            title: "Build 4-week plan and aggregated compliance checklist"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "Plan includes 4-week schedule and aggregated checklist."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M5-02"
+        title: "Export deliverables"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "3" }
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "10" }
+        acceptance_criteria:
+          - "plan.md, result.json, and profile.yaml export with required sections."
+        tasks:
+          - task_id: "T-M5-02-01"
+            title: "Export plan.md with steps, compliance, and artifacts"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "3" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "plan.md includes steps, checklists, and compliance section."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M5-02-02"
+            title: "Export result.json and profile.yaml with applied rules"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "3" }
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "11" }
+            acceptance_criteria:
+              - "result.json includes applied_rules for auditability."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M6"
+    title: "Streamlit UI MVP flow"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+    stories:
+      - story_id: "S-M6-01"
+        title: "Profile → Recommendations → Plan → Export flow"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+        acceptance_criteria:
+          - "UI provides required screens with state handling and data status."
+        tasks:
+          - task_id: "T-M6-01-01"
+            title: "Implement Data status and Profile entry screens"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Data status shows dataset_version, reviewed_at, warnings."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M6-01-02"
+            title: "Implement Recommendations, Plan, Export screens and transitions"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Flow proceeds without errors from profile to export."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M6-02"
+        title: "Reality Check block and quick fixes"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "4" }
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+        acceptance_criteria:
+          - "Reality Check shows top blockers and quick fixes." 
+        tasks:
+          - task_id: "T-M6-02-01"
+            title: "Display top 3 blockers and explanations"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Reality Check lists top blockers based on current profile."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M6-02-02"
+            title: "Implement quick-fix actions and objective presets"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Quick-fix buttons adjust filters/objective presets." 
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-M7"
+    title: "Stabilization: tests, CI, demo content"
+    priority: "P0"
+    status: "next"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "13" }
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
+    stories:
+      - story_id: "S-M7-01"
+        title: "Definition of Done tests and CI"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
+        acceptance_criteria:
+          - "CI runs required tests and validates data."
+        tasks:
+          - task_id: "T-M7-01-01"
+            title: "Implement DoD tests (validate, feasibility, economics, rules, objectives)"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
+            acceptance_criteria:
+              - "Test suite covers validation, engines, and UI import smoke tests."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M7-01-02"
+            title: "Ensure CI runs pytest and money-map validate"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
+            acceptance_criteria:
+              - "CI executes pytest and money-map validate in GitHub Actions."
+            repo_touches: []
+            notes: ""
+      - story_id: "S-M7-02"
+        title: "Demo profiles and fixture data"
+        priority: "P0"
+        status: "next"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
+          - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "2" }
+        acceptance_criteria:
+          - "Fixture packs and demo profiles support stable E2E runs."
+        tasks:
+          - task_id: "T-M7-02-01"
+            title: "Create fixture pack (5-20 variants) for dev/QA/e2e"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "2" }
+            acceptance_criteria:
+              - "Fixture pack includes representative variants and profiles."
+            repo_touches: []
+            notes: ""
+          - task_id: "T-M7-02-02"
+            title: "Add data contract tests to CI"
+            priority: "P0"
+            status: "next"
+            spec_refs:
+              - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "2" }
+            acceptance_criteria:
+              - "CI verifies data contracts for core datasets."
+            repo_touches: []
+            notes: ""
+  - epic_id: "E-X"
+    title: "Spec gaps and UX open questions"
+    priority: "P1"
+    status: "later"
+    spec_refs:
+      - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8-9" }
+      - { pdf: "Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf", pages: "1" }
+    stories:
+      - story_id: "S-X-01"
+        title: "Define taxonomy/cells semantics and mapping guidance"
+        priority: "P1"
+        status: "later"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "9" }
+        acceptance_criteria:
+          - "Taxonomy (14 mechanisms) and 8 cells have explicit definitions and mapping rules."
+        tasks:
+          - task_id: "T-X-01-01"
+            title: "Publish definitions for 14 mechanisms and 8 cells"
+            priority: "P1"
+            status: "later"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "9" }
+            acceptance_criteria:
+              - "Definitions clarify how variants map to taxonomy and cells."
+            repo_touches: []
+            notes: "Gap: spec references taxonomy/cells but does not define them in detail."
+          - task_id: "T-X-01-02"
+            title: "Define bridges/paths semantics and required metadata"
+            priority: "P1"
+            status: "later"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "9" }
+            acceptance_criteria:
+              - "Bridge/path entries include preconditions and outputs." 
+            repo_touches: []
+            notes: "Gap: bridge/path content structure is not detailed." 
+      - story_id: "S-X-02"
+        title: "Clarify objective presets and quick-fix behaviors"
+        priority: "P1"
+        status: "later"
+        spec_refs:
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+          - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+        acceptance_criteria:
+          - "Objective presets list and quick-fix adjustments are documented." 
+        tasks:
+          - task_id: "T-X-02-01"
+            title: "Define objective preset list and weight mappings"
+            priority: "P1"
+            status: "later"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "6" }
+            acceptance_criteria:
+              - "Each preset includes explicit scoring weights and intent." 
+            repo_touches: []
+            notes: "Gap: spec requires objective presets but does not define them." 
+          - task_id: "T-X-02-02"
+            title: "Document quick-fix behaviors and filters"
+            priority: "P1"
+            status: "later"
+            spec_refs:
+              - { pdf: "Money_Map_Spec_Packet.pdf", pages: "8" }
+            acceptance_criteria:
+              - "Quick-fix buttons map to documented filter or objective changes." 
+            repo_touches: []
+            notes: "Gap: quick-fix adjustments are named but not specified." 

@@ -39,3 +39,13 @@
 - Consequences: Quick mode stays lightweight, Advanced adds assets, and objective selection aligns with the Recommendations flow while remaining stored on the profile for scoring.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.8
 - Owner: team
+
+## 2026-02-03 — Backlog priority/status mapping for Block 10
+- Date: 2026-02-03
+- Title: Map MoSCoW requirements to P0/P1/P2 and default status
+- Context: The backlog requires P0/P1/P2 priorities and done/next/later statuses, while the spec expresses MoSCoW priorities and does not define current execution status.
+- Decision: Map MUST → P0, SHOULD → P1, COULD → P2; leave WON'T out of backlog. Default backlog status is "next" for milestone epics and "later" for gap items until a project tracker provides real status.
+- Alternatives: (1) Treat all milestones as P0 without MoSCoW mapping. (2) Infer done/next from repository state.
+- Consequences: Backlog priorities reflect spec intent, while status remains neutral pending real tracking.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.5, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
