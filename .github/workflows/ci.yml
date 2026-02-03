@@ -13,7 +13,7 @@ jobs:
     name: Core CI (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     env:
-      PYTHONPATH: src
+      PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
       matrix:
