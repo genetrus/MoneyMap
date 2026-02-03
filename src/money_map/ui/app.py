@@ -101,7 +101,7 @@ def run_app() -> None:
 
     elif page == "Profile":
         st.header("Profile")
-        quick_mode = st.toggle("Quick mode", value=True)
+        st.toggle("Quick mode", value=True)
         profile = st.session_state["profile"]
 
         profile["name"] = st.text_input("Name", value=profile["name"])

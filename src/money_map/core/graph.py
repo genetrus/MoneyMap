@@ -8,9 +8,7 @@ from money_map.core.rules import evaluate_legal
 
 def build_plan(profile: dict, variant: Variant, rulepack) -> RoutePlan:
     legal = evaluate_legal(rulepack, variant)
-    prep_detail = (
-        "; ".join(variant.prep_steps) if variant.prep_steps else "No prep tasks provided."
-    )
+    prep_detail = "; ".join(variant.prep_steps) if variant.prep_steps else "No prep tasks provided."
     steps = [
         PlanStep("Confirm scope", f"Review summary: {variant.summary}"),
         PlanStep("Assess feasibility", "Validate time, capital, and assets requirements."),
