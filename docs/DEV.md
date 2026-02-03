@@ -37,9 +37,19 @@ CI runs the same gates on every push/PR (ruff format check, ruff lint, pytest). 
 ## E2E smoke tests (Step 8)
 Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_Map_Spec_Packet.pdf p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
+- **One-command run (validate + E2E):**
+  ```bash
+  make e2e
+  ```
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts/e2e.ps1
+  ```
+  ```bash
+  ./scripts/e2e.sh
+  ```
 - **Run only the E2E tests:**
   ```bash
-  python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
+  MONEY_MAP_DISABLE_NETWORK=1 python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
   ```
 - **Run the full test suite:**
   ```bash
@@ -47,8 +57,15 @@ Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_M
   ```
 - **Run the CLI validation gate:**
   ```bash
-  money-map validate --data-dir data
+  MONEY_MAP_DISABLE_NETWORK=1 python -m money_map.app.cli validate --data-dir data
   ```
+  > If the console script is installed, `money-map validate --data-dir data` is equivalent.
+
+- **Machine-readable CLI output (recommend):**
+  ```bash
+  python -m money_map.app.cli recommend --profile profiles/demo_fast_start.yaml --format json
+  ```
+  Use `--output path/to/recommend.json` to write JSON to disk. (Money_Map_Spec_Packet.pdf p.14)
 
 Demo profiles live in `profiles/`, with `profiles/demo_fast_start.yaml` used by the E2E tests.
 

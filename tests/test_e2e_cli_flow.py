@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import re
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -22,7 +23,21 @@ def _run_cli(
 
 def test_e2e_cli_flow(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[1]
-    env = None
+    env = os.environ.copy()
+    env.update(
+        {
+            "MONEY_MAP_DISABLE_NETWORK": "1",
+            "PYTHONHASHSEED": "0",
+            "PYTHONUTF8": "1",
+            "PYTHONIOENCODING": "utf-8",
+            "TERM": "dumb",
+            "COLUMNS": "120",
+        }
+    )
+    python_path = str(root / "src")
+    if env.get("PYTHONPATH"):
+        python_path = f"{python_path}{os.pathsep}{env['PYTHONPATH']}"
+    env["PYTHONPATH"] = python_path
 
     profile_path = root / "profiles" / "demo_fast_start.yaml"
     data_dir = root / "data"
@@ -40,16 +55,16 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             "fastest_money",
             "--data",
             str(data_dir),
+            "--format",
+            "json",
         ],
         cwd=root,
         env=env,
     )
 
-    match = re.search(r"^1\.\s+(\S+)\s+\|", recommend.stdout, re.MULTILINE)
-    assert match is not None, (
-        f"Could not parse top recommendation from output:\\n{recommend.stdout}"
-    )
-    variant_id = match.group(1)
+    payload = json.loads(recommend.stdout)
+    assert payload["recommendations"], "Expected at least one recommendation."
+    variant_id = payload["recommendations"][0]["variant_id"]
 
     _run_cli(
         [

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -11,8 +13,27 @@ from pathlib import Path
 import typer
 
 from money_map.app.api import export_bundle, plan_variant, recommend_variants, validate_data
+from money_map.storage.fs import write_json
 
 app = typer.Typer(help="MoneyMap CLI.")
+
+_NETWORK_GUARD_ENV = "MONEY_MAP_DISABLE_NETWORK"
+
+
+def _disable_network() -> None:
+    message = f"Network access disabled by {_NETWORK_GUARD_ENV}=1"
+
+    def _blocked(*_args, **_kwargs):
+        raise RuntimeError(message)
+
+    socket.socket.connect = _blocked  # type: ignore[assignment]
+    socket.create_connection = _blocked  # type: ignore[assignment]
+
+
+def _disable_network_if_requested() -> None:
+    flag = os.getenv(_NETWORK_GUARD_ENV, "").strip().lower()
+    if flag in {"1", "true", "yes", "on"}:
+        _disable_network()
 
 
 def _format_report(report: dict) -> str:
@@ -49,9 +70,38 @@ def recommend(
     top: int = typer.Option(5, "--top", help="Top N variants"),
     objective: str = typer.Option("fastest_money", "--objective", help="Objective preset"),
     data_dir: str = typer.Option("data", "--data", help="Data directory"),
+    output_format: str = typer.Option("text", "--format", help="Output format: text or json"),
+    output_path: str | None = typer.Option(None, "--output", help="Write JSON output to file"),
 ) -> None:
     """Recommend top variants."""
     result = recommend_variants(profile, objective=objective, top_n=top, data_dir=data_dir)
+    output_format = output_format.strip().lower()
+    if output_format not in {"text", "json"}:
+        raise typer.BadParameter("format must be 'text' or 'json'")
+
+    payload = {
+        "objective": objective,
+        "top_n": top,
+        "recommendations": [
+            {
+                "variant_id": rec.variant.variant_id,
+                "score": rec.score,
+                "title": rec.variant.title,
+                "pros": rec.pros,
+                "cons": rec.cons,
+            }
+            for rec in result.ranked_variants
+        ],
+        "diagnostics": result.diagnostics,
+    }
+
+    if output_path:
+        write_json(output_path, payload)
+
+    if output_format == "json":
+        typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
     for idx, rec in enumerate(result.ranked_variants, start=1):
         typer.echo(f"{idx}. {rec.variant.variant_id} | score={rec.score:.2f} | {rec.variant.title}")
         typer.echo(f"   Pros: {'; '.join(rec.pros)}")
@@ -105,6 +155,7 @@ def ui() -> None:
 
 
 def main() -> None:
+    _disable_network_if_requested()
     app()
 
 

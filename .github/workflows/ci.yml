@@ -45,7 +45,7 @@ jobs:
         run: python -m pytest -q
 
       - name: CLI validate
-        run: money-map validate --data-dir data
+        run: python -m money_map.app.cli validate --data-dir data
 
       # TODO: Add data contract tests in CI when scheduled. (Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2)
 
@@ -78,3 +78,31 @@ jobs:
 
       - name: UI smoke imports
         run: python -c "import streamlit; import money_map.ui"
+
+  e2e-smoke:
+    name: E2E smoke (ubuntu-latest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Step 8 E2E smoke (Money_Map_Spec_Packet.pdf p.13–14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
+        env:
+          MONEY_MAP_DISABLE_NETWORK: "1"
+        run: |
+          python -m money_map.app.cli validate --data-dir data
+          python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
