@@ -55,6 +55,10 @@ Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_M
   ```bash
   MONEY_MAP_DISABLE_NETWORK=1 python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
   ```
+  ```powershell
+  $env:MONEY_MAP_DISABLE_NETWORK = "1"
+  python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
+  ```
 - **Run the full test suite:**
   ```bash
   python -m pytest -q

@@ -58,7 +58,7 @@ def _format_report(report: dict) -> str:
 
 @app.command()
 def validate(
-    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory")
+    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
 ) -> None:
     """Validate datasets and rules."""
     report = validate_data(data_dir)

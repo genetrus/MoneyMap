@@ -5,8 +5,9 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from shutil import which
+from shutil import copytree, which
 
+from money_map.storage.fs import read_yaml, write_yaml
 from tests.helpers import count_bullet_lines, count_numbered_lines, extract_section
 
 
@@ -51,7 +52,20 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             env["PYTHONPATH"] = str(repo_src)
 
     profile_path = root / "profiles" / "demo_fast_start.yaml"
-    data_dir = root / "data"
+    data_dir = tmp_path / "data"
+    copytree(root / "data", data_dir)
+    rulepack_path = data_dir / "rulepacks" / "DE.yaml"
+    rulepack_payload = read_yaml(rulepack_path)
+    rulepack_payload["reviewed_at"] = "2000-01-01"
+    write_yaml(rulepack_path, rulepack_payload)
+
+    variants_payload = read_yaml(data_dir / "variants.yaml")
+    variants = variants_payload.get("variants", [])
+    tags_by_variant = {variant["variant_id"]: set(variant.get("tags", [])) for variant in variants}
+    regulated_domains = set(rulepack_payload.get("regulated_domains", []))
+    regulated_variants = {
+        variant_id for variant_id, tags in tags_by_variant.items() if tags & regulated_domains
+    }
 
     _run_cli_module(["validate", "--data-dir", str(data_dir)], cwd=root, env=env)
 
@@ -107,8 +121,9 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
     ids_first = [item["variant_id"] for item in payload_first["recommendations"]]
     ids_second = [item["variant_id"] for item in payload_second["recommendations"]]
     assert ids_first == ids_second
-    assert "de.regulated.childcare_assist" in ids_first
-    variant_id = "de.regulated.childcare_assist"
+    regulated_ranked = [variant_id for variant_id in ids_first if variant_id in regulated_variants]
+    assert regulated_ranked, "Expected at least one regulated variant in recommendations."
+    variant_id = regulated_ranked[0] if regulated_ranked else ids_first[0]
 
     _run_cli_module(
         [
@@ -149,9 +164,23 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
     artifacts_section = extract_section(plan_md, "## Artifacts")
     assert count_numbered_lines(steps_section) >= 10
     assert count_bullet_lines(artifacts_section) >= 3
-    artifact_names = {line.strip()[2:] for line in artifacts_section if line.strip().startswith("- ")}
+    artifact_names = {
+        line.strip()[2:] for line in artifacts_section if line.strip().startswith("- ")
+    }
     assert len({name for name in artifact_names if name}) >= 3
 
     result_payload = json.loads((tmp_path / "result.json").read_text(encoding="utf-8"))
-    applied_rules = result_payload.get("legal", {}).get("applied_rules", [])
+    legal_payload = result_payload.get("legal", {})
+    applied_rules = legal_payload.get("applied_rules", [])
     assert applied_rules, "Expected applied_rules to be present and non-empty."
+    legal_gate = str(legal_payload.get("legal_gate", ""))
+    if any(
+        term in legal_gate
+        for term in ("regulated", "require_check", "registration", "license", "blocked")
+    ):
+        checklist = legal_payload.get("checklist", [])
+        assert checklist, "Expected non-empty legal checklist for regulated/blocked gate."
+        for kit_name in rulepack_payload.get("compliance_kits", {}):
+            assert any(str(item).startswith(f"{kit_name}:") for item in checklist), (
+                f"Expected compliance kit {kit_name} in checklist."
+            )
