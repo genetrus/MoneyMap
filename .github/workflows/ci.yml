@@ -53,6 +53,7 @@ jobs:
     name: UI smoke (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - windows-latest
@@ -76,4 +77,4 @@ jobs:
         run: python -m pip install -e ".[ui]"
 
       - name: UI smoke imports
-        run: python -m pytest -q -k ui_import
+        run: python -c "import streamlit; import money_map.ui"
