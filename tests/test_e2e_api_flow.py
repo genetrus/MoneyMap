@@ -13,20 +13,23 @@ from tests.helpers import (
 
 def test_e2e_api_flow(tmp_path: Path, monkeypatch) -> None:
     block_network(monkeypatch)
-    profile_path = Path("profiles/demo_fast_start.yaml")
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.chdir(root)
+    profile_path = root / "profiles" / "demo_fast_start.yaml"
     assert profile_path.exists(), "Expected demo profile at profiles/demo_fast_start.yaml"
+    data_dir = root / "data"
 
     first = recommend_variants(
         profile_path=profile_path,
         objective="fastest_money",
         top_n=10,
-        data_dir="data",
+        data_dir=data_dir,
     )
     second = recommend_variants(
         profile_path=profile_path,
         objective="fastest_money",
         top_n=10,
-        data_dir="data",
+        data_dir=data_dir,
     )
 
     ids_first = [rec.variant.variant_id for rec in first.ranked_variants]
@@ -38,7 +41,7 @@ def test_e2e_api_flow(tmp_path: Path, monkeypatch) -> None:
         profile_path=profile_path,
         variant_id=ids_first[0],
         out_dir=tmp_path,
-        data_dir="data",
+        data_dir=data_dir,
     )
 
     plan_path = Path(export_paths["plan"])

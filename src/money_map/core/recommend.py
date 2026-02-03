@@ -118,5 +118,6 @@ def recommend(
             )
         )
 
+    # Deterministic ordering: score desc, then variant_id asc for tie-breaks.
     ranked.sort(key=lambda item: (-item.score, item.variant.variant_id))
     return RecommendationResult(ranked_variants=ranked[:top_n], diagnostics=diagnostics)
