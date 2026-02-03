@@ -7,7 +7,8 @@ from money_map.core.rules import evaluate_legal
 def test_rules_force_legal_gate_when_rulepack_stale_and_regulated():
     app_data = load_app_data()
     stale_rulepack = replace(app_data.rulepack, reviewed_at="2000-01-01")
-    regulated_variant = next(v for v in app_data.variants if "regulated" in v.tags)
+    regulated_domains = set(app_data.rulepack.regulated_domains)
+    regulated_variant = next(v for v in app_data.variants if regulated_domains.intersection(v.tags))
 
     legal = evaluate_legal(stale_rulepack, regulated_variant, app_data.meta.staleness_policy)
 
@@ -29,7 +30,8 @@ def test_rules_apply_blocked_rule():
 
 def test_rules_force_legal_gate_when_variant_date_invalid_and_regulated():
     app_data = load_app_data()
-    regulated_variant = next(v for v in app_data.variants if "regulated" in v.tags)
+    regulated_domains = set(app_data.rulepack.regulated_domains)
+    regulated_variant = next(v for v in app_data.variants if regulated_domains.intersection(v.tags))
     invalid_variant = replace(regulated_variant, review_date="not-a-date")
 
     legal = evaluate_legal(app_data.rulepack, invalid_variant, app_data.meta.staleness_policy)

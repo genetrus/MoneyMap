@@ -90,6 +90,12 @@ def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
     return current
 
 
+def _guard_fatals(report: dict) -> None:
+    if report["fatals"]:
+        st.error("Validation fatals block actions: " + ", ".join(report["fatals"]))
+        st.stop()
+
+
 def run_app() -> None:
     _init_state()
 
@@ -129,10 +135,10 @@ def run_app() -> None:
         invalid_date_variants = [
             variant_id
             for variant_id, detail in report["staleness"]["variants"].items()
-            if detail.get("severity") == "fatal"
+            if detail.get("age_days") is None
         ]
         if invalid_date_variants:
-            st.error("Invalid date variants: " + ", ".join(sorted(invalid_date_variants)))
+            st.warning("Unknown date variants: " + ", ".join(sorted(invalid_date_variants)))
 
     elif page == "Profile":
         st.header("Profile")
@@ -183,6 +189,8 @@ def run_app() -> None:
 
     elif page == "Recommendations":
         st.header("Recommendations")
+        report = _get_validation()
+        _guard_fatals(report)
         profile = st.session_state["profile"]
         objective_options = ["fastest_money", "max_net"]
         current_objective = _ensure_objective(profile, objective_options)
@@ -269,6 +277,8 @@ def run_app() -> None:
 
     elif page == "Plan":
         st.header("Plan")
+        report = _get_validation()
+        _guard_fatals(report)
         variant_id = st.session_state.get("selected_variant_id")
         if not variant_id:
             st.info("Select a variant in Recommendations.")
@@ -309,6 +319,8 @@ def run_app() -> None:
 
     elif page == "Export":
         st.header("Export")
+        report = _get_validation()
+        _guard_fatals(report)
         variant_id = st.session_state.get("selected_variant_id")
         plan = st.session_state.get("plan")
         if not variant_id or plan is None:

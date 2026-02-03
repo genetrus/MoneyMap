@@ -32,9 +32,7 @@ def _cli_env() -> dict[str, str]:
 
 
 @pytest.mark.parametrize("command", ["recommend", "plan", "export"])
-def test_cli_blocks_actions_on_validation_fatals(
-    tmp_path: Path, command: str
-) -> None:
+def test_cli_blocks_actions_on_validation_fatals(tmp_path: Path, command: str) -> None:
     data_dir, variant_id = _prepare_invalid_rulepack(tmp_path)
     profile_path = Path(__file__).resolve().parents[1] / "profiles" / "demo_fast_start.yaml"
     args = [sys.executable, "-m", "money_map.app.cli", command]
