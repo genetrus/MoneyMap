@@ -114,7 +114,11 @@ def run_app() -> None:
         if report["warns"]:
             st.warning("Warnings: " + ", ".join(report["warns"]))
         st.subheader("Staleness detail")
-        st.write(report["staleness"]["rulepack"].get("message"))
+        rulepack_staleness = report["staleness"]["rulepack"]
+        rulepack_message = rulepack_staleness.get("message")
+        rulepack_severity = rulepack_staleness.get("severity")
+        if rulepack_message:
+            st.write(f"Rulepack: {rulepack_message} (severity: {rulepack_severity})")
         stale_variants = [
             variant_id
             for variant_id, detail in report["staleness"]["variants"].items()
@@ -122,6 +126,13 @@ def run_app() -> None:
         ]
         if stale_variants:
             st.warning("Stale variants: " + ", ".join(sorted(stale_variants)))
+        invalid_date_variants = [
+            variant_id
+            for variant_id, detail in report["staleness"]["variants"].items()
+            if detail.get("severity") == "fatal"
+        ]
+        if invalid_date_variants:
+            st.error("Invalid date variants: " + ", ".join(sorted(invalid_date_variants)))
 
     elif page == "Profile":
         st.header("Profile")

@@ -27,6 +27,18 @@ def test_rules_apply_blocked_rule():
     assert any(rule.rule_id.startswith("blocked.") for rule in legal.applied_rules)
 
 
+def test_rules_force_legal_gate_when_variant_date_invalid_and_regulated():
+    app_data = load_app_data()
+    regulated_variant = next(v for v in app_data.variants if "regulated" in v.tags)
+    invalid_variant = replace(regulated_variant, review_date="not-a-date")
+
+    legal = evaluate_legal(app_data.rulepack, invalid_variant, app_data.meta.staleness_policy)
+
+    assert legal.legal_gate == "require_check"
+    assert any("DATE_INVALID" in item for item in legal.checklist)
+    assert any("require_check_if_stale" in rule.rule_id for rule in legal.applied_rules)
+
+
 def test_rules_apply_blocked_fallback_when_missing():
     app_data = load_app_data()
     base_variant = app_data.variants[0]

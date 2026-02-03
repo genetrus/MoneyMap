@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from money_map.core.model import LegalResult, Rule, Rulepack, StalenessPolicy, Variant
-from money_map.core.staleness import evaluate_staleness
+from money_map.core.staleness import evaluate_staleness, is_freshness_unknown
 
 
 def evaluate_legal(
@@ -27,10 +27,16 @@ def evaluate_legal(
         label=f"variant:{variant.variant_id}",
     )
     stale = rulepack_staleness.is_stale or variant_staleness.is_stale
+    freshness_unknown = is_freshness_unknown(rulepack_staleness) or is_freshness_unknown(
+        variant_staleness
+    )
     regulated = any(tag in rulepack.regulated_domains for tag in variant.tags)
-    if stale and regulated:
+    if regulated and (stale or freshness_unknown):
         legal_gate = "require_check"
-        checklist.append("DATA_STALE: re-verify laws before launch.")
+        if freshness_unknown:
+            checklist.append("DATE_INVALID: re-verify laws before launch.")
+        else:
+            checklist.append("DATA_STALE: re-verify laws before launch.")
         for rule in rulepack.rules:
             if "require_check_if_stale" in rule.rule_id:
                 applied_rules.append(rule)

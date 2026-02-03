@@ -69,3 +69,23 @@
 - Consequences: Rulepack validity is enforced while variant issues remain actionable warnings without blocking the full dataset.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.7, p.11
 - Owner: team
+
+## 2026-02-04 — Treat unknown freshness as require_check for regulated domains
+- Date: 2026-02-04
+- Title: Regulated legal gating requires re-checks when freshness is unknown
+- Context: Regulated recommendations must be cautious when staleness cannot be evaluated due to missing or invalid review dates.
+- Decision: When rulepack or variant freshness is unknown (invalid/missing reviewed_at or review_date) and the variant is regulated, downgrade legal_gate to require_check and include an explicit DATE_INVALID or DATA_STALE checklist marker.
+- Alternatives: (1) Allow regulated recommendations without extra gating on unknown freshness. (2) Treat unknown freshness as stale without a separate marker.
+- Consequences: Regulated options require human verification when review dates are invalid, reducing compliance risk.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6–7, p.7, p.11
+- Owner: team
+
+## 2026-02-04 — Stop recommend/plan/export when validation has fatals
+- Date: 2026-02-04
+- Title: Validation fatals halt recommendations, plans, and exports
+- Context: DoD requires validation coverage and predictable failures; running critical flows with invalid data undermines reliability.
+- Decision: API and CLI operations for recommend/plan/export run validate first and abort with explicit fatals if any are present.
+- Alternatives: (1) Proceed with warnings only. (2) Allow recommend/plan/export but tag results as invalid.
+- Consequences: Users must fix fatal validation issues before execution, aligning CLI/UI behavior with DoD expectations.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.14
+- Owner: team

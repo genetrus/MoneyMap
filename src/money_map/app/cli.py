@@ -69,6 +69,14 @@ def _format_report(report: dict) -> str:
     return "\n".join(lines)
 
 
+def _abort_on_fatals(report: dict) -> None:
+    if report["fatals"]:
+        typer.echo("Validation failed with fatals:")
+        for fatal in report["fatals"]:
+            typer.echo(f"- {fatal}")
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def validate(
     data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
@@ -90,6 +98,8 @@ def recommend(
     output_path: str | None = typer.Option(None, "--output", help="Write JSON output to file"),
 ) -> None:
     """Recommend top variants."""
+    report = validate_data(data_dir)
+    _abort_on_fatals(report)
     result = recommend_variants(profile, objective=objective, top_n=top, data_dir=data_dir)
     output_format = output_format.strip().lower()
     if output_format not in {"text", "json"}:
@@ -148,6 +158,8 @@ def plan(
     data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
 ) -> None:
     """Generate a route plan for a selected variant."""
+    report = validate_data(data_dir)
+    _abort_on_fatals(report)
     try:
         plan_data = plan_variant(profile, variant_id, data_dir=data_dir)
     except ValueError as exc:
@@ -164,6 +176,8 @@ def export(
     data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
 ) -> None:
     """Export plan artifacts."""
+    report = validate_data(data_dir)
+    _abort_on_fatals(report)
     try:
         paths = export_bundle(profile, variant_id, out_dir=out_dir, data_dir=data_dir)
     except ValueError as exc:

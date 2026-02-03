@@ -19,6 +19,10 @@ class StalenessResult:
     message: str
 
 
+def is_freshness_unknown(result: StalenessResult) -> bool:
+    return result.severity == "fatal"
+
+
 def _parse_date(value: str) -> date | None:
     for fmt in _DATE_FORMATS:
         try:
