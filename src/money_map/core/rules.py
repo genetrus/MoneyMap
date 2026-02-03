@@ -25,6 +25,7 @@ def evaluate_legal(
         variant.review_date,
         staleness_policy,
         label=f"variant:{variant.variant_id}",
+        invalid_severity="warn",
     )
     stale = rulepack_staleness.is_stale or variant_staleness.is_stale
     freshness_unknown = is_freshness_unknown(rulepack_staleness) or is_freshness_unknown(

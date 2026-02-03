@@ -12,6 +12,8 @@ jobs:
   core-ci:
     name: Core CI (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONPATH: src
     strategy:
       fail-fast: false
       matrix:
@@ -47,8 +49,6 @@ jobs:
 
       - name: CLI validate
         run: python -m money_map.app.cli validate --data-dir data
-        env:
-          PYTHONPATH: src
 
       # TODO: Add data contract tests in CI when scheduled. (Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2)
 

@@ -20,9 +20,8 @@ def test_smoke_imports():
 
 
 def test_cli_validate_smoke():
-    env = dict(**os.environ)
     repo_src = Path(__file__).resolve().parents[1] / "src"
-    env["PYTHONPATH"] = str(repo_src)
+    env = dict(**os.environ, PYTHONPATH=str(repo_src))
     result = subprocess.run(
         [sys.executable, "-m", "money_map.app.cli", "validate", "--data-dir", "data"],
         check=False,

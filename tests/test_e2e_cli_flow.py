@@ -41,9 +41,7 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
             "COLUMNS": "120",
         }
     )
-
-    repo_src = root / "src"
-    env["PYTHONPATH"] = str(repo_src)
+    env["PYTHONPATH"] = str(root / "src")
 
     profile_path = root / "profiles" / "demo_fast_start.yaml"
     data_dir = tmp_path / "data"

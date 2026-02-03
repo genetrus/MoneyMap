@@ -79,7 +79,9 @@ def _abort_on_fatals(report: dict) -> None:
 
 def _summarize_legal_reasons(checklist: list[str]) -> str | None:
     markers = ("DATE_INVALID", "DATA_STALE")
-    highlighted = [item for item in checklist if any(marker in str(item) for marker in markers)]
+    highlighted: list[str] = []
+    for marker in markers:
+        highlighted.extend([item for item in checklist if marker in str(item)])
     if highlighted:
         return "; ".join(highlighted[:2])
     if checklist:

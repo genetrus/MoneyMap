@@ -17,6 +17,12 @@ from money_map.storage.fs import write_json, write_text, write_yaml
 _VALIDATION_FATALS_MESSAGE = "Validation failed with fatals"
 
 
+class ValidationFatalsError(ValueError):
+    def __init__(self, fatals: list[str]) -> None:
+        self.fatals = fatals
+        super().__init__(f"{_VALIDATION_FATALS_MESSAGE}: {', '.join(fatals)}")
+
+
 def validate_data(data_dir: str | Path = "data") -> dict[str, Any]:
     app_data = load_app_data(data_dir)
     report = validate(app_data)
@@ -33,7 +39,7 @@ def validate_data(data_dir: str | Path = "data") -> dict[str, Any]:
 
 def _raise_on_fatals(report) -> None:
     if report.fatals:
-        raise ValueError(f"{_VALIDATION_FATALS_MESSAGE}: {report.fatals}")
+        raise ValidationFatalsError(report.fatals)
 
 
 def _resolve_profile(profile_path: str | Path | None, profile_data: dict | None) -> dict:
