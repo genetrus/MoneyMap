@@ -33,7 +33,8 @@ def test_cli_recommend_includes_date_invalid_reason(tmp_path: Path) -> None:
     write_yaml(variants_path, variants_payload)
 
     profile_path = root / "profiles" / "demo_fast_start.yaml"
-    env = dict(**os.environ, PYTHONPATH=str(root / "src"))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(root / "src")
     result = subprocess.run(
         [
             sys.executable,

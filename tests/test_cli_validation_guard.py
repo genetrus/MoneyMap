@@ -29,7 +29,8 @@ def test_cli_blocks_actions_on_validation_fatals(tmp_path: Path, command: str) -
     data_dir, variant_id = _prepare_invalid_rulepack(tmp_path)
     profile_path = Path(__file__).resolve().parents[1] / "profiles" / "demo_fast_start.yaml"
     repo_src = Path(__file__).resolve().parents[1] / "src"
-    env = dict(**os.environ, PYTHONPATH=str(repo_src))
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_src)
     args = [sys.executable, "-m", "money_map.app.cli", command]
     args.extend(["--profile", str(profile_path), "--data-dir", str(data_dir)])
     if command in {"plan", "export"}:
