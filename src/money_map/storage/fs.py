@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import yaml
 
@@ -28,11 +28,15 @@ def write_yaml(path: str | Path, obj: Any) -> None:
     path.write_text(payload, encoding="utf-8")
 
 
-def write_json(path: str | Path, obj: Any) -> None:
+def write_json(
+    path: str | Path,
+    obj: Any,
+    default: Callable[[Any], Any] | None = None,
+) -> None:
     """Write JSON to disk."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(obj, ensure_ascii=False, indent=2)
+    payload = json.dumps(obj, ensure_ascii=False, indent=2, default=default)
     path.write_text(payload + "\n", encoding="utf-8")
 
 
