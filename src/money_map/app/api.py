@@ -135,6 +135,7 @@ def export_bundle(
     artifact_paths = []
     for artifact in plan.artifacts:
         artifact_path = out_dir / artifact
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
         if artifact_path.name == "checklist.md":
             write_text(artifact_path, "\n".join(checklist_lines) + "\n")
         elif artifact_path.name == "budget.yaml":

@@ -24,7 +24,7 @@ def test_rules_apply_blocked_rule():
     legal = evaluate_legal(app_data.rulepack, blocked_variant)
 
     assert legal.legal_gate == "blocked"
-    assert any("blocked" in rule.rule_id for rule in legal.applied_rules)
+    assert any(rule.rule_id.startswith("blocked.") for rule in legal.applied_rules)
 
 
 def test_rules_apply_blocked_fallback_when_missing():
@@ -33,7 +33,7 @@ def test_rules_apply_blocked_fallback_when_missing():
     blocked_variant = replace(base_variant, legal={"legal_gate": "blocked", "checklist": []})
     rulepack_without_blocked = replace(
         app_data.rulepack,
-        rules=[rule for rule in app_data.rulepack.rules if "blocked" not in rule.rule_id],
+        rules=[rule for rule in app_data.rulepack.rules if not rule.rule_id.startswith("blocked.")],
     )
 
     legal = evaluate_legal(rulepack_without_blocked, blocked_variant)

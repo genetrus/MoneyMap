@@ -101,7 +101,7 @@ def run_app() -> None:
 
     elif page == "Profile":
         st.header("Profile")
-        st.toggle("Quick mode", value=True)
+        quick_mode = st.toggle("Quick mode", value=True)
         profile = st.session_state["profile"]
 
         profile["name"] = st.text_input("Name", value=profile["name"])
@@ -113,18 +113,19 @@ def run_app() -> None:
         )
         profile["capital_eur"] = st.number_input("Capital (EUR)", value=profile["capital_eur"])
         profile["time_per_week"] = st.number_input("Time per week", value=profile["time_per_week"])
-        assets = st.text_input(
-            "Assets (comma separated)",
-            value=", ".join(profile["assets"]),
-        )
-        profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
+        if not quick_mode:
+            assets = st.text_input(
+                "Assets (comma separated)",
+                value=", ".join(profile["assets"]),
+            )
+            profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
 
-        objective_options = ["fastest_money", "max_net"]
-        profile["objective"] = st.selectbox(
-            "Objective",
-            objective_options,
-            index=objective_options.index(profile.get("objective", "fastest_money")),
-        )
+            objective_options = ["fastest_money", "max_net"]
+            profile["objective"] = st.selectbox(
+                "Objective",
+                objective_options,
+                index=objective_options.index(profile.get("objective", "fastest_money")),
+            )
 
         st.session_state["profile"] = profile
         st.success("Profile ready" if profile["name"] else "Profile draft")
