@@ -49,3 +49,23 @@
 - Consequences: Backlog priorities reflect spec intent, while status remains neutral pending real tracking.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.5, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
+
+## 2026-02-04 — Block 11 MVP iteration task selection (staleness + DoD tests)
+- Date: 2026-02-04
+- Title: Select P0 tasks for Block 11 MVP iteration
+- Context: Block 11 requires 2–3 P0 tasks that reduce runtime failure risk and advance DoD compliance.
+- Decision: Execute T-M3-02-01 (staleness evaluation hardening) and T-M7-01-01 (DoD test coverage) in this iteration.
+- Alternatives: (1) Focus on recommendation or plan feature expansion instead of test/validation stability. (2) Split staleness hardening into a separate iteration.
+- Consequences: Core CI gains stronger validation/staleness coverage, and validation payloads are stabilized before further UI/feature work.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.7, p.11, p.14
+- Owner: team
+
+## 2026-02-04 — Invalid reviewed_at handling for staleness evaluation
+- Date: 2026-02-04
+- Title: Treat invalid reviewed_at as fatal for rulepack and warning for variants
+- Context: Staleness policy requires reliable review dates; missing/invalid dates must surface in validation outputs.
+- Decision: When reviewed_at is missing/invalid, staleness evaluation returns severity=fatal and validation raises RULEPACK_REVIEWED_AT_INVALID for rulepack data; variant review_date invalids emit VARIANT_REVIEW_DATE_INVALID warnings and appear in staleness details.
+- Alternatives: (1) Treat invalid dates as stale warnings only. (2) Block all recommendations when variant dates are invalid.
+- Consequences: Rulepack validity is enforced while variant issues remain actionable warnings without blocking the full dataset.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.7, p.11
+- Owner: team

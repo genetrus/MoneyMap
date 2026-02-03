@@ -29,11 +29,21 @@ def _parse_date(value: str) -> date | None:
 
 
 def evaluate_staleness(
-    reviewed_at: str,
+    reviewed_at: object,
     policy: StalenessPolicy,
     label: str = "data",
 ) -> StalenessResult:
-    parsed = _parse_date(reviewed_at)
+    if reviewed_at is None:
+        parsed = None
+    elif isinstance(reviewed_at, datetime):
+        parsed = reviewed_at.date()
+    elif isinstance(reviewed_at, date):
+        parsed = reviewed_at
+    elif isinstance(reviewed_at, str):
+        value = reviewed_at.strip()
+        parsed = _parse_date(value) if value else None
+    else:
+        parsed = None
     threshold = int(policy.stale_after_days)
     if not parsed:
         return StalenessResult(

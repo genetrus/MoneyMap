@@ -392,7 +392,7 @@ Canonical backlog: `docs/backlog.yaml`.
 
 **Tasks**
 - **T-M7-01-01** — Implement DoD tests (validate, feasibility, economics, rules, objectives)
-  - Priority: P0 | Status: next
+  - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.14.
   - Acceptance criteria: Test suite covers validation, engines, and UI import smoke tests.
   - Repo touches: []

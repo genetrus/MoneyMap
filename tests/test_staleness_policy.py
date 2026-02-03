@@ -20,3 +20,12 @@ def test_evaluate_staleness_invalid_date_marks_fatal():
 
     assert result.severity == "fatal"
     assert result.is_stale is False
+
+
+def test_evaluate_staleness_handles_none_value():
+    policy = StalenessPolicy(stale_after_days=30)
+
+    result = evaluate_staleness(None, policy, label="rulepack")
+
+    assert result.severity == "fatal"
+    assert result.is_stale is False

@@ -62,9 +62,7 @@ def _format_report(report: dict) -> str:
             lines.append(f"- rulepack: {rulepack.get('message')}")
         variant_map = staleness.get("variants", {})
         stale_variants = [
-            variant_id
-            for variant_id, detail in variant_map.items()
-            if detail.get("is_stale")
+            variant_id for variant_id, detail in variant_map.items() if detail.get("is_stale")
         ]
         if stale_variants:
             lines.append(f"- stale_variants: {', '.join(sorted(stale_variants))}")

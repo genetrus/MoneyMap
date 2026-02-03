@@ -574,7 +574,7 @@ epics:
           - task_id: "T-M7-01-01"
             title: "Implement DoD tests (validate, feasibility, economics, rules, objectives)"
             priority: "P0"
-            status: "next"
+            status: "done"
             spec_refs:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
             acceptance_criteria:

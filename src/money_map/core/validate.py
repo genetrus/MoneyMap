@@ -48,6 +48,8 @@ def validate(app_data: AppData) -> ValidationReport:
             app_data.meta.staleness_policy,
             label=f"variant:{variant.variant_id}",
         )
+        if variant_staleness.severity == "fatal":
+            warns.append(f"VARIANT_REVIEW_DATE_INVALID:{variant.variant_id}")
         if variant_staleness.is_stale:
             stale_variants.append(variant.variant_id)
         variant_staleness_by_id[variant.variant_id] = asdict(variant_staleness)
