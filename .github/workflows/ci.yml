@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  quality-gates:
-    name: Quality gates (${{ matrix.os }})
+  core-ci:
+    name: Core CI (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -33,7 +33,7 @@ jobs:
         run: python -m pip install --upgrade pip
 
       - name: Install dependencies
-        run: python -m pip install -e ".[dev,ui]"
+        run: python -m pip install -e ".[dev]"
 
       - name: Ruff format check
         run: python -m ruff format --check .
@@ -48,3 +48,32 @@ jobs:
         run: money-map validate --data-dir data
 
       # TODO: Add data contract tests in CI when scheduled. (Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2)
+
+  ui-smoke:
+    name: UI smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install UI dependencies
+        run: python -m pip install -e ".[ui]"
+
+      - name: UI smoke imports
+        run: python -c "import streamlit; import money_map.ui"
