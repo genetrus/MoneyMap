@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -95,6 +96,9 @@ def export(
 @app.command()
 def ui() -> None:
     """Launch the UI."""
+    if importlib.util.find_spec("streamlit") is None:
+        typer.echo("Streamlit is not installed. Install with: pip install -e \".[ui]\"")
+        raise typer.Exit(code=1)
     app_path = Path(__file__).resolve().parents[1] / "ui" / "app.py"
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], check=False)
 

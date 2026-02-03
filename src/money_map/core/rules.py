@@ -43,6 +43,14 @@ def evaluate_legal(rulepack: Rulepack, variant: Variant) -> LegalResult:
 
     if legal_gate == "blocked":
         blocked_rules = [rule for rule in rulepack.rules if "blocked" in rule.rule_id]
+        if not blocked_rules:
+            checklist.append("Rulepack has no explicit blocked rule; manual review required.")
+            blocked_rules.append(
+                Rule(
+                    rule_id="blocked.missing_rulepack_rule",
+                    reason="Legal gate blocked but rulepack lacks an explicit blocked rule.",
+                )
+            )
         applied_rules.extend(blocked_rules)
 
     return LegalResult(legal_gate=legal_gate, checklist=checklist, applied_rules=applied_rules)

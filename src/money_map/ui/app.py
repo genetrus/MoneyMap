@@ -11,7 +11,7 @@ import yaml
 from money_map.app.api import export_bundle
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data
-from money_map.core.recommend import recommend
+from money_map.core.recommend import is_variant_stale, recommend
 from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
@@ -227,23 +227,21 @@ def run_app() -> None:
             except ValueError as exc:
                 st.error(str(exc))
             else:
-                last_result = st.session_state.get("last_recommendations")
-                if last_result is not None:
-                    selected = next(
-                        (
-                            rec
-                            for rec in last_result.ranked_variants
-                            if rec.variant.variant_id == variant_id
-                        ),
-                        None,
-                    )
-                else:
-                    selected = None
-                if plan.legal_gate != "ok" or (selected and selected.stale):
+                app_data = _get_app_data()
+                variant = next(
+                    (item for item in app_data.variants if item.variant_id == variant_id),
+                    None,
+                )
+                variant_stale = (
+                    is_variant_stale(variant, app_data.meta.staleness_policy)
+                    if variant is not None
+                    else False
+                )
+                if plan.legal_gate != "ok" or variant_stale:
                     warnings = []
                     if plan.legal_gate != "ok":
                         warnings.append(f"Legal gate: {plan.legal_gate}")
-                    if selected and selected.stale:
+                    if variant_stale:
                         warnings.append("Variant data is stale")
                     st.warning(" | ".join(warnings))
                 st.session_state["plan"] = plan
