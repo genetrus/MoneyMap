@@ -27,13 +27,7 @@ def _prepare_invalid_rulepack(tmp_path: Path) -> tuple[Path, str]:
 def _cli_env() -> dict[str, str]:
     env = dict(**os.environ)
     repo_src = Path(__file__).resolve().parents[1] / "src"
-    try:
-        import money_map
-    except ModuleNotFoundError:
-        env["PYTHONPATH"] = str(repo_src)
-    else:
-        if Path(money_map.__file__ or "").resolve().is_relative_to(repo_src):
-            env["PYTHONPATH"] = str(repo_src)
+    env["PYTHONPATH"] = str(repo_src)
     return env
 
 

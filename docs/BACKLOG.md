@@ -233,7 +233,8 @@ Canonical backlog: `docs/backlog.yaml`.
   - Priority: P0 | Status: done
   - Spec refs: Money_Map_Spec_Packet.pdf p.6-7, p.7, p.11.
   - Acceptance criteria:
-    - Invalid reviewed_at on rulepack or variant forces regulated legal_gate=require_check.
+    - Invalid/missing variant review_date forces regulated legal_gate=require_check.
+    - Rulepack reviewed_at invalid remains a validation fatal and stops recommend/plan/export.
     - Checklist includes DATA_STALE or DATE_INVALID marker for unknown freshness.
   - Repo touches: []
 

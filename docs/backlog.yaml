@@ -330,7 +330,8 @@ epics:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "7" }
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "11" }
             acceptance_criteria:
-              - "Invalid reviewed_at on rulepack or variant forces regulated legal_gate=require_check."
+              - "Invalid/missing variant review_date forces regulated legal_gate=require_check."
+              - "Rulepack reviewed_at invalid remains a validation fatal and stops recommend/plan/export."
               - "Checklist includes DATA_STALE or DATE_INVALID marker for unknown freshness."
             repo_touches: []
             notes: ""

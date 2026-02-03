@@ -77,6 +77,18 @@ def _abort_on_fatals(report: dict) -> None:
         raise typer.Exit(code=1)
 
 
+def _summarize_legal_reasons(checklist: list[str]) -> str | None:
+    markers = ("DATE_INVALID", "DATA_STALE")
+    highlighted = [
+        item for item in checklist if any(marker in str(item) for marker in markers)
+    ]
+    if highlighted:
+        return "; ".join(highlighted[:2])
+    if checklist:
+        return "see legal_checklist"
+    return None
+
+
 @app.command()
 def validate(
     data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
@@ -141,6 +153,9 @@ def recommend(
             typer.echo("   Warning: data is stale")
         if rec.legal.legal_gate != "ok":
             typer.echo(f"   Legal gate: {rec.legal.legal_gate}")
+            reason = _summarize_legal_reasons(rec.legal.checklist)
+            if reason:
+                typer.echo(f"   Reason: {reason}")
     typer.echo(
         json.dumps(
             {"diagnostics": result.diagnostics},
