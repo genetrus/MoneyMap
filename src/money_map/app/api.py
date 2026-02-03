@@ -13,7 +13,6 @@ from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import write_json, write_text, write_yaml
 
-
 _VALIDATION_FATALS_MESSAGE = "Validation failed with fatals"
 
 
