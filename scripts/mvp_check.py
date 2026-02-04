@@ -150,7 +150,7 @@ def _check_staleness_gating() -> tuple[bool, str]:
 
 def _check_ui_import() -> tuple[str, str]:
     if importlib.util.find_spec("streamlit") is None:
-        return "FAIL", 'streamlit not installed (install with: pip install -e ".[ui]")'
+        return "FAIL", 'streamlit not installed (install with: python -m pip install -e ".[ui]")'
     from money_map.ui import app as ui_app
 
     if not hasattr(ui_app, "run_app"):
