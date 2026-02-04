@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Run MVP verification checks for MoneyMap."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import argparse
@@ -49,8 +51,12 @@ def _check_validation(data_dir: Path) -> tuple[bool, str]:
     return True, f"dataset_version={report['dataset_version']}"
 
 
-def _check_recommend_plan_export(data_dir: Path, profile: Path, top_n: int) -> tuple[bool, str, str]:
-    rec = recommend_variants(profile_path=profile, objective="fastest_money", top_n=top_n, data_dir=data_dir)
+def _check_recommend_plan_export(
+    data_dir: Path, profile: Path, top_n: int
+) -> tuple[bool, str, str]:
+    rec = recommend_variants(
+        profile_path=profile, objective="fastest_money", top_n=top_n, data_dir=data_dir
+    )
     if not rec.ranked_variants:
         return False, "no recommendations returned", ""
     variant_id = rec.ranked_variants[0].variant.variant_id
@@ -59,7 +65,9 @@ def _check_recommend_plan_export(data_dir: Path, profile: Path, top_n: int) -> t
     if "## Compliance" not in plan_md:
         return False, "plan missing compliance section", variant_id
     with tempfile.TemporaryDirectory() as tmpdir:
-        paths = export_bundle(profile_path=profile, variant_id=variant_id, out_dir=tmpdir, data_dir=data_dir)
+        paths = export_bundle(
+            profile_path=profile, variant_id=variant_id, out_dir=tmpdir, data_dir=data_dir
+        )
         expected = ["plan", "result", "profile"]
         missing = [key for key in expected if not Path(paths[key]).exists()]
         if missing:
@@ -80,8 +88,12 @@ def _check_plan_actionability(data_dir: Path, profile: Path, variant_id: str) ->
 
 
 def _check_determinism(data_dir: Path, profile: Path, top_n: int) -> tuple[bool, str]:
-    result_a = recommend_variants(profile_path=profile, objective="fastest_money", top_n=top_n, data_dir=data_dir)
-    result_b = recommend_variants(profile_path=profile, objective="fastest_money", top_n=top_n, data_dir=data_dir)
+    result_a = recommend_variants(
+        profile_path=profile, objective="fastest_money", top_n=top_n, data_dir=data_dir
+    )
+    result_b = recommend_variants(
+        profile_path=profile, objective="fastest_money", top_n=top_n, data_dir=data_dir
+    )
     ids_a = [rec.variant.variant_id for rec in result_a.ranked_variants]
     ids_b = [rec.variant.variant_id for rec in result_b.ranked_variants]
     if ids_a != ids_b:

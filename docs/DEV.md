@@ -34,6 +34,17 @@ Run the local format/lint/tests gates as a single command. (Блок-схема_
 
 CI runs the same gates on every push/PR (ruff format check, ruff lint, pytest). (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1; Money_Map_Spec_Packet.pdf p.13–14)
 
+## Pre-commit hooks (format/lint safety)
+Install and enable pre-commit so formatting matches CI before you commit. (Money_Map_Spec_Packet.pdf p.14)
+
+```bash
+python -m pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+The hooks run Ruff lint + format using the same pinned version as CI. If you prefer Make targets, use `make fmt` for formatting and `make fmt-check` for CI-equivalent format checks.
+
 ## E2E smoke tests (Step 8)
 Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_Map_Spec_Packet.pdf p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
