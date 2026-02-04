@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections import Counter
 from pathlib import Path
+from urllib.parse import quote
 from uuid import uuid4
 
 import streamlit as st
@@ -41,6 +42,7 @@ def _init_state() -> None:
     st.session_state.setdefault("profile_source", "Demo profile")
     st.session_state.setdefault("ui_run_id", str(uuid4()))
     st.session_state.setdefault("data_status_preset", "Light")
+    st.session_state.setdefault("page", "Data status")
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -153,7 +155,46 @@ def _guard_fatals(report: dict) -> None:
         st.stop()
 
 
-def _render_data_status_theme(preset: str) -> None:
+def _render_data_status_theme(preset: str, active_page: str) -> None:
+    def _svg_data_uri(svg: str) -> str:
+        return f"data:image/svg+xml;utf8,{quote(svg)}"
+
+    icons = {
+        "data_status": _svg_data_uri(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            '<path fill="black" d="M12 2C7.6 2 4 3.6 4 5.6v12.8C4 20.4 7.6 22 12 '
+            "22s8-1.6 8-3.6V5.6C20 3.6 16.4 2 12 2zm0 2c3.6 0 6 .9 6 1.6S15.6 7.2 "
+            "12 7.2s-6-.9-6-1.6S8.4 4 12 4zm0 6.2c3.6 0 6-.9 6-1.6V12c0 .7-2.4 "
+            "1.6-6 1.6s-6-.9-6-1.6V8.6c0 .7 2.4 1.6 6 1.6zm0 6.2c3.6 0 6-.9 "
+            '6-1.6v3.4c0 .7-2.4 1.6-6 1.6s-6-.9-6-1.6v-3.4c0 .7 2.4 1.6 6 1.6z"/>'
+            "</svg>"
+        ),
+        "profile": _svg_data_uri(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            '<path fill="black" d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 '
+            '12zm0 2c-3.5 0-6.8 1.8-6.8 4.2V20h13.6v-1.8C18.8 15.8 15.5 14 12 14z"/>'
+            "</svg>"
+        ),
+        "recommendations": _svg_data_uri(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            '<path fill="black" d="M12 3.2l2.2 4.6 5.1.7-3.7 3.6.9 5.1L12 '
+            '14.9 7.5 17.2l.9-5.1-3.7-3.6 5.1-.7L12 3.2z"/>'
+            "</svg>"
+        ),
+        "plan": _svg_data_uri(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            '<path fill="black" d="M7 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 '
+            '0 0 1-2-2V5a2 2 0 0 1 2-2zm2 5h7v2H9V8zm0 4h7v2H9v-2zm0 4h5v2H9v-2z"/>'
+            "</svg>"
+        ),
+        "export": _svg_data_uri(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            '<path fill="black" d="M12 3a1 1 0 0 1 1 1v8.6l2.4-2.4 1.4 1.4L12 '
+            '16.4 7.2 11.6l1.4-1.4L11 12.6V4a1 1 0 0 1 1-1zm-7 15h14v2H5v-2z"/>'
+            "</svg>"
+        ),
+    }
+
     palette = {
         "Light": {
             "bg": "#f5f6f8",
@@ -171,6 +212,13 @@ def _render_data_status_theme(preset: str) -> None:
             "chip_text": "#1b5e3c",
             "section_bg": "#ffffff",
             "divider": "#e5e7eb",
+            "sidebar_divider": "#d4d9e1",
+            "nav_hover_bg": "#e9edf3",
+            "nav_active_bg": "#ffffff",
+            "nav_active_border": "#d6dbe2",
+            "nav_active_bar": "#3b82f6",
+            "nav_icon": "#6b7280",
+            "nav_icon_active": "#1f2328",
         },
         "Dark": {
             "bg": "#0f1724",
@@ -188,6 +236,13 @@ def _render_data_status_theme(preset: str) -> None:
             "chip_text": "#c0f5d3",
             "section_bg": "rgba(17, 24, 39, 0.7)",
             "divider": "rgba(148, 163, 184, 0.2)",
+            "sidebar_divider": "rgba(148, 163, 184, 0.25)",
+            "nav_hover_bg": "rgba(30, 41, 59, 0.8)",
+            "nav_active_bg": "rgba(30, 41, 59, 0.95)",
+            "nav_active_border": "rgba(148, 163, 184, 0.3)",
+            "nav_active_bar": "#38bdf8",
+            "nav_icon": "#9aa6b8",
+            "nav_icon_active": "#e2e8f0",
         },
     }
     theme = palette.get(preset, palette["Light"])
@@ -210,6 +265,18 @@ def _render_data_status_theme(preset: str) -> None:
           --mm-chip-text: {theme["chip_text"]};
           --mm-section-bg: {theme["section_bg"]};
           --mm-divider: {theme["divider"]};
+          --mm-sidebar-divider: {theme["sidebar_divider"]};
+          --mm-nav-hover-bg: {theme["nav_hover_bg"]};
+          --mm-nav-active-bg: {theme["nav_active_bg"]};
+          --mm-nav-active-border: {theme["nav_active_border"]};
+          --mm-nav-active-bar: {theme["nav_active_bar"]};
+          --mm-nav-icon: {theme["nav_icon"]};
+          --mm-nav-icon-active: {theme["nav_icon_active"]};
+          --mm-icon-data-status: url("{icons["data_status"]}");
+          --mm-icon-profile: url("{icons["profile"]}");
+          --mm-icon-recommendations: url("{icons["recommendations"]}");
+          --mm-icon-plan: url("{icons["plan"]}");
+          --mm-icon-export: url("{icons["export"]}");
         }}
 
         .stApp {{
@@ -219,6 +286,132 @@ def _render_data_status_theme(preset: str) -> None:
 
         div[data-testid="stSidebar"] > div {{
           background: var(--mm-sidebar-bg);
+        }}
+
+        div[data-testid="stSidebar"] .mm-sidebar-header {{
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.75rem 0.5rem 0.4rem;
+        }}
+
+        div[data-testid="stSidebar"] .mm-sidebar-logo {{
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(59, 130, 246, 0.18);
+          box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.4);
+        }}
+
+        div[data-testid="stSidebar"] .mm-sidebar-title {{
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--mm-text);
+        }}
+
+        div[data-testid="stSidebar"] .mm-sidebar-divider {{
+          height: 1px;
+          background: var(--mm-sidebar-divider);
+          margin: 0.35rem 0.2rem 0.8rem;
+        }}
+
+        div[data-testid="stSidebar"] div[data-testid="stButton"] > button {{
+          width: 100%;
+          justify-content: flex-start;
+          padding: 0.45rem 0.7rem 0.45rem 2.4rem;
+          border-radius: 999px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: var(--mm-text);
+          font-weight: 500;
+          position: relative;
+          box-shadow: none;
+        }}
+
+        div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {{
+          background: var(--mm-nav-hover-bg);
+          border-color: transparent;
+        }}
+
+        div[data-testid="stSidebar"] div[data-testid="stButton"] > button::before {{
+          content: "";
+          position: absolute;
+          left: 0.7rem;
+          width: 18px;
+          height: 18px;
+          background-color: var(--mm-nav-icon);
+          -webkit-mask-repeat: no-repeat;
+          -webkit-mask-position: center;
+          -webkit-mask-size: contain;
+          mask-repeat: no-repeat;
+          mask-position: center;
+          mask-size: contain;
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="Data status"]::before {{
+          -webkit-mask-image: var(--mm-icon-data-status);
+          mask-image: var(--mm-icon-data-status);
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="Profile"]::before {{
+          -webkit-mask-image: var(--mm-icon-profile);
+          mask-image: var(--mm-icon-profile);
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="Recommendations"]::before {{
+          -webkit-mask-image: var(--mm-icon-recommendations);
+          mask-image: var(--mm-icon-recommendations);
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="Plan"]::before {{
+          -webkit-mask-image: var(--mm-icon-plan);
+          mask-image: var(--mm-icon-plan);
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="Export"]::before {{
+          -webkit-mask-image: var(--mm-icon-export);
+          mask-image: var(--mm-icon-export);
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="{active_page}"] {{
+          background: var(--mm-nav-active-bg);
+          border-color: var(--mm-nav-active-border);
+          font-weight: 600;
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="{active_page}"]::before {{
+          background-color: var(--mm-nav-icon-active);
+        }}
+
+        div[data-testid="stSidebar"]
+          div[data-testid="stButton"]
+          > button[aria-label="{active_page}"]::after {{
+          content: "";
+          position: absolute;
+          left: 0.35rem;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 4px;
+          height: 60%;
+          border-radius: 999px;
+          background: var(--mm-nav-active-bar);
         }}
 
         .main .block-container {{
@@ -242,6 +435,25 @@ def _render_data_status_theme(preset: str) -> None:
 
         .preset-selector label {{
           font-weight: 600;
+          font-size: 0.8rem;
+          color: var(--mm-muted);
+        }}
+
+        .preset-selector > div {{
+          display: flex;
+          justify-content: flex-end;
+        }}
+
+        .preset-selector div[role="radiogroup"] {{
+          gap: 0.35rem;
+        }}
+
+        .preset-selector div[data-testid="stSelectbox"] {{
+          max-width: 120px;
+        }}
+
+        .preset-selector div[data-testid="stSelectbox"] > div {{
+          font-size: 0.8rem;
         }}
 
         .kpi-card {{
@@ -411,34 +623,56 @@ def _render_kpi_card(
 def run_app() -> None:
     _init_state()
 
-    st.sidebar.title("MoneyMap")
-    page = st.sidebar.radio(
-        "Navigate",
-        ["Data status", "Profile", "Recommendations", "Plan", "Export"],
+    st.sidebar.markdown(
+        """
+        <div class="mm-sidebar-header">
+          <span class="mm-sidebar-logo">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" fill="rgba(59,130,246,0.7)"></circle>
+              <circle cx="12" cy="12" r="5" fill="rgba(14,116,144,0.6)"></circle>
+            </svg>
+          </span>
+          <span class="mm-sidebar-title">MoneyMap</span>
+        </div>
+        <div class="mm-sidebar-divider"></div>
+        """,
+        unsafe_allow_html=True,
     )
+
+    pages = ["Data status", "Profile", "Recommendations", "Plan", "Export"]
+    for page_name in pages:
+        if st.sidebar.button(page_name, key=f"nav-{page_name}", use_container_width=True):
+            st.session_state["page"] = page_name
+
+    page = st.session_state.get("page", "Data status")
+    selected_preset = st.session_state.get("data_status_preset", "Light")
+    _render_data_status_theme(selected_preset, page)
 
     if page == "Data status":
         preset_options = ["Light", "Dark"]
-        st.sidebar.markdown("### Data status preset")
-        selected_preset = st.sidebar.radio(
-            "",
-            preset_options,
-            index=preset_options.index(st.session_state.get("data_status_preset", "Light")),
-        )
-        st.session_state["data_status_preset"] = selected_preset
-
-        _render_data_status_theme(selected_preset)
 
         st.markdown('<div class="data-status">', unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div class="data-status-header">
-              <h1>Data status</h1>
-              <p>Validation, staleness, and dataset metadata (offline-first).</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        header_left, header_right = st.columns([0.75, 0.25])
+        with header_left:
+            st.markdown(
+                """
+                <div class="data-status-header">
+                  <h1>Data status</h1>
+                  <p>Validation, staleness, and dataset metadata (offline-first).</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with header_right:
+            st.markdown('<div class="preset-selector">', unsafe_allow_html=True)
+            st.selectbox(
+                "",
+                preset_options,
+                index=preset_options.index(st.session_state.get("data_status_preset", "Light")),
+                key="data_status_preset",
+                label_visibility="collapsed",
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
 
         def _render_status() -> None:
             report = _get_validation()
