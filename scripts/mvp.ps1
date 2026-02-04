@@ -10,6 +10,6 @@ if (-not (Test-Path $VenvDir)) {
 & "$VenvDir\Scripts\Activate.ps1"
 
 python -m pip install --upgrade pip
-python -m pip install -e ".[ui]"
+python -m pip install -e .
 
 python scripts/mvp_check.py

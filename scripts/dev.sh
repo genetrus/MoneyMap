@@ -12,7 +12,7 @@ fi
 source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip
-python -m pip install -e ".[ui]"
+python -m pip install -e ".[dev]"
 
 money-map --help
 
