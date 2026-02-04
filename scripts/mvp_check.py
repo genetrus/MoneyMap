@@ -164,7 +164,7 @@ def _check_ui_import(mode: str) -> tuple[str, str]:
         detail = 'Streamlit missing. Run: python -m pip install -e ".[ui]"'
         if mode == "optional":
             return "SKIP", detail
-        return "SKIP", f"(required) {detail}"
+        return "FAIL", f"(required) {detail}"
     from money_map.ui import app as ui_app
 
     if not hasattr(ui_app, "run_app"):
