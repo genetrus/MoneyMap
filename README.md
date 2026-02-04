@@ -15,6 +15,19 @@ python -m pip install -e ".[ui]"
 python scripts/mvp_check.py
 ```
 
+### UI deps in restricted networks
+If your network blocks PyPI, retry without build isolation or use a wheelhouse:
+
+```bash
+python -m pip install --no-build-isolation -e ".[ui]"
+# or: python scripts/install_ui_deps.py
+# or (offline):
+python scripts/build_wheelhouse.py --out wheelhouse
+python scripts/install_ui_offline.py --wheelhouse wheelhouse
+```
+
+Without the UI check, you cannot claim “MVP criteria passed.”
+
 ## Formatting guardrails
 This repo uses Ruff for formatting and linting (same commands as CI). To avoid future "would reformat" failures, enable pre-commit hooks and use the Make targets for formatting checks. (Money_Map_Spec_Packet.pdf p.14)
 
