@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 from collections import Counter
 from pathlib import Path
+from uuid import uuid4
 
 import streamlit as st
 import yaml
 
 from money_map.app.api import export_bundle
+from money_map.core.errors import InternalError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data
 from money_map.core.recommend import is_variant_stale, recommend
@@ -37,6 +39,32 @@ def _init_state() -> None:
     st.session_state.setdefault("last_recommendations", None)
     st.session_state.setdefault("export_paths", None)
     st.session_state.setdefault("profile_source", "Demo profile")
+    st.session_state.setdefault("ui_run_id", str(uuid4()))
+
+
+def _render_error(err: MoneyMapError) -> None:
+    run_id = err.run_id or st.session_state.get("ui_run_id", "unknown")
+    st.error(f"[ERROR {err.code}] {err.message} (run_id={run_id})")
+    if err.hint:
+        st.info(f"Hint: {err.hint}")
+    if err.details:
+        st.caption(f"Details: {err.details}")
+
+
+def _run_with_error_boundary(action) -> None:
+    try:
+        action()
+    except MoneyMapError as exc:
+        _render_error(exc)
+        st.stop()
+    except Exception as exc:
+        error = InternalError(
+            message=str(exc) or "Unexpected error",
+            hint="Review logs or retry the action.",
+            run_id=st.session_state.get("ui_run_id"),
+        )
+        _render_error(error)
+        st.stop()
 
 
 @st.cache_resource
@@ -107,286 +135,330 @@ def run_app() -> None:
 
     if page == "Data status":
         st.header("Data status")
-        report = _get_validation()
-        st.metric("Dataset version", report["dataset_version"])
-        st.metric("Reviewed at", report["reviewed_at"])
-        st.metric("Status", report["status"])
-        st.write(f"Stale: {report['stale']}")
-        st.caption(
-            f"Staleness policy: {report['staleness']['rulepack'].get('threshold_days')} days"
-        )
-        if report["fatals"]:
-            st.error("Fatals: " + ", ".join(report["fatals"]))
-        if report["warns"]:
-            st.warning("Warnings: " + ", ".join(report["warns"]))
-        st.subheader("Staleness detail")
-        rulepack_staleness = report["staleness"]["rulepack"]
-        rulepack_message = rulepack_staleness.get("message")
-        rulepack_severity = rulepack_staleness.get("severity")
-        if rulepack_message:
-            st.write(f"Rulepack: {rulepack_message} (severity: {rulepack_severity})")
-        stale_variants = [
-            variant_id
-            for variant_id, detail in report["staleness"]["variants"].items()
-            if detail.get("is_stale")
-        ]
-        if stale_variants:
-            st.warning("Stale variants: " + ", ".join(sorted(stale_variants)))
-        invalid_date_variants = [
-            variant_id
-            for variant_id, detail in report["staleness"]["variants"].items()
-            if detail.get("age_days") is None
-        ]
-        if invalid_date_variants:
-            st.warning("Unknown date variants: " + ", ".join(sorted(invalid_date_variants)))
+
+        def _render_status() -> None:
+            report = _get_validation()
+            st.metric("Dataset version", report["dataset_version"])
+            st.metric("Reviewed at", report["reviewed_at"])
+            st.metric("Status", report["status"])
+            st.write(f"Stale: {report['stale']}")
+            st.caption(
+                f"Staleness policy: {report['staleness']['rulepack'].get('threshold_days')} days"
+            )
+            if report["fatals"]:
+                st.error("Fatals: " + ", ".join(report["fatals"]))
+            if report["warns"]:
+                st.warning("Warnings: " + ", ".join(report["warns"]))
+            st.subheader("Validate report")
+            report_json = json.dumps(report, ensure_ascii=False, indent=2, default=str)
+            st.download_button(
+                "Download validate report",
+                data=report_json,
+                file_name="validate-report.json",
+                mime="application/json",
+            )
+            st.json(report)
+            st.subheader("Staleness detail")
+            rulepack_staleness = report["staleness"]["rulepack"]
+            rulepack_message = rulepack_staleness.get("message")
+            rulepack_severity = rulepack_staleness.get("severity")
+            if rulepack_message:
+                st.write(f"Rulepack: {rulepack_message} (severity: {rulepack_severity})")
+            stale_variants = [
+                variant_id
+                for variant_id, detail in report["staleness"]["variants"].items()
+                if detail.get("is_stale")
+            ]
+            if stale_variants:
+                st.warning("Stale variants: " + ", ".join(sorted(stale_variants)))
+            invalid_date_variants = [
+                variant_id
+                for variant_id, detail in report["staleness"]["variants"].items()
+                if detail.get("age_days") is None
+            ]
+            if invalid_date_variants:
+                st.warning("Unknown date variants: " + ", ".join(sorted(invalid_date_variants)))
+
+        _run_with_error_boundary(_render_status)
 
     elif page == "Profile":
         st.header("Profile")
-        repo_root = Path(__file__).resolve().parents[3]
-        profiles_dir = repo_root / "profiles"
-        demo_profiles = sorted([path.name for path in profiles_dir.glob("*.yaml")])
-        if demo_profiles:
-            selected = st.selectbox(
-                "Load demo profile",
-                ["Demo profile"] + demo_profiles,
-                index=0,
-            )
-            if selected != st.session_state.get("profile_source"):
-                st.session_state["profile_source"] = selected
-                if selected != "Demo profile":
-                    try:
-                        st.session_state["profile"] = read_yaml(profiles_dir / selected)
-                    except ValueError as exc:
-                        st.error(str(exc))
-        st.caption(f"Profile source: {st.session_state['profile_source']}")
-        quick_mode = st.toggle("Quick mode", value=True)
-        profile = st.session_state["profile"]
-        profile.setdefault("name", "")
-        profile.setdefault("location", "")
-        profile.setdefault("language_level", "B1")
-        profile.setdefault("capital_eur", 0)
-        profile.setdefault("time_per_week", 0)
-        profile.setdefault("assets", [])
 
-        profile["name"] = st.text_input("Name", value=profile["name"])
-        profile["location"] = st.text_input("Location", value=profile["location"])
-        profile["language_level"] = st.selectbox(
-            "Language level",
-            ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
-            index=2,
-        )
-        profile["capital_eur"] = st.number_input("Capital (EUR)", value=profile["capital_eur"])
-        profile["time_per_week"] = st.number_input("Time per week", value=profile["time_per_week"])
-        if not quick_mode:
-            assets = st.text_input(
-                "Assets (comma separated)",
-                value=", ".join(profile["assets"]),
-            )
-            profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
+        def _render_profile() -> None:
+            repo_root = Path(__file__).resolve().parents[3]
+            profiles_dir = repo_root / "profiles"
+            demo_profiles = sorted([path.name for path in profiles_dir.glob("*.yaml")])
+            if demo_profiles:
+                selected = st.selectbox(
+                    "Load demo profile",
+                    ["Demo profile"] + demo_profiles,
+                    index=0,
+                )
+                if selected != st.session_state.get("profile_source"):
+                    st.session_state["profile_source"] = selected
+                    if selected != "Demo profile":
+                        try:
+                            st.session_state["profile"] = read_yaml(profiles_dir / selected)
+                        except ValueError as exc:
+                            st.error(str(exc))
+            st.caption(f"Profile source: {st.session_state['profile_source']}")
+            quick_mode = st.toggle("Quick mode", value=True)
+            profile = st.session_state["profile"]
+            profile.setdefault("name", "")
+            profile.setdefault("location", "")
+            profile.setdefault("language_level", "B1")
+            profile.setdefault("capital_eur", 0)
+            profile.setdefault("time_per_week", 0)
+            profile.setdefault("assets", [])
 
-        st.session_state["profile"] = profile
-        st.success("Profile ready" if profile["name"] else "Profile draft")
+            profile["name"] = st.text_input("Name", value=profile["name"])
+            profile["location"] = st.text_input("Location", value=profile["location"])
+            profile["language_level"] = st.selectbox(
+                "Language level",
+                ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
+                index=2,
+            )
+            profile["capital_eur"] = st.number_input("Capital (EUR)", value=profile["capital_eur"])
+            profile["time_per_week"] = st.number_input(
+                "Time per week", value=profile["time_per_week"]
+            )
+            if not quick_mode:
+                assets = st.text_input(
+                    "Assets (comma separated)",
+                    value=", ".join(profile["assets"]),
+                )
+                profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
+
+            st.session_state["profile"] = profile
+            st.success("Profile ready" if profile["name"] else "Profile draft")
+
+        _run_with_error_boundary(_render_profile)
 
     elif page == "Recommendations":
         st.header("Recommendations")
-        report = _get_validation()
-        _guard_fatals(report)
-        profile = st.session_state["profile"]
-        objective_options = ["fastest_money", "max_net"]
-        current_objective = _ensure_objective(profile, objective_options)
-        selected_objective = st.selectbox(
-            "Objective preset",
-            objective_options,
-            index=objective_options.index(current_objective),
-        )
-        st.caption("Objective preset affects ranking and diagnostics.")
-        profile["objective"] = selected_objective
-        st.session_state["profile"] = profile
-        top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
-        max_time = st.number_input(
-            "Max time to first money (days)",
-            value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
-        )
-        st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
-        st.session_state["filters"]["exclude_blocked"] = st.checkbox(
-            "Exclude blocked",
-            value=st.session_state["filters"].get("exclude_blocked", True),
-        )
 
-        def _run_recommendations() -> None:
-            result = _get_recommendations(
-                json.dumps(profile, ensure_ascii=False),
-                profile["objective"],
-                st.session_state["filters"],
-                top_n,
+        def _render_recommendations() -> None:
+            report = _get_validation()
+            _guard_fatals(report)
+            profile = st.session_state["profile"]
+            objective_options = ["fastest_money", "max_net"]
+            current_objective = _ensure_objective(profile, objective_options)
+            selected_objective = st.selectbox(
+                "Objective preset",
+                objective_options,
+                index=objective_options.index(current_objective),
             )
-            st.session_state["last_recommendations"] = result
+            st.caption("Objective preset affects ranking and diagnostics.")
+            profile["objective"] = selected_objective
+            st.session_state["profile"] = profile
+            top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
+            max_time = st.number_input(
+                "Max time to first money (days)",
+                value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
+            )
+            st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
+            st.session_state["filters"]["exclude_blocked"] = st.checkbox(
+                "Exclude blocked",
+                value=st.session_state["filters"].get("exclude_blocked", True),
+            )
 
-        if st.button("Run recommendations"):
-            _run_recommendations()
-
-        result = st.session_state.get("last_recommendations")
-        if result is None:
-            st.info("Run recommendations to see results.")
-        elif not result.ranked_variants:
-            st.warning("No results. Adjust filters and try again.")
-        else:
-            for rec in result.ranked_variants:
-                st.subheader(rec.variant.title)
-                st.caption(rec.variant.variant_id)
-                stale_label = " (stale)" if rec.stale else ""
-                st.write(
-                    f"Feasibility: {rec.feasibility.status} | "
-                    f"Legal: {rec.legal.legal_gate}{stale_label}"
+            def _run_recommendations() -> None:
+                result = _get_recommendations(
+                    json.dumps(profile, ensure_ascii=False),
+                    profile["objective"],
+                    st.session_state["filters"],
+                    top_n,
                 )
-                if rec.stale or rec.legal.legal_gate != "ok":
-                    warnings = []
-                    if rec.stale:
-                        warnings.append("Variant data is stale")
-                    if rec.legal.legal_gate != "ok":
-                        warnings.append(f"Legal gate: {rec.legal.legal_gate}")
-                    st.warning(" | ".join(warnings))
-                st.write("Why: " + "; ".join(rec.pros))
-                if rec.cons:
-                    st.write("Concerns: " + "; ".join(rec.cons))
-                if st.button(
-                    f"Select {rec.variant.variant_id}", key=f"select-{rec.variant.variant_id}"
-                ):
-                    st.session_state["selected_variant_id"] = rec.variant.variant_id
+                st.session_state["last_recommendations"] = result
 
-            st.subheader("Reality Check")
-            blocker_counts = Counter()
-            for rec in result.ranked_variants:
-                blocker_counts.update(rec.feasibility.blockers)
-            top_blockers = blocker_counts.most_common(3)
-            if top_blockers:
-                formatted = ", ".join([f"{name} ({count})" for name, count in top_blockers])
-                st.warning("Top blockers: " + formatted)
-            if st.button("Startable in 2 weeks"):
-                st.session_state["filters"]["max_time_to_money_days"] = 14
-                st.session_state["filters"]["exclude_blocked"] = True
+            if st.button("Run recommendations"):
                 _run_recommendations()
-            if st.button("Focus on fastest money"):
-                profile["objective"] = "fastest_money"
-                st.session_state["filters"]["max_time_to_money_days"] = 30
-                st.session_state["profile"] = profile
-                _run_recommendations()
-            if st.button("Reduce legal friction"):
-                st.session_state["filters"]["exclude_blocked"] = True
-                _run_recommendations()
+
+            result = st.session_state.get("last_recommendations")
+            if result is None:
+                st.info("Run recommendations to see results.")
+            elif not result.ranked_variants:
+                st.warning("No results. Adjust filters and try again.")
+            else:
+                for rec in result.ranked_variants:
+                    st.subheader(rec.variant.title)
+                    st.caption(rec.variant.variant_id)
+                    stale_label = " (stale)" if rec.stale else ""
+                    st.write(
+                        f"Feasibility: {rec.feasibility.status} | "
+                        f"Legal: {rec.legal.legal_gate}{stale_label}"
+                    )
+                    if rec.stale or rec.legal.legal_gate != "ok":
+                        warnings = []
+                        if rec.stale:
+                            warnings.append("Variant data is stale")
+                        if rec.legal.legal_gate != "ok":
+                            warnings.append(f"Legal gate: {rec.legal.legal_gate}")
+                        st.warning(" | ".join(warnings))
+                    st.write("Why: " + "; ".join(rec.pros))
+                    if rec.cons:
+                        st.write("Concerns: " + "; ".join(rec.cons))
+                    if st.button(
+                        f"Select {rec.variant.variant_id}",
+                        key=f"select-{rec.variant.variant_id}",
+                    ):
+                        st.session_state["selected_variant_id"] = rec.variant.variant_id
+
+                st.subheader("Reality Check")
+                blocker_counts = Counter()
+                for rec in result.ranked_variants:
+                    blocker_counts.update(rec.feasibility.blockers)
+                top_blockers = blocker_counts.most_common(3)
+                if top_blockers:
+                    formatted = ", ".join([f"{name} ({count})" for name, count in top_blockers])
+                    st.warning("Top blockers: " + formatted)
+                if st.button("Startable in 2 weeks"):
+                    st.session_state["filters"]["max_time_to_money_days"] = 14
+                    st.session_state["filters"]["exclude_blocked"] = True
+                    _run_recommendations()
+                if st.button("Focus on fastest money"):
+                    profile["objective"] = "fastest_money"
+                    st.session_state["filters"]["max_time_to_money_days"] = 30
+                    st.session_state["profile"] = profile
+                    _run_recommendations()
+                if st.button("Reduce legal friction"):
+                    st.session_state["filters"]["exclude_blocked"] = True
+                    _run_recommendations()
+
+        _run_with_error_boundary(_render_recommendations)
 
     elif page == "Plan":
         st.header("Plan")
-        report = _get_validation()
-        _guard_fatals(report)
-        variant_id = st.session_state.get("selected_variant_id")
-        if not variant_id:
-            st.info("Select a variant in Recommendations.")
-        else:
-            profile = st.session_state["profile"]
-            st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
-            try:
-                plan = _ensure_plan(profile, variant_id)
-            except ValueError as exc:
-                st.error(str(exc))
+
+        def _render_plan() -> None:
+            report = _get_validation()
+            _guard_fatals(report)
+            variant_id = st.session_state.get("selected_variant_id")
+            if not variant_id:
+                st.info("Select a variant in Recommendations.")
             else:
-                app_data = _get_app_data()
-                variant = next(
-                    (item for item in app_data.variants if item.variant_id == variant_id),
-                    None,
-                )
-                variant_stale = (
-                    is_variant_stale(variant, app_data.meta.staleness_policy)
-                    if variant is not None
-                    else False
-                )
-                if plan.legal_gate != "ok" or variant_stale:
-                    warnings = []
-                    if plan.legal_gate != "ok":
-                        warnings.append(f"Legal gate: {plan.legal_gate}")
-                    if variant_stale:
-                        warnings.append("Variant data is stale")
-                    st.warning(" | ".join(warnings))
-                st.session_state["plan"] = plan
-                st.write(f"Plan for {variant_id}")
-                st.write("Steps")
-                for step in plan.steps:
-                    st.write(f"- {step.title}: {step.detail}")
-                st.write("4-week outline")
-                st.json(plan.week_plan)
-                st.write("Compliance")
-                st.write("\n".join(plan.compliance))
-
-    elif page == "Export":
-        st.header("Export")
-        report = _get_validation()
-        _guard_fatals(report)
-        variant_id = st.session_state.get("selected_variant_id")
-        plan = st.session_state.get("plan")
-        if not variant_id or plan is None:
-            st.info("Select a variant and generate a plan first.")
-        else:
-            profile = st.session_state["profile"]
-            app_data = _get_app_data()
-            plan_text = render_plan_md(plan)
-            recommendations = recommend(
-                profile,
-                app_data.variants,
-                app_data.rulepack,
-                app_data.meta.staleness_policy,
-                profile.get("objective", "fastest_money"),
-                {},
-                len(app_data.variants),
-            )
-            selected_rec = next(
-                (r for r in recommendations.ranked_variants if r.variant.variant_id == variant_id),
-                None,
-            )
-            result_payload = (
-                render_result_json(profile, selected_rec, plan) if selected_rec else None
-            )
-            profile_yaml = yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
-            if selected_rec is None:
-                st.error(f"Variant '{variant_id}' not found in recommendations.")
-
-            if st.button("Generate export files"):
+                profile = st.session_state["profile"]
+                st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
                 try:
-                    paths = export_bundle(
-                        profile_path=None,
-                        variant_id=variant_id,
-                        out_dir="exports",
-                        data_dir="data",
-                        profile_data=profile,
-                    )
+                    plan = _ensure_plan(profile, variant_id)
                 except ValueError as exc:
                     st.error(str(exc))
                 else:
-                    st.session_state["export_paths"] = paths
-                    st.success("Export completed")
-                    st.write(paths)
+                    app_data = _get_app_data()
+                    variant = next(
+                        (item for item in app_data.variants if item.variant_id == variant_id),
+                        None,
+                    )
+                    variant_stale = (
+                        is_variant_stale(variant, app_data.meta.staleness_policy)
+                        if variant is not None
+                        else False
+                    )
+                    if plan.legal_gate != "ok" or variant_stale:
+                        warnings = []
+                        if plan.legal_gate != "ok":
+                            warnings.append(f"Legal gate: {plan.legal_gate}")
+                        if variant_stale:
+                            warnings.append("Variant data is stale")
+                        st.warning(" | ".join(warnings))
+                    st.session_state["plan"] = plan
+                    st.write(f"Plan for {variant_id}")
+                    st.write("Steps")
+                    for step in plan.steps:
+                        st.write(f"- {step.title}: {step.detail}")
+                    st.write("4-week outline")
+                    st.json(plan.week_plan)
+                    st.write("Compliance")
+                    st.write("\n".join(plan.compliance))
 
-            st.subheader("Downloads")
-            st.download_button(
-                "Download plan.md",
-                data=plan_text,
-                file_name="plan.md",
-                mime="text/markdown",
-                disabled=plan is None,
-            )
-            st.download_button(
-                "Download result.json",
-                data=json.dumps(result_payload or {}, ensure_ascii=False, indent=2),
-                file_name="result.json",
-                mime="application/json",
-                disabled=result_payload is None,
-            )
-            st.download_button(
-                "Download profile.yaml",
-                data=profile_yaml,
-                file_name="profile.yaml",
-                mime="text/yaml",
-                disabled=profile is None,
-            )
+        _run_with_error_boundary(_render_plan)
+
+    elif page == "Export":
+        st.header("Export")
+
+        def _render_export() -> None:
+            report = _get_validation()
+            _guard_fatals(report)
+            variant_id = st.session_state.get("selected_variant_id")
+            plan = st.session_state.get("plan")
+            if not variant_id or plan is None:
+                st.info("Select a variant and generate a plan first.")
+            else:
+                profile = st.session_state["profile"]
+                app_data = _get_app_data()
+                plan_text = render_plan_md(plan)
+                recommendations = recommend(
+                    profile,
+                    app_data.variants,
+                    app_data.rulepack,
+                    app_data.meta.staleness_policy,
+                    profile.get("objective", "fastest_money"),
+                    {},
+                    len(app_data.variants),
+                )
+                selected_rec = next(
+                    (
+                        r
+                        for r in recommendations.ranked_variants
+                        if r.variant.variant_id == variant_id
+                    ),
+                    None,
+                )
+                result_payload = (
+                    render_result_json(
+                        profile,
+                        selected_rec,
+                        plan,
+                        diagnostics=recommendations.diagnostics,
+                        profile_hash=recommendations.profile_hash,
+                    )
+                    if selected_rec
+                    else None
+                )
+                profile_yaml = yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
+                if selected_rec is None:
+                    st.error(f"Variant '{variant_id}' not found in recommendations.")
+
+                if st.button("Generate export files"):
+                    try:
+                        paths = export_bundle(
+                            profile_path=None,
+                            variant_id=variant_id,
+                            out_dir="exports",
+                            data_dir="data",
+                            profile_data=profile,
+                        )
+                    except MoneyMapError as exc:
+                        _render_error(exc)
+                    else:
+                        st.session_state["export_paths"] = paths
+                        st.success("Export completed")
+                        st.write(paths)
+
+                st.subheader("Downloads")
+                st.download_button(
+                    "Download plan.md",
+                    data=plan_text,
+                    file_name="plan.md",
+                    mime="text/markdown",
+                    disabled=plan is None,
+                )
+                st.download_button(
+                    "Download result.json",
+                    data=json.dumps(result_payload or {}, ensure_ascii=False, indent=2),
+                    file_name="result.json",
+                    mime="application/json",
+                    disabled=result_payload is None,
+                )
+                st.download_button(
+                    "Download profile.yaml",
+                    data=profile_yaml,
+                    file_name="profile.yaml",
+                    mime="text/yaml",
+                    disabled=profile is None,
+                )
+
+        _run_with_error_boundary(_render_export)
 
 
 if __name__ == "__main__":

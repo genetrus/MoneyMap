@@ -89,3 +89,13 @@
 - Consequences: Users must fix fatal validation issues before execution, aligning CLI/UI behavior with DoD expectations.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.14
 - Owner: team
+
+## 2026-02-05 — Hardening artifacts for run IDs, logs, and validate reports
+- Date: 2026-02-05
+- Title: Emit run_id-scoped logs and validate reports in exports
+- Context: Hardening requires diagnostics, auditability, and clear error handling without stacktraces. The demo checklist needs a consistent place to find validate reports and logs.
+- Decision: Each CLI run generates a run_id; logs are written to `exports/logs/<run_id>.log`, and validate reports are written to `exports/validate-report-<run_id>.json`. Error messages include run_id, a hint, and a pointer to the report/log location.
+- Alternatives: (1) Print full stacktraces to stderr. (2) Store logs outside exports. (3) Skip validate report files and rely on stdout only.
+- Consequences: Users can diagnose runs offline with a stable run_id and file locations, while CLI/UI stays clean.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6, p.8, p.9, p.11, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team

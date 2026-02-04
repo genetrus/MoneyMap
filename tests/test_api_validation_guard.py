@@ -5,12 +5,8 @@ from shutil import copytree
 
 import pytest
 
-from money_map.app.api import (
-    ValidationFatalsError,
-    export_bundle,
-    plan_variant,
-    recommend_variants,
-)
+from money_map.app.api import export_bundle, plan_variant, recommend_variants
+from money_map.core.errors import DataValidationError
 from money_map.storage.fs import read_yaml, write_yaml
 
 
@@ -32,7 +28,7 @@ def test_api_blocks_actions_on_validation_fatals(tmp_path: Path, action: str) ->
     data_dir, variant_id = _prepare_invalid_rulepack(tmp_path)
     profile_path = Path(__file__).resolve().parents[1] / "profiles" / "demo_fast_start.yaml"
 
-    with pytest.raises(ValidationFatalsError) as excinfo:
+    with pytest.raises(DataValidationError) as excinfo:
         if action == "recommend":
             recommend_variants(profile_path, data_dir=data_dir)
         elif action == "plan":
@@ -45,4 +41,4 @@ def test_api_blocks_actions_on_validation_fatals(tmp_path: Path, action: str) ->
                 data_dir=data_dir,
             )
 
-    assert "RULEPACK_REVIEWED_AT_INVALID" in excinfo.value.fatals
+    assert "RULEPACK_REVIEWED_AT_INVALID" in excinfo.value.message

@@ -12,20 +12,35 @@ def render_result_json(
     profile: dict,
     recommendation: RecommendationVariant,
     plan: RoutePlan,
+    *,
+    diagnostics: dict[str, Any] | None = None,
+    profile_hash: str | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     variant = recommendation.variant
+    applied_rules = plan.applied_rules
+    diagnostics = diagnostics or {}
     return {
+        "run_id": run_id,
+        "profile_hash": profile_hash,
         "profile": profile,
         "variant_id": variant.variant_id,
         "variant_title": variant.title,
         "score": recommendation.score,
         "staleness": recommendation.staleness,
+        "explanations": {
+            "pros": recommendation.pros,
+            "cons": recommendation.cons,
+            "legal_checklist": plan.compliance,
+        },
+        "diagnostics": diagnostics,
         "feasibility": asdict(recommendation.feasibility),
         "economics": asdict(recommendation.economics),
         "legal": {
             "legal_gate": plan.legal_gate,
             "checklist": plan.compliance,
-            "applied_rules": [asdict(rule) for rule in plan.applied_rules],
+            "applied_rule_ids": [rule.rule_id for rule in applied_rules],
+            "applied_rules": [asdict(rule) for rule in applied_rules],
         },
         "plan": {
             "steps": [step.title for step in plan.steps],
