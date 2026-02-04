@@ -11,6 +11,7 @@
 ## 2. CLI end-to-end flow: recommend → plan → export
 - **What to verify:** CLI flow completes from recommendations to plan generation and export artifacts for the demo profile without exceptions.
 - **How to verify:**
+  - `make mvp` (installs UI deps + runs checks)
   - `python scripts/mvp_check.py`
   - Manual CLI flow (optional):
     1. `python -m money_map.app.cli recommend --profile profiles/demo_fast_start.yaml --top 10 --data-dir data`

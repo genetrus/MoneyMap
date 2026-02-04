@@ -12,8 +12,8 @@ fi
 source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip
-python -m pip install -e ".[ui]"
+python -m pip install -e ".[dev]"
 
 money-map --help
 
-echo "UI command is not implemented yet. When available, run: money-map ui"
+echo "Run the UI with: money-map ui"
