@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -43,6 +44,12 @@ def _print_results(results: list[CheckResult]) -> None:
     skips = sum(1 for result in results if result.status == "SKIP")
     print("-")
     print(f"Summary: {len(results)} checks, {failures} failed, {skips} skipped")
+    if failures:
+        print("MVP FAILED")
+    elif skips:
+        print("MVP INCOMPLETE")
+    else:
+        print("MVP PASSED")
 
 
 def _check_validation(data_dir: Path) -> tuple[bool, str]:
@@ -148,9 +155,16 @@ def _check_staleness_gating() -> tuple[bool, str]:
     return True, "regulated gating markers present"
 
 
-def _check_ui_import() -> tuple[str, str]:
+def _check_ui_import(mode: str) -> tuple[str, str]:
     if importlib.util.find_spec("streamlit") is None:
-        return "FAIL", 'streamlit not installed (install with: pip install -e ".[ui]")'
+        detail = (
+            "streamlit missing or not installable in current network. "
+            'To enable UI check: python -m pip install -e ".[ui]" '
+            "or run scripts/install_ui_deps.py for offline guidance."
+        )
+        if mode == "optional":
+            return "SKIP", detail
+        return "FAIL", detail
     from money_map.ui import app as ui_app
 
     if not hasattr(ui_app, "run_app"):
@@ -171,6 +185,9 @@ def main() -> int:
 
     data_dir = ROOT / args.data_dir
     profile = ROOT / args.profile
+    ui_mode = (os.getenv("MM_UI_CHECK") or "required").strip().lower()
+    if ui_mode not in {"required", "optional"}:
+        ui_mode = "required"
 
     results: list[CheckResult] = []
 
@@ -209,7 +226,7 @@ def main() -> int:
         _record(results, "Staleness + regulated gating", "FAIL", str(exc))
 
     try:
-        status, detail = _check_ui_import()
+        status, detail = _check_ui_import(ui_mode)
         _record(results, "UI import smoke", status, detail)
     except Exception as exc:  # noqa: BLE001
         _record(results, "UI import smoke", "FAIL", str(exc))
@@ -217,7 +234,12 @@ def main() -> int:
     _print_results(results)
 
     failed = any(result.status == "FAIL" for result in results)
-    return 1 if failed else 0
+    skipped = any(result.status == "SKIP" for result in results)
+    if failed:
+        return 1
+    if skipped:
+        return 2
+    return 0
 
 
 if __name__ == "__main__":
