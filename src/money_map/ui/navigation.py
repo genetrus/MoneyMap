@@ -10,7 +10,9 @@ NAV_ITEMS: list[tuple[str, str]] = [
     ("Export", "export"),
 ]
 
-NAV_PAGES = [label for label, _ in NAV_ITEMS]
+NAV_LABEL_BY_SLUG = {slug: label for label, slug in NAV_ITEMS}
+NAV_SLUG_BY_LABEL = {label: slug for label, slug in NAV_ITEMS}
+NAV_PAGES = list(NAV_SLUG_BY_LABEL)
 
 
 def resolve_page_from_query(params: dict | None, default: str) -> str:
@@ -19,6 +21,8 @@ def resolve_page_from_query(params: dict | None, default: str) -> str:
     page = params.get("page")
     if isinstance(page, (list, tuple)):
         page = page[0] if page else None
-    if isinstance(page, str) and page in NAV_PAGES:
-        return page
+    if isinstance(page, str):
+        resolved = NAV_LABEL_BY_SLUG.get(page)
+        if resolved:
+            return resolved
     return default
