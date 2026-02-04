@@ -29,10 +29,18 @@ class CheckResult:
     name: str
     status: str
     detail: str
+    required: bool = True
 
 
-def _record(results: list[CheckResult], name: str, status: str, detail: str) -> None:
-    results.append(CheckResult(name=name, status=status, detail=detail))
+def _record(
+    results: list[CheckResult],
+    name: str,
+    status: str,
+    detail: str,
+    *,
+    required: bool = True,
+) -> None:
+    results.append(CheckResult(name=name, status=status, detail=detail, required=required))
 
 
 def _print_results(results: list[CheckResult]) -> None:
@@ -40,7 +48,8 @@ def _print_results(results: list[CheckResult]) -> None:
     print("MVP CHECK RESULTS")
     for result in results:
         safe_name = result.name.replace("→", "->")
-        print(f"{result.status}: {safe_name} - {result.detail}")
+        optional_label = "" if result.required else " (optional)"
+        print(f"{result.status}{optional_label}: {safe_name} - {result.detail}")
     print("-")
     print(f"Summary: {len(results)} checks, {failures} failed, {skips} skipped")
     print(status_label)
@@ -49,9 +58,12 @@ def _print_results(results: list[CheckResult]) -> None:
 def _summarize_results(results: list[CheckResult]) -> tuple[str, int, int, int]:
     failures = sum(1 for result in results if result.status == "FAIL")
     skips = sum(1 for result in results if result.status == "SKIP")
+    required_failures = sum(
+        1 for result in results if result.required and result.status in {"FAIL", "SKIP"}
+    )
     if failures:
         return "MVP FAILED", 1, failures, skips
-    if skips:
+    if required_failures:
         return "MVP INCOMPLETE", 2, failures, skips
     return "MVP PASSED", 0, failures, skips
 
@@ -227,7 +239,13 @@ def main() -> int:
 
     try:
         status, detail = _check_ui_import(ui_mode)
-        _record(results, "UI import smoke", status, detail)
+        _record(
+            results,
+            "UI import smoke",
+            status,
+            detail,
+            required=ui_mode != "optional",
+        )
     except Exception as exc:  # noqa: BLE001
         _record(results, "UI import smoke", "FAIL", str(exc))
 

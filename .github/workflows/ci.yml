@@ -101,6 +101,11 @@ jobs:
           MM_UI_CHECK: required
         run: python -m pytest -q tests/test_ui_smoke.py
 
+      - name: MVP verification (UI required)
+        env:
+          MM_UI_CHECK: required
+        run: python scripts/mvp_check.py
+
   e2e-smoke:
     name: E2E smoke (ubuntu-latest)
     runs-on: ubuntu-latest
