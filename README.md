@@ -15,6 +15,13 @@ python -m pip install -e ".[ui]"
 python scripts/mvp_check.py
 ```
 
+Quick commands:
+
+```
+python scripts/install_ui_deps.py
+python scripts/mvp_check.py
+```
+
 ### UI deps in restricted networks
 If your network blocks PyPI, retry without build isolation or use a wheelhouse:
 
