@@ -7,9 +7,9 @@ from time import perf_counter
 from typing import Any
 
 from money_map.app.observability import get_run_context, log_event
+from money_map.core.errors import DataValidationError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data, load_profile
-from money_map.core.errors import DataValidationError, MoneyMapError
 from money_map.core.profile import profile_hash
 from money_map.core.recommend import recommend
 from money_map.core.validate import validate
