@@ -170,6 +170,7 @@ def _check_ui_import(mode: str) -> tuple[str, str]:
         if mode == "optional":
             return "SKIP", detail
         return "SKIP", f"(required) {detail}"
+        return "FAIL", 'streamlit not installed (install with: python -m pip install -e ".[ui]")'
     from money_map.ui import app as ui_app
 
     if not hasattr(ui_app, "run_app"):
