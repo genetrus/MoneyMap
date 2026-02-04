@@ -74,9 +74,14 @@ Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_M
   ```bash
   python -m pytest -q
   ```
-- **Run the CLI validation gate:**
+- **Run the CLI validation gate (editable install required):**
   ```bash
-  MONEY_MAP_DISABLE_NETWORK=1 python -m money_map.app.cli validate --data-dir data
+  make validate
+  ```
+  Or explicitly:
+  ```bash
+  python -m pip install -e .
+  python -m money_map.app.cli validate --data-dir data
   ```
   > If the console script is installed, `money-map validate --data-dir data` is equivalent. The canonical form is `python -m money_map.app.cli ...`. (Money_Map_Spec_Packet.pdf p.14)
 
@@ -100,6 +105,11 @@ python scripts/mvp_check.py
 ```
 
 If Streamlit is installed (via `.[ui]`), the script will also verify the UI import smoke check; otherwise it will report a skip. (Money_Map_Spec_Packet.pdf p.8, p.14)
+
+For a CLI-only run (no UI deps), use:
+```bash
+make mvp-lite
+```
 
 ## Editable installs
 - Core editable install:
@@ -133,8 +143,23 @@ pip config set global.index-url https://mirror.example.com/simple
 pip config set global.trusted-host mirror.example.com
 ```
 
+### Run `make mvp` behind a proxy/mirror
+```bash
+MM_PIP_ARGS="--index-url https://mirror.example.com/simple --trusted-host mirror.example.com" make mvp
+```
+```powershell
+$env:MM_PIP_ARGS="--index-url https://mirror.example.com/simple --trusted-host mirror.example.com"; make mvp
+```
+
 ### Offline install via a wheelhouse
 Use a machine with internet access to download wheels into a local folder, then install from that folder.
+
+```bash
+MM_WHEELHOUSE=wheelhouse make mvp
+```
+```powershell
+$env:MM_WHEELHOUSE="wheelhouse"; make mvp
+```
 
 ```powershell
 # On an online machine

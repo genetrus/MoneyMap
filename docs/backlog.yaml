@@ -613,7 +613,7 @@ epics:
               - { pdf: "Money_Map_Spec_Packet.pdf", pages: "14" }
             acceptance_criteria:
               - "CI executes python -m pytest -q on ubuntu and windows."
-              - "CI executes PYTHONPATH=src python -m money_map.app.cli validate --data-dir data."
+              - "CI executes python -m money_map.app.cli validate --data-dir data after editable install."
             repo_touches: []
             notes: ""
       - story_id: "S-M7-02"

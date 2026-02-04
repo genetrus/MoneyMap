@@ -3,7 +3,10 @@
 ## 1. Dataset validation gate (CLI)
 - **What to verify:** Dataset validation runs and reports valid status with no fatal errors before any flows proceed.
 - **How to verify:**
-  - `python -m money_map.app.cli validate --data-dir data`
+  - `make validate`
+  - Or:
+    - `python -m pip install -e .`
+    - `python -m money_map.app.cli validate --data-dir data`
 - **Expected output:**
   - Validation report shows `status: valid` and `fatals: 0`.
 - **Spec citation:** Money_Map_Spec_Packet.pdf p.5 (MVP requires validate), p.6 (data loading + validation), p.14 (DoD: validate in CI + manual flow).
