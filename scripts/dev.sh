@@ -12,8 +12,10 @@ fi
 source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,ui]"
 
-money-map --help
+python -c "import streamlit as st; print('streamlit', st.__version__)"
+
+python -m money_map.app.cli --help
 
 echo "Run the UI with: money-map ui"
