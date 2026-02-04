@@ -37,7 +37,8 @@ def _record(results: list[CheckResult], name: str, status: str, detail: str) -> 
 def _print_results(results: list[CheckResult]) -> None:
     print("MVP CHECK RESULTS")
     for result in results:
-        print(f"{result.status}: {result.name} - {result.detail}")
+        safe_name = result.name.replace("→", "->")
+        print(f"{result.status}: {safe_name} - {result.detail}")
     failures = sum(1 for result in results if result.status == "FAIL")
     skips = sum(1 for result in results if result.status == "SKIP")
     print("-")
@@ -182,9 +183,9 @@ def main() -> int:
     variant_id = ""
     try:
         ok, detail, variant_id = _check_recommend_plan_export(data_dir, profile, args.top)
-        _record(results, "Recommend → Plan → Export", "PASS" if ok else "FAIL", detail)
+        _record(results, "Recommend -> Plan -> Export", "PASS" if ok else "FAIL", detail)
     except Exception as exc:  # noqa: BLE001
-        _record(results, "Recommend → Plan → Export", "FAIL", str(exc))
+        _record(results, "Recommend -> Plan -> Export", "FAIL", str(exc))
 
     try:
         if variant_id:
