@@ -119,3 +119,13 @@
 - Consequences: Navigation stays stable across Streamlit updates/locales, and styling remains isolated to the Data status page.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
 - Owner: team
+
+## 2026-02-07 — Global Light/Dark theme presets and app-shell styling
+- Date: 2026-02-07
+- Title: Apply global Light/Dark theme presets and app-shell styling across the UI
+- Context: The UI styling regressed to default Streamlit chrome; we need a stable, app-wide theme system that restores the mock-aligned shell while keeping content and logic unchanged. The PDFs do not specify exact visual tokens, so the design alignment is based on the reference mock and kept CSS-only.
+- Decision: Introduce global Light/Dark theme presets applied on every render and rebuild the sidebar/navigation chrome with stable `mm-*` hooks. Move the theme switch to a subtle main-header control while keeping all page content and data fields unchanged.
+- Alternatives: (1) Keep page-scoped styling limited to Data status. (2) Add JavaScript-driven theming. (3) Leave Streamlit default chrome.
+- Consequences: Every page responds to the Light/Dark switch; UI structure remains unchanged while presentation matches the reference mock more closely.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
+- Owner: team
