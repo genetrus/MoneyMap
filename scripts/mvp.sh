@@ -12,8 +12,6 @@ fi
 source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
+python -m pip install -e . --no-build-isolation
 
-python -m ruff format --check .
-python -m ruff check .
-python -m pytest -q
+python scripts/mvp_check.py
