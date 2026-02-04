@@ -5,6 +5,10 @@ from money_map.core.rules import evaluate_legal
 from money_map.core.validate import validate
 
 
+def _issue_codes(issues: list[dict]) -> list[str]:
+    return [issue.get("code", "") for issue in issues if issue.get("code")]
+
+
 def test_rulepack_and_variant_staleness_warns():
     app_data = load_app_data()
     stale_rulepack = replace(app_data.rulepack, reviewed_at="2000-01-01")
@@ -13,8 +17,9 @@ def test_rulepack_and_variant_staleness_warns():
 
     report = validate(app_data)
 
-    assert "STALE_RULEPACK" in report.warns
-    assert any(warn.startswith("STALE_VARIANTS:") for warn in report.warns)
+    warn_codes = _issue_codes(report.warns)
+    assert "STALE_RULEPACK" in warn_codes
+    assert "STALE_VARIANTS" in warn_codes
 
 
 def _is_regulated_variant(tags: set[str], regulated_domains: set[str]) -> bool:
@@ -34,11 +39,10 @@ def test_variant_invalid_date_warns_and_regulated_requires_check():
 
     report = validate(app_data)
 
-    assert "RULEPACK_REVIEWED_AT_INVALID" not in report.fatals
-    assert any(
-        warn.startswith(f"VARIANT_REVIEW_DATE_INVALID:{invalid_variant.variant_id}")
-        for warn in report.warns
-    )
+    fatal_codes = _issue_codes(report.fatals)
+    warn_codes = _issue_codes(report.warns)
+    assert "RULEPACK_REVIEWED_AT_INVALID" not in fatal_codes
+    assert "VARIANT_REVIEW_DATE_INVALID" in warn_codes
 
     legal = evaluate_legal(app_data.rulepack, invalid_variant, app_data.meta.staleness_policy)
     assert legal.legal_gate == "require_check"

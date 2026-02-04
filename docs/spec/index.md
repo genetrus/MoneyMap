@@ -19,6 +19,9 @@
   - Ключевые разделы/страницы: Full Data Requirements (inventory, классификация, data dictionary, ER, producer/consumer, policies) (p.1); Data Sourcing & Collection Plan (источники, каналы, seed/fixture packs, data contracts, gate) (p.2).
   - Заметки: определяет артефакты data-inventory и data contracts для CI.
 
+## UI Specs
+- `docs/spec/ui/data_status.md`
+
 ## How we develop
 - Перед любой задачей: открыть `index.md` и релевантные PDF.
 - Если есть конфликт: PDF всегда правее любых других документов.

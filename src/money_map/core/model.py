@@ -66,11 +66,13 @@ class UserProfile:
 @dataclass(frozen=True)
 class ValidationReport:
     status: str
-    fatals: list[str]
-    warns: list[str]
+    fatals: list[dict[str, Any]]
+    warns: list[dict[str, Any]]
     dataset_version: str
     reviewed_at: str
     stale: bool
+    staleness_policy_days: int
+    generated_at: str
     staleness: dict[str, Any]
 
 
