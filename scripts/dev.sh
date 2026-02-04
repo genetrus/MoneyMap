@@ -16,4 +16,4 @@ python -m pip install -e ".[ui]"
 
 money-map --help
 
-echo "UI command is not implemented yet. When available, run: money-map ui"
+echo "Run the UI with: money-map ui"
