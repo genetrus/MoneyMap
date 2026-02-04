@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from collections import Counter
 from pathlib import Path
@@ -20,6 +21,7 @@ from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
+from money_map.ui.navigation import NAV_ITEMS, resolve_page_from_query
 
 DEFAULT_PROFILE = {
     "name": "Demo",
@@ -156,41 +158,53 @@ def _guard_fatals(report: dict) -> None:
 
 
 def _render_data_status_theme(preset: str, active_page: str) -> None:
-    def _svg_data_uri(svg: str) -> str:
-        return f"data:image/svg+xml;utf8,{quote(svg)}"
+    def _svg_data_uri_base64(svg: str) -> str:
+        encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+        return f"data:image/svg+xml;base64,{encoded}"
 
     icons = {
-        "data_status": _svg_data_uri(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-            '<path fill="black" d="M12 2C7.6 2 4 3.6 4 5.6v12.8C4 20.4 7.6 22 12 '
-            "22s8-1.6 8-3.6V5.6C20 3.6 16.4 2 12 2zm0 2c3.6 0 6 .9 6 1.6S15.6 7.2 "
-            "12 7.2s-6-.9-6-1.6S8.4 4 12 4zm0 6.2c3.6 0 6-.9 6-1.6V12c0 .7-2.4 "
-            "1.6-6 1.6s-6-.9-6-1.6V8.6c0 .7 2.4 1.6 6 1.6zm0 6.2c3.6 0 6-.9 "
-            '6-1.6v3.4c0 .7-2.4 1.6-6 1.6s-6-.9-6-1.6v-3.4c0 .7 2.4 1.6 6 1.6z"/>'
+        "data_status": _svg_data_uri_base64(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" '
+            'stroke-linejoin="round">'
+            '<ellipse cx="12" cy="5" rx="7" ry="3"></ellipse>'
+            '<path d="M5 5v9c0 1.7 3.1 3 7 3s7-1.3 7-3V5"></path>'
+            '<path d="M5 10c0 1.7 3.1 3 7 3s7-1.3 7-3"></path>'
             "</svg>"
         ),
-        "profile": _svg_data_uri(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-            '<path fill="black" d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 '
-            '12zm0 2c-3.5 0-6.8 1.8-6.8 4.2V20h13.6v-1.8C18.8 15.8 15.5 14 12 14z"/>'
+        "profile": _svg_data_uri_base64(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" '
+            'stroke-linejoin="round">'
+            '<circle cx="12" cy="8" r="3.2"></circle>'
+            '<path d="M5 20c1.2-3.6 4.2-5.4 7-5.4s5.8 1.8 7 5.4"></path>'
             "</svg>"
         ),
-        "recommendations": _svg_data_uri(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-            '<path fill="black" d="M12 3.2l2.2 4.6 5.1.7-3.7 3.6.9 5.1L12 '
-            '14.9 7.5 17.2l.9-5.1-3.7-3.6 5.1-.7L12 3.2z"/>'
+        "recommendations": _svg_data_uri_base64(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" '
+            'stroke-linejoin="round">'
+            "<path "
+            'd="M12 3l2.2 4.6 5.1.7-3.7 3.6.9 5.1L12 14.9 '
+            '7.5 17.2l.9-5.1-3.7-3.6 5.1-.7L12 3z"></path>'
             "</svg>"
         ),
-        "plan": _svg_data_uri(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-            '<path fill="black" d="M7 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 '
-            '0 0 1-2-2V5a2 2 0 0 1 2-2zm2 5h7v2H9V8zm0 4h7v2H9v-2zm0 4h5v2H9v-2z"/>'
+        "plan": _svg_data_uri_base64(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" '
+            'stroke-linejoin="round">'
+            "<path "
+            'd="M7 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>'
+            '<path d="M9 8h7M9 12h7M9 16h5"></path>'
             "</svg>"
         ),
-        "export": _svg_data_uri(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-            '<path fill="black" d="M12 3a1 1 0 0 1 1 1v8.6l2.4-2.4 1.4 1.4L12 '
-            '16.4 7.2 11.6l1.4-1.4L11 12.6V4a1 1 0 0 1 1-1zm-7 15h14v2H5v-2z"/>'
+        "export": _svg_data_uri_base64(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="none" stroke="black" stroke-width="1.7" stroke-linecap="round" '
+            'stroke-linejoin="round">'
+            '<path d="M12 3v10"></path>'
+            '<path d="M8 9l4 4 4-4"></path>'
+            '<path d="M5 20h14"></path>'
             "</svg>"
         ),
     }
@@ -246,6 +260,14 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
         },
     }
     theme = palette.get(preset, palette["Light"])
+    app_shell = ""
+    if active_page == "Data status":
+        app_shell = """
+        .stApp {
+          background: var(--mm-bg);
+          color: var(--mm-text);
+        }
+        """
     st.markdown(
         f"""
         <style>
@@ -279,10 +301,7 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           --mm-icon-export: url("{icons["export"]}");
         }}
 
-        .stApp {{
-          background: var(--mm-bg);
-          color: var(--mm-text);
-        }}
+        {app_shell}
 
         div[data-testid="stSidebar"] > div {{
           background: var(--mm-sidebar-bg);
@@ -318,25 +337,32 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           margin: 0.35rem 0.2rem 0.8rem;
         }}
 
-        div[data-testid="stSidebar"] div[data-testid="stButton"] > button {{
-          width: 100%;
-          justify-content: flex-start;
-          padding: 0.45rem 0.7rem 0.45rem 2.4rem;
+        div[data-testid="stSidebar"] .mm-nav {{
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          padding: 0 0.4rem;
+        }}
+
+        div[data-testid="stSidebar"] .mm-nav-link {{
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.45rem 0.7rem 0.45rem 2.2rem;
           border-radius: 999px;
           border: 1px solid transparent;
-          background: transparent;
           color: var(--mm-text);
           font-weight: 500;
+          text-decoration: none;
           position: relative;
-          box-shadow: none;
+          transition: background 120ms ease, border 120ms ease;
         }}
 
-        div[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {{
+        div[data-testid="stSidebar"] .mm-nav-link:hover {{
           background: var(--mm-nav-hover-bg);
-          border-color: transparent;
         }}
 
-        div[data-testid="stSidebar"] div[data-testid="stButton"] > button::before {{
+        div[data-testid="stSidebar"] .mm-nav-link::before {{
           content: "";
           position: absolute;
           left: 0.7rem;
@@ -351,58 +377,42 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           mask-size: contain;
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="Data status"]::before {{
+        div[data-testid="stSidebar"] .mm-nav-link[data-mm-nav="data-status"]::before {{
           -webkit-mask-image: var(--mm-icon-data-status);
           mask-image: var(--mm-icon-data-status);
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="Profile"]::before {{
+        div[data-testid="stSidebar"] .mm-nav-link[data-mm-nav="profile"]::before {{
           -webkit-mask-image: var(--mm-icon-profile);
           mask-image: var(--mm-icon-profile);
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="Recommendations"]::before {{
+        div[data-testid="stSidebar"] .mm-nav-link[data-mm-nav="recommendations"]::before {{
           -webkit-mask-image: var(--mm-icon-recommendations);
           mask-image: var(--mm-icon-recommendations);
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="Plan"]::before {{
+        div[data-testid="stSidebar"] .mm-nav-link[data-mm-nav="plan"]::before {{
           -webkit-mask-image: var(--mm-icon-plan);
           mask-image: var(--mm-icon-plan);
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="Export"]::before {{
+        div[data-testid="stSidebar"] .mm-nav-link[data-mm-nav="export"]::before {{
           -webkit-mask-image: var(--mm-icon-export);
           mask-image: var(--mm-icon-export);
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="{active_page}"] {{
+        div[data-testid="stSidebar"] .mm-nav-link.active {{
           background: var(--mm-nav-active-bg);
           border-color: var(--mm-nav-active-border);
           font-weight: 600;
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="{active_page}"]::before {{
+        div[data-testid="stSidebar"] .mm-nav-link.active::before {{
           background-color: var(--mm-nav-icon-active);
         }}
 
-        div[data-testid="stSidebar"]
-          div[data-testid="stButton"]
-          > button[aria-label="{active_page}"]::after {{
+        div[data-testid="stSidebar"] .mm-nav-link.active::after {{
           content: "";
           position: absolute;
           left: 0.35rem;
@@ -414,17 +424,13 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           background: var(--mm-nav-active-bar);
         }}
 
-        .main .block-container {{
-          padding-top: 2.5rem;
-          padding-bottom: 3rem;
-        }}
-
         .data-status {{
           color: var(--mm-text);
+          padding-top: 0.3rem;
         }}
 
         .data-status-header h1 {{
-          font-size: 2rem;
+          font-size: 1.85rem;
           margin-bottom: 0.25rem;
         }}
 
@@ -433,30 +439,28 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           color: var(--mm-muted);
         }}
 
-        .preset-selector label {{
-          font-weight: 600;
-          font-size: 0.8rem;
-          color: var(--mm-muted);
-        }}
-
-        .preset-selector > div {{
+        .preset-selector {{
           display: flex;
           justify-content: flex-end;
-        }}
-
-        .preset-selector div[role="radiogroup"] {{
-          gap: 0.35rem;
+          align-items: flex-start;
+          margin-top: 0.2rem;
         }}
 
         .preset-selector div[data-testid="stSelectbox"] {{
-          max-width: 120px;
+          max-width: 110px;
         }}
 
         .preset-selector div[data-testid="stSelectbox"] > div {{
-          font-size: 0.8rem;
+          font-size: 0.78rem;
+          border-radius: 10px;
         }}
 
-        .kpi-card {{
+        .preset-selector div[data-testid="stSelectbox"] div[role="combobox"] {{
+          min-height: 32px;
+          padding: 0.1rem 0.45rem;
+        }}
+
+        .data-status .kpi-card {{
           background: var(--mm-card-bg);
           border-radius: 16px;
           border: 1px solid var(--mm-card-border);
@@ -468,7 +472,7 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           gap: 0.4rem;
         }}
 
-        .kpi-label {{
+        .data-status .kpi-label {{
           font-size: 0.75rem;
           letter-spacing: 0.02em;
           text-transform: uppercase;
@@ -476,18 +480,18 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           font-weight: 600;
         }}
 
-        .kpi-value {{
-          font-size: 1.3rem;
+        .data-status .kpi-value {{
+          font-size: 1.18rem;
           font-weight: 700;
           color: var(--mm-text);
         }}
 
-        .kpi-subtext {{
+        .data-status .kpi-subtext {{
           font-size: 0.8rem;
           color: var(--mm-muted);
         }}
 
-        .kpi-badge {{
+        .data-status .kpi-badge {{
           display: inline-flex;
           align-items: center;
           padding: 0.2rem 0.6rem;
@@ -499,11 +503,11 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           letter-spacing: 0.03em;
         }}
 
-        .kpi-badge.valid {{ background: var(--mm-badge-valid); }}
-        .kpi-badge.stale {{ background: var(--mm-badge-stale); }}
-        .kpi-badge.invalid {{ background: var(--mm-badge-invalid); }}
+        .data-status .kpi-badge.valid {{ background: var(--mm-badge-valid); }}
+        .data-status .kpi-badge.stale {{ background: var(--mm-badge-stale); }}
+        .data-status .kpi-badge.invalid {{ background: var(--mm-badge-invalid); }}
 
-        .kpi-chip {{
+        .data-status .kpi-chip {{
           display: inline-flex;
           align-items: center;
           padding: 0.15rem 0.55rem;
@@ -514,24 +518,24 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           font-weight: 600;
         }}
 
-        .section-card {{
+        .data-status .section-card {{
           background: var(--mm-section-bg);
           border: 1px solid var(--mm-card-border);
-          border-radius: 18px;
+          border-radius: 16px;
           padding: 1.2rem 1.4rem;
           box-shadow: var(--mm-shadow);
           margin-top: 1.5rem;
         }}
 
-        .section-card h3 {{
+        .data-status .section-card h3 {{
           margin-top: 0;
         }}
 
-        .section-card p {{
+        .data-status .section-card p {{
           color: var(--mm-muted);
         }}
 
-        .section-divider {{
+        .data-status .section-divider {{
           height: 1px;
           background: var(--mm-divider);
           margin: 1rem 0;
@@ -566,19 +570,19 @@ def _render_data_status_theme(preset: str, active_page: str) -> None:
           color: var(--mm-muted);
         }}
 
-        div[data-testid="stDownloadButton"] button {{
+        .data-status div[data-testid="stDownloadButton"] button {{
           border-radius: 999px;
           padding: 0.4rem 1rem;
           font-weight: 600;
         }}
 
-        div[data-testid="stExpander"] {{
+        .data-status div[data-testid="stExpander"] {{
           border-radius: 14px;
           border: 1px solid var(--mm-card-border);
           background: var(--mm-section-bg);
         }}
 
-        div[data-testid="stAlert"] {{
+        .data-status div[data-testid="stAlert"] {{
           border-radius: 14px;
         }}
         </style>
@@ -623,13 +627,28 @@ def _render_kpi_card(
 def run_app() -> None:
     _init_state()
 
+    params = st.query_params if hasattr(st, "query_params") else st.experimental_get_query_params()
+    st.session_state["page"] = resolve_page_from_query(
+        params, st.session_state.get("page", "Data status")
+    )
+
+    page = st.session_state.get("page", "Data status")
+    selected_preset = st.session_state.get("data_status_preset", "Light")
+    _render_data_status_theme(selected_preset, page)
+
     st.sidebar.markdown(
         """
         <div class="mm-sidebar-header">
           <span class="mm-sidebar-logo">
-            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" fill="rgba(59,130,246,0.7)"></circle>
-              <circle cx="12" cy="12" r="5" fill="rgba(14,116,144,0.6)"></circle>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="mm-logo-gradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#60a5fa" />
+                  <stop offset="100%" stop-color="#38bdf8" />
+                </linearGradient>
+              </defs>
+              <circle cx="12" cy="12" r="9" fill="url(#mm-logo-gradient)"></circle>
+              <circle cx="12" cy="12" r="5" fill="rgba(15, 23, 42, 0.2)"></circle>
             </svg>
           </span>
           <span class="mm-sidebar-title">MoneyMap</span>
@@ -638,15 +657,18 @@ def run_app() -> None:
         """,
         unsafe_allow_html=True,
     )
-
-    pages = ["Data status", "Profile", "Recommendations", "Plan", "Export"]
-    for page_name in pages:
-        if st.sidebar.button(page_name, key=f"nav-{page_name}", use_container_width=True):
-            st.session_state["page"] = page_name
-
-    page = st.session_state.get("page", "Data status")
-    selected_preset = st.session_state.get("data_status_preset", "Light")
-    _render_data_status_theme(selected_preset, page)
+    nav_links = []
+    for label, slug in NAV_ITEMS:
+        active_class = "active" if label == page else ""
+        active_attr = ' aria-current="page"' if label == page else ""
+        nav_links.append(
+            f'<a class="mm-nav-link {active_class}" data-mm-nav="{slug}" '
+            f'href="?page={quote(label)}"{active_attr}>{label}</a>'
+        )
+    st.sidebar.markdown(
+        '<nav class="mm-nav" aria-label="Primary">' + "".join(nav_links) + "</nav>",
+        unsafe_allow_html=True,
+    )
 
     if page == "Data status":
         preset_options = ["Light", "Dark"]

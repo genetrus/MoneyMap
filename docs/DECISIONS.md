@@ -109,3 +109,13 @@
 - Consequences: Visual styling improves while content remains identical; PDF verification remains a follow-up task.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
 - Owner: team
+
+## 2026-02-06 — Query-param navigation and scoped Data status styling
+- Date: 2026-02-06
+- Title: Query-param navigation and scoped Data status styling
+- Context: Sidebar navigation needed stable selectors and offline-first behavior without relying on aria-labels; Data status styling should not restyle other pages.
+- Decision: Use query-param links for sidebar navigation and scope Light/Dark styling to the Data status content while keeping sidebar chrome consistent.
+- Alternatives: (1) Keep Streamlit buttons with aria-label selectors. (2) Inject JS to sync navigation state. (3) Apply global theming across all pages.
+- Consequences: Navigation stays stable across Streamlit updates/locales, and styling remains isolated to the Data status page.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
+- Owner: team
