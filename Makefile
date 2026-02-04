@@ -1,18 +1,23 @@
-.PHONY: dev fmt format format-check lint test gates e2e
+.PHONY: dev fmt format fmt-check format-check lint lint-fix test gates e2e
 
 dev:
 	./scripts/dev.sh
 
 fmt:
-	ruff format .
+	python -m ruff format .
 
 format: fmt
 
+fmt-check: format-check
+
 format-check:
-	ruff format --check .
+	python -m ruff format --check .
 
 lint:
-	ruff check .
+	python -m ruff check .
+
+lint-fix:
+	python -m ruff check --fix .
 
 test:
 	pytest -q

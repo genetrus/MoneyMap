@@ -6,3 +6,14 @@ Release 0.1 scope/flows/DoD are summarized in [docs/releases/0.1-brief.md](docs/
 
 ## Development
 See [docs/DEV.md](docs/DEV.md) for the Windows-first setup and one-command run instructions.
+
+## Formatting guardrails
+This repo uses Ruff for formatting and linting (same commands as CI). To avoid future "would reformat" failures, enable pre-commit hooks and use the Make targets for formatting checks. (Money_Map_Spec_Packet.pdf p.14)
+
+```bash
+python -m pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+Use `make fmt` to auto-format and `make fmt-check` to run the CI-equivalent formatting check.

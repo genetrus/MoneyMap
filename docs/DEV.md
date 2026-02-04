@@ -34,6 +34,17 @@ Run the local format/lint/tests gates as a single command. (Блок-схема_
 
 CI runs the same gates on every push/PR (ruff format check, ruff lint, pytest). (Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1; Money_Map_Spec_Packet.pdf p.13–14)
 
+## Pre-commit hooks (format/lint safety)
+Install and enable pre-commit so formatting matches CI before you commit. (Money_Map_Spec_Packet.pdf p.14)
+
+```bash
+python -m pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+The hooks run Ruff lint + format using the same pinned version as CI. If you prefer Make targets, use `make fmt` for formatting and `make fmt-check` for CI-equivalent format checks.
+
 ## E2E smoke tests (Step 8)
 Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_Map_Spec_Packet.pdf p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
@@ -80,6 +91,15 @@ Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_M
   (Money_Map_Spec_Packet.pdf p.14)
 
 Demo profiles live in `profiles/`, with `profiles/demo_fast_start.yaml` used by the E2E tests.
+
+## MVP verification (one command)
+Run the automated MVP verification script, which checks validation, recommend → plan → export, determinism, staleness gating, and plan actionability. (Money_Map_Spec_Packet.pdf p.5–7, p.11, p.14)
+
+```bash
+python scripts/mvp_check.py
+```
+
+If Streamlit is installed (via `.[ui]`), the script will also verify the UI import smoke check; otherwise it will report a skip. (Money_Map_Spec_Packet.pdf p.8, p.14)
 
 ## Editable installs
 - Core editable install:

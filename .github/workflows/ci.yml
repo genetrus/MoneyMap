@@ -47,6 +47,9 @@ jobs:
       - name: Pytest
         run: python -m pytest -q
 
+      - name: MVP verification
+        run: python scripts/mvp_check.py
+
       - name: CLI validate
         run: python -m money_map.app.cli validate --data-dir data
 
