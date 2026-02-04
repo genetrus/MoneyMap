@@ -26,8 +26,14 @@ def _validation_payload(report) -> dict[str, Any]:
         "dataset_version": report.dataset_version,
         "reviewed_at": report.reviewed_at,
         "stale": report.stale,
+        "staleness_policy_days": report.staleness_policy_days,
+        "generated_at": report.generated_at,
         "staleness": report.staleness,
     }
+
+
+def _issue_codes(issues: list[dict[str, Any]]) -> list[str]:
+    return [issue.get("code") for issue in issues if issue.get("code")]
 
 
 def _write_validation_report(
@@ -55,10 +61,11 @@ def _validate_app_data(app_data, out_dir: str | Path | None, run_id: str | None)
 
 def _raise_on_fatals(report, payload: dict[str, Any], run_id: str | None) -> None:
     if report.fatals:
+        fatal_codes = _issue_codes(report.fatals)
         hint = "Fix the fatals and rerun `money-map validate` before continuing."
         details = payload.get("report_path") or "See validate report output."
         raise DataValidationError(
-            message=f"Validation failed with fatals: {', '.join(report.fatals)}",
+            message=f"Validation failed with fatals: {', '.join(fatal_codes)}",
             hint=hint,
             run_id=run_id,
             details=details,

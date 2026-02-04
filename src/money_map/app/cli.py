@@ -41,23 +41,29 @@ def _disable_network_if_requested() -> None:
         _disable_network()
 
 
+def _issue_codes(issues: list[dict]) -> list[str]:
+    return [issue.get("code", "") for issue in issues if issue.get("code")]
+
+
 def _format_report(report: dict) -> str:
+    fatal_codes = _issue_codes(report["fatals"])
+    warn_codes = _issue_codes(report["warns"])
     lines = [
         "validation report",
         f"status: {report['status']}",
         f"dataset_version: {report['dataset_version']}",
         f"reviewed_at: {report['reviewed_at']}",
         f"stale: {report['stale']}",
-        f"staleness_policy_days: {report['staleness']['rulepack'].get('threshold_days')}",
+        f"staleness_policy_days: {report['staleness_policy_days']}",
         f"fatals: {len(report['fatals'])}",
         f"warns: {len(report['warns'])}",
     ]
     if report["fatals"]:
         lines.append("FATALS:")
-        lines.extend([f"- {fatal}" for fatal in report["fatals"]])
+        lines.extend([f"- {fatal}" for fatal in fatal_codes])
     if report["warns"]:
         lines.append("WARNS:")
-        lines.extend([f"- {warn}" for warn in report["warns"]])
+        lines.extend([f"- {warn}" for warn in warn_codes])
     staleness = report.get("staleness", {})
     if staleness:
         lines.append("STALENESS:")
@@ -104,8 +110,9 @@ def validate(
         report = validate_data(data_dir)
         typer.echo(_format_report(report))
         if report["fatals"]:
+            fatal_codes = _issue_codes(report["fatals"])
             error = DataValidationError(
-                message=f"Validation failed with fatals: {', '.join(report['fatals'])}",
+                message=f"Validation failed with fatals: {', '.join(fatal_codes)}",
                 hint="Fix the fatals and rerun `money-map validate`.",
                 run_id=run_context.run_id,
                 details=report.get("report_path"),

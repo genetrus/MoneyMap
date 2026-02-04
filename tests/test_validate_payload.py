@@ -8,6 +8,8 @@ def test_validate_data_payload_has_expected_keys():
         "reviewed_at",
         "status",
         "stale",
+        "staleness_policy_days",
+        "generated_at",
         "staleness",
         "fatals",
         "warns",
