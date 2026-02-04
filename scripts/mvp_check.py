@@ -161,7 +161,7 @@ def _check_staleness_gating() -> tuple[bool, str]:
 
 def _check_ui_import(mode: str) -> tuple[str, str]:
     if importlib.util.find_spec("streamlit") is None:
-        detail = "Streamlit missing. Run: python scripts/install_ui_deps.py"
+        detail = 'Streamlit missing. Run: python -m pip install -e ".[ui]"'
         if mode == "optional":
             return "SKIP", detail
         return "SKIP", f"(required) {detail}"

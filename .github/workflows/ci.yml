@@ -36,13 +36,15 @@ jobs:
         run: python -m pip install --upgrade pip setuptools wheel
 
       - name: Install dependencies
-        run: python -m pip install -e ".[dev,ui]"
+        run: python -m pip install -e .
+
+      - name: Install test tooling
+        run: python -m pip install pytest ruff
 
       - name: Python diagnostics
         run: |
           python -c "import sys; print(sys.executable)"
           python -m pip --version
-          python -c "import streamlit; print(streamlit.__version__)"
 
       - name: Ruff format check
         run: python -m ruff format --check .
@@ -55,9 +57,8 @@ jobs:
 
       - name: MVP verification
         env:
-          MM_UI_CHECK: required
+          MM_UI_CHECK: optional
         run: |
-          python scripts/install_ui_deps.py
           python scripts/mvp_check.py
 
       - name: CLI validate
@@ -90,7 +91,10 @@ jobs:
         run: python -m pip install --upgrade pip setuptools wheel
 
       - name: Install UI dependencies
-        run: python scripts/install_ui_deps.py
+        run: python -m pip install -e ".[ui]"
+
+      - name: Install test tooling
+        run: python -m pip install pytest
 
       - name: Python diagnostics
         run: |
@@ -99,7 +103,9 @@ jobs:
           python -c "import streamlit; print(streamlit.__version__)"
 
       - name: UI smoke imports
-        run: python -c "import streamlit; import money_map.ui"
+        env:
+          MM_UI_CHECK: required
+        run: python -m pytest -q tests/test_ui_smoke.py
 
   e2e-smoke:
     name: E2E smoke (ubuntu-latest)
