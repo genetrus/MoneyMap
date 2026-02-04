@@ -21,8 +21,9 @@ If your network blocks PyPI, retry without build isolation or use a wheelhouse:
 ```bash
 python -m pip install --no-build-isolation -e ".[ui]"
 # or: python scripts/install_ui_deps.py
-# or (offline): python -m pip download -d wheelhouse "money-map[ui]"
-# then: python -m pip install --no-index --find-links=wheelhouse -e ".[ui]"
+# or (offline):
+python scripts/build_wheelhouse.py --out wheelhouse
+python scripts/install_ui_offline.py --wheelhouse wheelhouse
 ```
 
 Without the UI check, you cannot claim “MVP criteria passed.”

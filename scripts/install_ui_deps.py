@@ -27,9 +27,9 @@ def main() -> int:
     print('     python -m pip install --no-build-isolation -e ".[ui]"')
     print("  2) Offline wheelhouse install:")
     print("     # On an online machine:")
-    print('     python -m pip download -d wheelhouse "money-map[ui]"')
+    print("     python scripts/build_wheelhouse.py --out wheelhouse")
     print("     # On the offline machine (repo root):")
-    print('     python -m pip install --no-index --find-links=wheelhouse -e ".[ui]"')
+    print("     python scripts/install_ui_offline.py --wheelhouse wheelhouse")
     print("  3) Configure a proxy/mirror for pip before installing.")
     return status
 

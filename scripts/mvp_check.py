@@ -36,20 +36,24 @@ def _record(results: list[CheckResult], name: str, status: str, detail: str) -> 
 
 
 def _print_results(results: list[CheckResult]) -> None:
+    status_label, exit_code, failures, skips = _summarize_results(results)
     print("MVP CHECK RESULTS")
     for result in results:
         safe_name = result.name.replace("→", "->")
         print(f"{result.status}: {safe_name} - {result.detail}")
-    failures = sum(1 for result in results if result.status == "FAIL")
-    skips = sum(1 for result in results if result.status == "SKIP")
     print("-")
     print(f"Summary: {len(results)} checks, {failures} failed, {skips} skipped")
+    print(status_label)
+
+
+def _summarize_results(results: list[CheckResult]) -> tuple[str, int, int, int]:
+    failures = sum(1 for result in results if result.status == "FAIL")
+    skips = sum(1 for result in results if result.status == "SKIP")
     if failures:
-        print("MVP FAILED")
-    elif skips:
-        print("MVP INCOMPLETE")
-    else:
-        print("MVP PASSED")
+        return "MVP FAILED", 1, failures, skips
+    if skips:
+        return "MVP INCOMPLETE", 2, failures, skips
+    return "MVP PASSED", 0, failures, skips
 
 
 def _check_validation(data_dir: Path) -> tuple[bool, str]:
@@ -159,12 +163,13 @@ def _check_ui_import(mode: str) -> tuple[str, str]:
     if importlib.util.find_spec("streamlit") is None:
         detail = (
             "streamlit missing or not installable in current network. "
-            'To enable UI check: python -m pip install -e ".[ui]" '
-            "or run scripts/install_ui_deps.py for offline guidance."
+            'Online: python -m pip install -e ".[ui]". '
+            "Offline: python scripts/build_wheelhouse.py --out wheelhouse "
+            "and python scripts/install_ui_offline.py --wheelhouse wheelhouse."
         )
         if mode == "optional":
             return "SKIP", detail
-        return "FAIL", detail
+        return "SKIP", f"(required) {detail}"
     from money_map.ui import app as ui_app
 
     if not hasattr(ui_app, "run_app"):
@@ -233,13 +238,8 @@ def main() -> int:
 
     _print_results(results)
 
-    failed = any(result.status == "FAIL" for result in results)
-    skipped = any(result.status == "SKIP" for result in results)
-    if failed:
-        return 1
-    if skipped:
-        return 2
-    return 0
+    _, exit_code, _, _ = _summarize_results(results)
+    return exit_code
 
 
 if __name__ == "__main__":
