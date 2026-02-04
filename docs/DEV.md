@@ -81,6 +81,15 @@ Run the end-to-end API + CLI smoke tests locally with the demo profile. (Money_M
 
 Demo profiles live in `profiles/`, with `profiles/demo_fast_start.yaml` used by the E2E tests.
 
+## MVP verification (one command)
+Run the automated MVP verification script, which checks validation, recommend → plan → export, determinism, staleness gating, and plan actionability. (Money_Map_Spec_Packet.pdf p.5–7, p.11, p.14)
+
+```bash
+python scripts/mvp_check.py
+```
+
+If Streamlit is installed (via `.[ui]`), the script will also verify the UI import smoke check; otherwise it will report a skip. (Money_Map_Spec_Packet.pdf p.8, p.14)
+
 ## Editable installs
 - Core editable install:
   ```bash
