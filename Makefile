@@ -29,4 +29,4 @@ e2e:
 	MONEY_MAP_DISABLE_NETWORK=1 python -m pytest -q tests/test_e2e_api_flow.py tests/test_e2e_cli_flow.py
 
 mvp:
-	python scripts/mvp_check.py
+	./scripts/mvp.sh
