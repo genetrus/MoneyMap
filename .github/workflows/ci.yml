@@ -36,7 +36,7 @@ jobs:
         run: python -m pip install --upgrade pip setuptools wheel
 
       - name: Install dependencies
-        run: python -m pip install -e ".[dev,ui]"
+        run: python -m pip install -e ".[dev]"
 
       - name: Ruff format check
         run: python -m ruff format --check .
@@ -50,7 +50,9 @@ jobs:
       - name: MVP verification
         env:
           MM_UI_CHECK: required
-        run: python scripts/mvp_check.py
+        run: |
+          python scripts/install_ui_deps.py
+          python scripts/mvp_check.py
 
       - name: CLI validate
         run: python -m money_map.app.cli validate --data-dir data
@@ -82,7 +84,7 @@ jobs:
         run: python -m pip install --upgrade pip setuptools wheel
 
       - name: Install UI dependencies
-        run: python -m pip install -e ".[ui]"
+        run: python scripts/install_ui_deps.py
 
       - name: UI smoke imports
         run: python -c "import streamlit; import money_map.ui"

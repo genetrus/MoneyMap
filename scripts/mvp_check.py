@@ -161,16 +161,10 @@ def _check_staleness_gating() -> tuple[bool, str]:
 
 def _check_ui_import(mode: str) -> tuple[str, str]:
     if importlib.util.find_spec("streamlit") is None:
-        detail = (
-            "streamlit missing or not installable in current network. "
-            'Online: python -m pip install -e ".[ui]". '
-            "Offline: python scripts/build_wheelhouse.py --out wheelhouse "
-            "and python scripts/install_ui_offline.py --wheelhouse wheelhouse."
-        )
+        detail = "Streamlit missing. Run: python scripts/install_ui_deps.py"
         if mode == "optional":
             return "SKIP", detail
         return "SKIP", f"(required) {detail}"
-        return "FAIL", 'streamlit not installed (install with: python -m pip install -e ".[ui]")'
     from money_map.ui import app as ui_app
 
     if not hasattr(ui_app, "run_app"):
