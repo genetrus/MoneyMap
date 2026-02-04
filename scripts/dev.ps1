@@ -9,15 +9,12 @@ if (-not (Test-Path $VenvDir)) {
 }
 
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
-$VenvMoneyMapExe = Join-Path $VenvDir "Scripts\money-map.exe"
 
 & $VenvPython -m pip install --upgrade pip
-& $VenvPython -m pip install -e ".[ui]"
+& $VenvPython -m pip install -e ".[dev,ui]"
 
-if (Test-Path $VenvMoneyMapExe) {
-  & $VenvMoneyMapExe --help
-} else {
-  & $VenvPython -m money_map --help
-}
+& $VenvPython -c "import streamlit as st; print('streamlit', st.__version__)"
+
+& $VenvPython -m money_map.app.cli --help
 
 Write-Host "UI command is not implemented yet. When available, run: money-map ui"

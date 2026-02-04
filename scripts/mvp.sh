@@ -12,6 +12,8 @@ fi
 source "$VENV_DIR/bin/activate"
 
 python -m pip install --upgrade pip
-python -m pip install -e . --no-build-isolation
+python -m pip install -e ".[ui]" --no-build-isolation
+
+python -c "import streamlit as st; print('streamlit', st.__version__)"
 
 python scripts/mvp_check.py

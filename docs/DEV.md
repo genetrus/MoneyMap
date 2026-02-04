@@ -104,11 +104,11 @@ If Streamlit is installed (via `.[ui]`), the script will also verify the UI impo
 ## Editable installs
 - Core editable install:
   ```bash
-  pip install -e .
+  python -m pip install -e .
   ```
 - Editable install with dev + UI dependencies:
   ```bash
-  pip install -e ".[dev,ui]"
+  python -m pip install -e ".[dev,ui]"
   ```
 The UI extra lives in `pyproject.toml` under `project.optional-dependencies`; install `.[ui]` for Streamlit, and add `.[dev]` when you need quality tools. (Money_Map_Spec_Packet.pdf p.11, p.13; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1)
 
