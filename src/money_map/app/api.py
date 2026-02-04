@@ -33,7 +33,7 @@ def _validation_payload(report) -> dict[str, Any]:
 
 
 def _issue_codes(issues: list[dict[str, Any]]) -> list[str]:
-    return [issue.get("code", "") for issue in issues]
+    return [issue.get("code") for issue in issues if issue.get("code")]
 
 
 def _write_validation_report(

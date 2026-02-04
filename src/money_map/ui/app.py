@@ -204,10 +204,8 @@ def run_app() -> None:
 
             st.subheader("Validate report")
             report_json = json.dumps(report, ensure_ascii=False, indent=2, default=str)
-            file_name = (
-                f"money_map_validate_report__{report['dataset_version']}__"
-                f"{report['generated_at']}.json"
-            )
+            safe_ts = report["generated_at"].replace(":", "-")
+            file_name = f"money_map_validate_report__{report['dataset_version']}__{safe_ts}.json"
             st.download_button(
                 "Download validate report",
                 data=report_json,

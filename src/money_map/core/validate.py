@@ -172,7 +172,7 @@ def validate(app_data: AppData) -> ValidationReport:
         dataset_version=app_data.meta.dataset_version,
         reviewed_at=app_data.rulepack.reviewed_at,
         stale=stale,
-        staleness_policy_days=app_data.rulepack.staleness_policy.stale_after_days,
+        staleness_policy_days=app_data.meta.staleness_policy.stale_after_days,
         generated_at=datetime.utcnow().replace(microsecond=0).isoformat(),
         staleness={
             "rulepack": asdict(rulepack_staleness),
