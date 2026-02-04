@@ -20,8 +20,10 @@ from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
+from money_map.ui.data_status import data_status_visibility
 from money_map.ui.navigation import NAV_ITEMS, resolve_page_from_query
 from money_map.ui.theme import inject_global_theme
+from money_map.ui.view_mode import get_view_mode, render_view_mode_control
 
 DEFAULT_PROFILE = {
     "name": "Demo",
@@ -45,6 +47,7 @@ def _init_state() -> None:
     st.session_state.setdefault("ui_run_id", str(uuid4()))
     st.session_state.setdefault("page", "Data status")
     st.session_state.setdefault("theme_preset", "Light")
+    st.session_state.setdefault("view_mode", "User")
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -236,6 +239,7 @@ def run_app() -> None:
     </div>
     """
     st.sidebar.markdown(sidebar_html, unsafe_allow_html=True)
+    render_view_mode_control("sidebar")
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
         header_left, header_right = st.columns([0.78, 0.22])
@@ -276,6 +280,9 @@ def run_app() -> None:
             warns_count = len(report["warns"])
             fatals_count = len(report["fatals"])
             warn_summary = _issue_summary(report["warns"])
+            view_mode = get_view_mode()
+            visibility = data_status_visibility(view_mode)
+            is_developer = visibility["show_validation_summary"]
 
             status_label = report["status"].upper()
             status_class = {
@@ -284,145 +291,190 @@ def run_app() -> None:
                 "stale": "stale",
             }.get(report["status"], "valid")
 
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                _render_kpi_card("Dataset version", str(report["dataset_version"]))
-            with col2:
-                _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
-            with col3:
-                _render_kpi_card(
-                    "Status", status_label, badge=status_label, badge_class=status_class
-                )
+            if is_developer:
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    _render_kpi_card("Dataset version", str(report["dataset_version"]))
+                with col2:
+                    _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
+                with col3:
+                    _render_kpi_card(
+                        "Status", status_label, badge=status_label, badge_class=status_class
+                    )
 
-            col4, col5, col6 = st.columns(3)
-            with col4:
-                _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
-            with col5:
-                _render_kpi_card("Fatals", str(fatals_count))
-            with col6:
-                _render_kpi_card(
-                    "Stale",
-                    str(report["stale"]),
-                    chip=f"Staleness policy: {report['staleness_policy_days']} days",
-                )
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
+                with col5:
+                    _render_kpi_card("Fatals", str(fatals_count))
+                with col6:
+                    _render_kpi_card(
+                        "Stale",
+                        str(report["stale"]),
+                        chip=f"Staleness policy: {report['staleness_policy_days']} days",
+                    )
 
-            if report["status"] == "invalid":
-                st.error(
-                    "**Data validation failed**\n\n"
-                    "Fix FATAL issues and re-run validation. Recommendations/Plan/Export may "
-                    "be unreliable until data is valid."
-                )
-            elif report["status"] == "stale":
-                st.warning(
-                    "**Data is stale**\n\n"
-                    "Reviewed_at is older than staleness_policy. Show warnings and apply cautious "
-                    "behavior.\n\n"
-                    "For regulated domains: force legal_gate=require_check when rulepack is stale."
-                )
+                if report["status"] == "invalid":
+                    st.error(
+                        "**Data validation failed**\n\n"
+                        "Fix FATAL issues and re-run validation. Recommendations/Plan/Export may "
+                        "be unreliable until data is valid."
+                    )
+                elif report["status"] == "stale":
+                    st.warning(
+                        "**Data is stale**\n\n"
+                        "Reviewed_at is older than staleness_policy. Show warnings and apply "
+                        "cautious behavior.\n\n"
+                        "For regulated domains: force legal_gate=require_check when rulepack is "
+                        "stale."
+                    )
+                else:
+                    st.caption("Data is valid.")
             else:
-                st.caption("Data is valid.")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    _render_kpi_card("Dataset version", str(report["dataset_version"]))
+                with col2:
+                    _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
+                with col3:
+                    _render_kpi_card(
+                        "Status", status_label, badge=status_label, badge_class=status_class
+                    )
 
-            st.markdown('<div class="section-card">', unsafe_allow_html=True)
-            st.subheader("Validate report")
-            report_json = json.dumps(report, ensure_ascii=False, indent=2, default=str)
-            safe_ts = report["generated_at"].replace(":", "-")
-            file_name = f"money_map_validate_report__{report['dataset_version']}__{safe_ts}.json"
-            st.download_button(
-                "Download validate report",
-                data=report_json,
-                file_name=file_name,
-                mime="application/json",
-            )
-            st.write(f"Generated at: {report['generated_at']}")
-            st.write(
-                "Includes: status, fatals[], warns[], dataset_version, reviewed_at, stale, "
-                "staleness_policy_days"
-            )
-            with st.expander("Raw report JSON"):
-                st.json(report)
-            st.markdown("</div>", unsafe_allow_html=True)
+                stale_label = "Yes" if report["stale"] else "No"
+                _render_kpi_card("Stale", stale_label)
 
-            st.markdown('<div class="section-card">', unsafe_allow_html=True)
-            st.subheader("Validation summary")
-            if fatals_count > 0:
-                st.markdown("**FATAL issues (must fix)**")
-                st.table(_issue_rows(report["fatals"]))
-            if warns_count > 0:
-                st.markdown("**Warnings (non-blocking)**")
-                st.table(_issue_rows(report["warns"]))
+                if warns_count > 0 or fatals_count > 0:
+                    cols = st.columns(2)
+                    if warns_count > 0:
+                        with cols[0]:
+                            _render_kpi_card("Warnings", str(warns_count))
+                    if fatals_count > 0:
+                        with cols[1]:
+                            _render_kpi_card("Fatals", str(fatals_count))
+                    st.caption("Switch to Developer mode for details.")
 
-            with st.expander("Staleness details"):
-                st.write("RulePack: DE")
-                st.write(f"rulepack_reviewed_at: {app_data.rulepack.reviewed_at}")
-                st.write(f"staleness_policy_days: {report['staleness_policy_days']}")
-                rulepack_stale = report["staleness"]["rulepack"].get("is_stale")
-                st.write(f"rulepack_stale: {rulepack_stale}")
-                variant_dates = [
-                    variant.review_date for variant in app_data.variants if variant.review_date
-                ]
-                st.write(f"variants_count: {len(app_data.variants)}")
-                if variant_dates:
-                    st.write(f"oldest_variant_review_date: {min(variant_dates)}")
-                    st.write(f"newest_variant_review_date: {max(variant_dates)}")
-                variants_stale = any(
-                    detail.get("is_stale") for detail in report["staleness"]["variants"].values()
+                summary = {
+                    "invalid": "Data validation failed.",
+                    "stale": "Data is stale.",
+                }.get(report["status"], "Data is valid.")
+                st.caption(summary)
+
+            if visibility["show_validate_report"]:
+                st.markdown('<div class="section-card">', unsafe_allow_html=True)
+                st.subheader("Validate report")
+                report_json = json.dumps(report, ensure_ascii=False, indent=2, default=str)
+                safe_ts = report["generated_at"].replace(":", "-")
+                file_name = (
+                    f"money_map_validate_report__{report['dataset_version']}__{safe_ts}.json"
                 )
-                st.write(f"variants_stale: {variants_stale}")
-                st.caption(
-                    "If rulepack/variants are stale: show warning. For regulated domains apply "
-                    "cautious behavior (force require_check)."
+                st.download_button(
+                    "Download validate report",
+                    data=report_json,
+                    file_name=file_name,
+                    mime="application/json",
                 )
-
-            with st.expander("Data sources & diagnostics"):
-                repo_root = Path(__file__).resolve().parents[3]
-                data_dir = repo_root / "data"
-                sources = []
-                meta_path = data_dir / "meta.yaml"
-                if meta_path.exists():
-                    meta_payload = read_yaml(meta_path)
-                    sources.append(
-                        {
-                            "Source": "data/meta.yaml",
-                            "Type": "meta",
-                            "Schema version": str(meta_payload.get("schema_version", "")),
-                            "Items": len(meta_payload),
-                        }
-                    )
-                rulepack_path = data_dir / "rulepacks" / "DE.yaml"
-                if rulepack_path.exists():
-                    rulepack_payload = read_yaml(rulepack_path)
-                    sources.append(
-                        {
-                            "Source": "data/rulepacks/DE.yaml",
-                            "Type": "rulepack",
-                            "Schema version": str(rulepack_payload.get("schema_version", "")),
-                            "Items": len(rulepack_payload.get("rules", [])),
-                        }
-                    )
-                variants_path = data_dir / "variants.yaml"
-                if variants_path.exists():
-                    variants_payload = read_yaml(variants_path)
-                    sources.append(
-                        {
-                            "Source": "data/variants.yaml",
-                            "Type": "variants",
-                            "Schema version": str(variants_payload.get("schema_version", "")),
-                            "Items": len(variants_payload.get("variants", [])),
-                        }
-                    )
-                if sources:
-                    st.table(sources)
-
+                st.write(f"Generated at: {report['generated_at']}")
                 st.write(
-                    "Reproducibility gate: one script/process should rebuild the same dataset "
-                    "from sources."
+                    "Includes: status, fatals[], warns[], dataset_version, reviewed_at, stale, "
+                    "staleness_policy_days"
                 )
-                st.write(
-                    "Errors must be diagnosable: this page shows validation report + sources; "
-                    "use the report to locate failing items."
-                )
-                st.write("CI should run: pytest + money-map validate.")
-            st.markdown("</div>", unsafe_allow_html=True)
+                if visibility["show_raw_report_json"]:
+                    with st.expander("Raw report JSON"):
+                        st.json(report)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            if visibility["show_validation_summary"]:
+                st.markdown('<div class="section-card">', unsafe_allow_html=True)
+                st.subheader("Validation summary")
+                if fatals_count > 0:
+                    st.markdown("**FATAL issues (must fix)**")
+                    st.table(_issue_rows(report["fatals"]))
+                if warns_count > 0:
+                    st.markdown("**Warnings (non-blocking)**")
+                    st.table(_issue_rows(report["warns"]))
+
+                if visibility["show_staleness_details"]:
+                    with st.expander("Staleness details"):
+                        st.write("RulePack: DE")
+                        st.write(f"rulepack_reviewed_at: {app_data.rulepack.reviewed_at}")
+                        st.write(f"staleness_policy_days: {report['staleness_policy_days']}")
+                        rulepack_stale = report["staleness"]["rulepack"].get("is_stale")
+                        st.write(f"rulepack_stale: {rulepack_stale}")
+                        variant_dates = [
+                            variant.review_date
+                            for variant in app_data.variants
+                            if variant.review_date
+                        ]
+                        st.write(f"variants_count: {len(app_data.variants)}")
+                        if variant_dates:
+                            st.write(f"oldest_variant_review_date: {min(variant_dates)}")
+                            st.write(f"newest_variant_review_date: {max(variant_dates)}")
+                        variants_stale = any(
+                            detail.get("is_stale")
+                            for detail in report["staleness"]["variants"].values()
+                        )
+                        st.write(f"variants_stale: {variants_stale}")
+                        st.caption(
+                            "If rulepack/variants are stale: show warning. For regulated domains "
+                            "apply cautious behavior (force require_check)."
+                        )
+
+                if visibility["show_data_sources"]:
+                    with st.expander("Data sources & diagnostics"):
+                        repo_root = Path(__file__).resolve().parents[3]
+                        data_dir = repo_root / "data"
+                        sources = []
+                        meta_path = data_dir / "meta.yaml"
+                        if meta_path.exists():
+                            meta_payload = read_yaml(meta_path)
+                            sources.append(
+                                {
+                                    "Source": "data/meta.yaml",
+                                    "Type": "meta",
+                                    "Schema version": str(meta_payload.get("schema_version", "")),
+                                    "Items": len(meta_payload),
+                                }
+                            )
+                        rulepack_path = data_dir / "rulepacks" / "DE.yaml"
+                        if rulepack_path.exists():
+                            rulepack_payload = read_yaml(rulepack_path)
+                            sources.append(
+                                {
+                                    "Source": "data/rulepacks/DE.yaml",
+                                    "Type": "rulepack",
+                                    "Schema version": str(
+                                        rulepack_payload.get("schema_version", "")
+                                    ),
+                                    "Items": len(rulepack_payload.get("rules", [])),
+                                }
+                            )
+                        variants_path = data_dir / "variants.yaml"
+                        if variants_path.exists():
+                            variants_payload = read_yaml(variants_path)
+                            sources.append(
+                                {
+                                    "Source": "data/variants.yaml",
+                                    "Type": "variants",
+                                    "Schema version": str(
+                                        variants_payload.get("schema_version", "")
+                                    ),
+                                    "Items": len(variants_payload.get("variants", [])),
+                                }
+                            )
+                        if sources:
+                            st.table(sources)
+
+                        st.write(
+                            "Reproducibility gate: one script/process should rebuild the same "
+                            "dataset from sources."
+                        )
+                        st.write(
+                            "Errors must be diagnosable: this page shows validation report + "
+                            "sources; use the report to locate failing items."
+                        )
+                        st.write("CI should run: pytest + money-map validate.")
+                st.markdown("</div>", unsafe_allow_html=True)
 
             st.markdown('<div class="data-status-disclaimer">', unsafe_allow_html=True)
             st.subheader("Disclaimer")
