@@ -303,6 +303,7 @@ def build_theme_css(theme_name: str) -> str:
       text-decoration: none;
       position: relative;
       transition: background 120ms ease, border 120ms ease;
+      width: 100%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;

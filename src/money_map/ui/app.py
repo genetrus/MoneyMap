@@ -201,36 +201,6 @@ def run_app() -> None:
     page = st.session_state.get("page", "Data status")
     inject_global_theme(st.session_state.get("theme_preset", "Light"))
 
-    st.sidebar.markdown('<div class="mm-sidebar">', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="mm-sidebar-header">
-          <div class="mm-sidebar-brand">
-            <span class="mm-sidebar-logo">
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <defs>
-                  <linearGradient id="mm-logo-gradient" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#60a5fa" />
-                    <stop offset="100%" stop-color="#38bdf8" />
-                  </linearGradient>
-                </defs>
-                <circle cx="12" cy="12" r="9" fill="url(#mm-logo-gradient)"></circle>
-                <circle cx="12" cy="12" r="5" fill="rgba(15, 23, 42, 0.2)"></circle>
-              </svg>
-            </span>
-            <span class="mm-sidebar-title">MoneyMap</span>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.sidebar.markdown(
-        """
-        <div class="mm-sidebar-divider"></div>
-        <div class="mm-sidebar-section-title">Navigate</div>
-        """,
-        unsafe_allow_html=True,
-    )
     nav_links = []
     for label, slug in NAV_ITEMS:
         active_class = "active" if label == page else ""
@@ -239,11 +209,33 @@ def run_app() -> None:
             f'<a class="mm-nav-link {active_class}" data-mm-nav="{slug}" '
             f'href="?page={quote(slug)}"{active_attr}>{label}</a>'
         )
-    st.sidebar.markdown(
-        '<nav class="mm-nav" aria-label="Primary">' + "".join(nav_links) + "</nav>",
-        unsafe_allow_html=True,
-    )
-    st.sidebar.markdown("</div>", unsafe_allow_html=True)
+    sidebar_html = f"""
+    <div class="mm-sidebar">
+      <div class="mm-sidebar-header">
+        <div class="mm-sidebar-brand">
+          <span class="mm-sidebar-logo">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <defs>
+                <linearGradient id="mm-logo-gradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#60a5fa" />
+                  <stop offset="100%" stop-color="#38bdf8" />
+                </linearGradient>
+              </defs>
+              <circle cx="12" cy="12" r="9" fill="url(#mm-logo-gradient)"></circle>
+              <circle cx="12" cy="12" r="5" fill="rgba(15, 23, 42, 0.2)"></circle>
+            </svg>
+          </span>
+          <span class="mm-sidebar-title">MoneyMap</span>
+        </div>
+      </div>
+      <div class="mm-sidebar-divider"></div>
+      <div class="mm-sidebar-section-title">Navigate</div>
+      <nav class="mm-nav" aria-label="Primary">
+        {"".join(nav_links)}
+      </nav>
+    </div>
+    """
+    st.sidebar.markdown(sidebar_html, unsafe_allow_html=True)
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
         header_left, header_right = st.columns([0.78, 0.22])
@@ -265,9 +257,7 @@ def run_app() -> None:
             st.selectbox(
                 "",
                 ["Light", "Dark"],
-                index=0
-                if st.session_state.get("theme_preset", "Light") == "Light"
-                else 1,
+                index=0 if st.session_state.get("theme_preset", "Light") == "Light" else 1,
                 key="theme_preset",
                 label_visibility="collapsed",
             )
