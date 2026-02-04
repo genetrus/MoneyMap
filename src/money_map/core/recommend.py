@@ -12,6 +12,7 @@ from money_map.core.model import (
     StalenessPolicy,
     Variant,
 )
+from money_map.core.profile import profile_hash as compute_profile_hash
 from money_map.core.rules import evaluate_legal
 from money_map.core.staleness import evaluate_staleness
 
@@ -42,8 +43,14 @@ def recommend(
     top_n: int = 5,
 ) -> RecommendationResult:
     filters = filters or {}
-    diagnostics = {"filtered_out": 0, "reasons": {}, "warnings": {}}
+    diagnostics = {
+        "filtered_out": 0,
+        "reasons": {},
+        "warnings": {},
+        "evaluated": len(variants),
+    }
 
+    profile_fingerprint = compute_profile_hash(profile)
     ranked: list[RecommendationVariant] = []
     for variant in variants:
         feasibility = assess_feasibility(profile, variant)
@@ -108,4 +115,8 @@ def recommend(
 
     # Deterministic ordering: score desc, then variant_id asc for tie-breaks.
     ranked.sort(key=lambda item: (-item.score, item.variant.variant_id))
-    return RecommendationResult(ranked_variants=ranked[:top_n], diagnostics=diagnostics)
+    return RecommendationResult(
+        ranked_variants=ranked[:top_n],
+        diagnostics=diagnostics,
+        profile_hash=profile_fingerprint,
+    )

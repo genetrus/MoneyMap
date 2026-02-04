@@ -117,6 +117,7 @@ class RecommendationVariant:
 class RecommendationResult:
     ranked_variants: list[RecommendationVariant]
     diagnostics: dict[str, Any]
+    profile_hash: str
 
 
 @dataclass(frozen=True)
