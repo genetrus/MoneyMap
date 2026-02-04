@@ -414,7 +414,7 @@ Canonical backlog: `docs/backlog.yaml`.
   - Spec refs: Money_Map_Spec_Packet.pdf p.14.
   - Acceptance criteria:
     - CI executes python -m pytest -q on ubuntu and windows.
-    - CI executes PYTHONPATH=src python -m money_map.app.cli validate --data-dir data.
+    - CI executes python -m money_map.app.cli validate --data-dir data after editable install.
   - Repo touches: []
 
 ### Story S-M7-02 — Demo profiles and fixture data
