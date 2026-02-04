@@ -99,3 +99,13 @@
 - Consequences: Users can diagnose runs offline with a stable run_id and file locations, while CLI/UI stays clean.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6, p.8, p.9, p.11, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
+
+## 2026-02-04 — Data status UI preset styling aligned to UX spec
+- Date: 2026-02-04
+- Title: Data status UI preset styling aligned to UX spec
+- Context: The data status page needs Light/Dark visual presets without changing content or logic. The environment lacks PDF extraction tooling, so the exact UI requirements could not be revalidated directly against the PDFs.
+- Decision: Implement CSS-only Light/Dark presets for the Data status page using the existing UI structure, aligning the styling changes to the UX guidance and limiting changes to presentation only.
+- Alternatives: (1) Delay the styling updates until PDF text can be extracted. (2) Implement only a single theme.
+- Consequences: Visual styling improves while content remains identical; PDF verification remains a follow-up task.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
+- Owner: team

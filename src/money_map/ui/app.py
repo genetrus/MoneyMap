@@ -40,6 +40,7 @@ def _init_state() -> None:
     st.session_state.setdefault("export_paths", None)
     st.session_state.setdefault("profile_source", "Demo profile")
     st.session_state.setdefault("ui_run_id", str(uuid4()))
+    st.session_state.setdefault("data_status_preset", "Light")
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -152,6 +153,261 @@ def _guard_fatals(report: dict) -> None:
         st.stop()
 
 
+def _render_data_status_theme(preset: str) -> None:
+    palette = {
+        "Light": {
+            "bg": "#f5f6f8",
+            "sidebar_bg": "#eef0f3",
+            "card_bg": "#ffffff",
+            "card_border": "#e3e6eb",
+            "text": "#1f2328",
+            "muted": "#5f6b7a",
+            "shadow": "0 10px 30px rgba(15, 23, 42, 0.08)",
+            "badge_valid": "#d7f5de",
+            "badge_stale": "#ffe7c2",
+            "badge_invalid": "#ffd7d9",
+            "badge_text": "#1f2328",
+            "chip_bg": "#e3f6e8",
+            "chip_text": "#1b5e3c",
+            "section_bg": "#ffffff",
+            "divider": "#e5e7eb",
+        },
+        "Dark": {
+            "bg": "#0f1724",
+            "sidebar_bg": "#101827",
+            "card_bg": "rgba(21, 30, 44, 0.7)",
+            "card_border": "rgba(148, 163, 184, 0.2)",
+            "text": "#e2e8f0",
+            "muted": "#b6c1d1",
+            "shadow": "0 16px 36px rgba(2, 6, 23, 0.35)",
+            "badge_valid": "rgba(34, 197, 94, 0.25)",
+            "badge_stale": "rgba(251, 191, 36, 0.25)",
+            "badge_invalid": "rgba(239, 68, 68, 0.25)",
+            "badge_text": "#f8fafc",
+            "chip_bg": "rgba(34, 197, 94, 0.2)",
+            "chip_text": "#c0f5d3",
+            "section_bg": "rgba(17, 24, 39, 0.7)",
+            "divider": "rgba(148, 163, 184, 0.2)",
+        },
+    }
+    theme = palette.get(preset, palette["Light"])
+    st.markdown(
+        f"""
+        <style>
+        :root {{
+          --mm-bg: {theme["bg"]};
+          --mm-sidebar-bg: {theme["sidebar_bg"]};
+          --mm-card-bg: {theme["card_bg"]};
+          --mm-card-border: {theme["card_border"]};
+          --mm-text: {theme["text"]};
+          --mm-muted: {theme["muted"]};
+          --mm-shadow: {theme["shadow"]};
+          --mm-badge-valid: {theme["badge_valid"]};
+          --mm-badge-stale: {theme["badge_stale"]};
+          --mm-badge-invalid: {theme["badge_invalid"]};
+          --mm-badge-text: {theme["badge_text"]};
+          --mm-chip-bg: {theme["chip_bg"]};
+          --mm-chip-text: {theme["chip_text"]};
+          --mm-section-bg: {theme["section_bg"]};
+          --mm-divider: {theme["divider"]};
+        }}
+
+        .stApp {{
+          background: var(--mm-bg);
+          color: var(--mm-text);
+        }}
+
+        div[data-testid="stSidebar"] > div {{
+          background: var(--mm-sidebar-bg);
+        }}
+
+        .main .block-container {{
+          padding-top: 2.5rem;
+          padding-bottom: 3rem;
+        }}
+
+        .data-status {{
+          color: var(--mm-text);
+        }}
+
+        .data-status-header h1 {{
+          font-size: 2rem;
+          margin-bottom: 0.25rem;
+        }}
+
+        .data-status-header p {{
+          font-size: 0.95rem;
+          color: var(--mm-muted);
+        }}
+
+        .preset-selector label {{
+          font-weight: 600;
+        }}
+
+        .kpi-card {{
+          background: var(--mm-card-bg);
+          border-radius: 16px;
+          border: 1px solid var(--mm-card-border);
+          box-shadow: var(--mm-shadow);
+          padding: 1rem 1.2rem;
+          min-height: 110px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+        }}
+
+        .kpi-label {{
+          font-size: 0.75rem;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+          color: var(--mm-muted);
+          font-weight: 600;
+        }}
+
+        .kpi-value {{
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: var(--mm-text);
+        }}
+
+        .kpi-subtext {{
+          font-size: 0.8rem;
+          color: var(--mm-muted);
+        }}
+
+        .kpi-badge {{
+          display: inline-flex;
+          align-items: center;
+          padding: 0.2rem 0.6rem;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--mm-badge-text);
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }}
+
+        .kpi-badge.valid {{ background: var(--mm-badge-valid); }}
+        .kpi-badge.stale {{ background: var(--mm-badge-stale); }}
+        .kpi-badge.invalid {{ background: var(--mm-badge-invalid); }}
+
+        .kpi-chip {{
+          display: inline-flex;
+          align-items: center;
+          padding: 0.15rem 0.55rem;
+          border-radius: 999px;
+          background: var(--mm-chip-bg);
+          color: var(--mm-chip-text);
+          font-size: 0.72rem;
+          font-weight: 600;
+        }}
+
+        .section-card {{
+          background: var(--mm-section-bg);
+          border: 1px solid var(--mm-card-border);
+          border-radius: 18px;
+          padding: 1.2rem 1.4rem;
+          box-shadow: var(--mm-shadow);
+          margin-top: 1.5rem;
+        }}
+
+        .section-card h3 {{
+          margin-top: 0;
+        }}
+
+        .section-card p {{
+          color: var(--mm-muted);
+        }}
+
+        .section-divider {{
+          height: 1px;
+          background: var(--mm-divider);
+          margin: 1rem 0;
+        }}
+
+        .data-status table {{
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.85rem;
+        }}
+
+        .data-status table th,
+        .data-status table td {{
+          border-bottom: 1px solid var(--mm-divider);
+          padding: 0.5rem 0.6rem;
+          text-align: left;
+        }}
+
+        .data-status table th {{
+          color: var(--mm-muted);
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }}
+
+        .data-status-disclaimer {{
+          margin-top: 1.5rem;
+          padding: 1rem 1.2rem;
+          border-radius: 14px;
+          background: var(--mm-card-bg);
+          border: 1px solid var(--mm-card-border);
+          color: var(--mm-muted);
+        }}
+
+        div[data-testid="stDownloadButton"] button {{
+          border-radius: 999px;
+          padding: 0.4rem 1rem;
+          font-weight: 600;
+        }}
+
+        div[data-testid="stExpander"] {{
+          border-radius: 14px;
+          border: 1px solid var(--mm-card-border);
+          background: var(--mm-section-bg);
+        }}
+
+        div[data-testid="stAlert"] {{
+          border-radius: 14px;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_kpi_card(
+    label: str,
+    value: str,
+    subtext: str | None = None,
+    badge: str | None = None,
+    badge_class: str | None = None,
+    chip: str | None = None,
+) -> None:
+    badge_html = ""
+    if badge and badge_class:
+        badge_html = f'<span class="kpi-badge {badge_class}">{badge}</span>'
+    chip_html = f'<span class="kpi-chip">{chip}</span>' if chip else ""
+    subtext_html = f'<div class="kpi-subtext">{subtext}</div>' if subtext else ""
+    st.markdown(
+        """
+        <div class="kpi-card">
+          <div class="kpi-label">{label}</div>
+          <div class="kpi-value">{value}</div>
+          {badge_html}
+          {subtext_html}
+          {chip_html}
+        </div>
+        """.format(
+            label=label,
+            value=value,
+            badge_html=badge_html,
+            subtext_html=subtext_html,
+            chip_html=chip_html,
+        ),
+        unsafe_allow_html=True,
+    )
+
+
 def run_app() -> None:
     _init_state()
 
@@ -162,8 +418,27 @@ def run_app() -> None:
     )
 
     if page == "Data status":
-        st.title("Data status")
-        st.caption("Validation, staleness, and dataset metadata (offline-first).")
+        preset_options = ["Light", "Dark"]
+        st.sidebar.markdown("### Data status preset")
+        selected_preset = st.sidebar.radio(
+            "",
+            preset_options,
+            index=preset_options.index(st.session_state.get("data_status_preset", "Light")),
+        )
+        st.session_state["data_status_preset"] = selected_preset
+
+        _render_data_status_theme(selected_preset)
+
+        st.markdown('<div class="data-status">', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="data-status-header">
+              <h1>Data status</h1>
+              <p>Validation, staleness, and dataset metadata (offline-first).</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         def _render_status() -> None:
             report = _get_validation()
@@ -172,19 +447,34 @@ def run_app() -> None:
             fatals_count = len(report["fatals"])
             warn_summary = _issue_summary(report["warns"])
 
+            status_label = report["status"].upper()
+            status_class = {
+                "valid": "valid",
+                "invalid": "invalid",
+                "stale": "stale",
+            }.get(report["status"], "valid")
+
             col1, col2, col3 = st.columns(3)
-            col1.metric("Dataset version", report["dataset_version"])
-            col2.metric("Reviewed at", report["reviewed_at"])
-            col3.metric("Status", report["status"])
+            with col1:
+                _render_kpi_card("Dataset version", str(report["dataset_version"]))
+            with col2:
+                _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
+            with col3:
+                _render_kpi_card(
+                    "Status", status_label, badge=status_label, badge_class=status_class
+                )
 
             col4, col5, col6 = st.columns(3)
-            col4.metric("Warnings", str(warns_count), warn_summary or "")
-            col5.metric("Fatals", str(fatals_count))
-            col6.metric(
-                "Stale",
-                str(report["stale"]),
-                f"Staleness policy: {report['staleness_policy_days']} days",
-            )
+            with col4:
+                _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
+            with col5:
+                _render_kpi_card("Fatals", str(fatals_count))
+            with col6:
+                _render_kpi_card(
+                    "Stale",
+                    str(report["stale"]),
+                    chip=f"Staleness policy: {report['staleness_policy_days']} days",
+                )
 
             if report["status"] == "invalid":
                 st.error(
@@ -202,6 +492,7 @@ def run_app() -> None:
             else:
                 st.caption("Data is valid.")
 
+            st.markdown('<div class="section-card">', unsafe_allow_html=True)
             st.subheader("Validate report")
             report_json = json.dumps(report, ensure_ascii=False, indent=2, default=str)
             safe_ts = report["generated_at"].replace(":", "-")
@@ -219,7 +510,9 @@ def run_app() -> None:
             )
             with st.expander("Raw report JSON"):
                 st.json(report)
+            st.markdown("</div>", unsafe_allow_html=True)
 
+            st.markdown('<div class="section-card">', unsafe_allow_html=True)
             st.subheader("Validation summary")
             if fatals_count > 0:
                 st.markdown("**FATAL issues (must fix)**")
@@ -299,7 +592,9 @@ def run_app() -> None:
                     "use the report to locate failing items."
                 )
                 st.write("CI should run: pytest + money-map validate.")
+            st.markdown("</div>", unsafe_allow_html=True)
 
+            st.markdown('<div class="data-status-disclaimer">', unsafe_allow_html=True)
             st.subheader("Disclaimer")
             st.write(
                 "Не является: юридическим сервисом, биржей вакансий, системой прогнозирования "
@@ -309,8 +604,10 @@ def run_app() -> None:
                 "Ограничение: не делаем юридических заключений и гарантий дохода; только "
                 "диапазоны и чеклисты."
             )
+            st.markdown("</div>", unsafe_allow_html=True)
 
         _run_with_error_boundary(_render_status)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     elif page == "Profile":
         st.header("Profile")
