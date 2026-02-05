@@ -284,14 +284,11 @@ def build_theme_css(theme_name: str) -> str:
       margin: 0.35rem 0.2rem 0.6rem;
     }}
 
-    .mm-nav {{
-      display: flex;
-      flex-direction: column;
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {{
       gap: 0.25rem;
-      padding: 0 0.4rem;
     }}
 
-    .mm-nav-link {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label {{
       display: flex;
       align-items: center;
       gap: 0.6rem;
@@ -309,11 +306,11 @@ def build_theme_css(theme_name: str) -> str:
       text-overflow: ellipsis;
     }}
 
-    .mm-nav-link:hover {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {{
       background: var(--mm-nav-hover-bg);
     }}
 
-    .mm-nav-link::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label::before {{
       content: "";
       position: absolute;
       left: 0.7rem;
@@ -328,51 +325,42 @@ def build_theme_css(theme_name: str) -> str:
       mask-size: contain;
     }}
 
-    .mm-nav-link[data-mm-nav="data-status"]::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(1)::before {{
       -webkit-mask-image: var(--mm-icon-data-status);
       mask-image: var(--mm-icon-data-status);
     }}
 
-    .mm-nav-link[data-mm-nav="profile"]::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(2)::before {{
       -webkit-mask-image: var(--mm-icon-profile);
       mask-image: var(--mm-icon-profile);
     }}
 
-    .mm-nav-link[data-mm-nav="recommendations"]::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(3)::before {{
       -webkit-mask-image: var(--mm-icon-recommendations);
       mask-image: var(--mm-icon-recommendations);
     }}
 
-    .mm-nav-link[data-mm-nav="plan"]::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(4)::before {{
       -webkit-mask-image: var(--mm-icon-plan);
       mask-image: var(--mm-icon-plan);
     }}
 
-    .mm-nav-link[data-mm-nav="export"]::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(5)::before {{
       -webkit-mask-image: var(--mm-icon-export);
       mask-image: var(--mm-icon-export);
     }}
 
-    .mm-nav-link.active {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] input:checked + div {{
       background: var(--mm-nav-active-bg);
-      border-color: var(--mm-nav-active-border);
+      border-radius: 999px;
+    }}
+
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] input:checked ~ div {{
       font-weight: 600;
     }}
 
-    .mm-nav-link.active::before {{
+    section[data-testid="stSidebar"] div[data-testid="stRadio"] input:checked + div::before {{
       background-color: var(--mm-nav-icon-active);
-    }}
-
-    .mm-nav-link.active::after {{
-      content: "";
-      position: absolute;
-      left: 0.35rem;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 60%;
-      border-radius: 999px;
-      background: var(--mm-nav-active-bar);
     }}
 
     .data-status {{
