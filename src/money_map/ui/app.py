@@ -48,6 +48,7 @@ def _init_state() -> None:
     st.session_state.setdefault("theme_preset", "Light")
     st.session_state.setdefault("view_mode", "User")
     st.session_state.setdefault("profile_quick_mode", True)
+    st.session_state.setdefault("page_initialized", False)
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -195,12 +196,16 @@ def _render_kpi_card(
 
 def run_app() -> None:
     _init_state()
+    page_slugs = [slug for _, slug in NAV_ITEMS]
 
     params = st.query_params if hasattr(st, "query_params") else st.experimental_get_query_params()
-    resolved_page = resolve_page_from_query(params, st.session_state.get("page", "data-status"))
-    st.session_state["page"] = resolved_page
+    if not st.session_state.get("page_initialized", False):
+        st.session_state["page"] = resolve_page_from_query(
+            params,
+            st.session_state.get("page", "data-status"),
+        )
+        st.session_state["page_initialized"] = True
 
-    page_slugs = [slug for _, slug in NAV_ITEMS]
     if st.session_state["page"] not in page_slugs:
         st.session_state["page"] = page_slugs[0]
 
@@ -235,14 +240,15 @@ def run_app() -> None:
         "Navigate",
         page_slugs,
         format_func=lambda slug: NAV_LABEL_BY_SLUG.get(slug, slug),
-        index=page_slugs.index(st.session_state["page"]),
         key="page",
         label_visibility="collapsed",
     )
-    if hasattr(st, "query_params"):
-        st.query_params["page"] = page_slug
-    else:
-        st.experimental_set_query_params(page=page_slug)
+    query_page = resolve_page_from_query(params, "")
+    if query_page != page_slug:
+        if hasattr(st, "query_params"):
+            st.query_params["page"] = page_slug
+        else:
+            st.experimental_set_query_params(page=page_slug)
     render_view_mode_control("sidebar")
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:

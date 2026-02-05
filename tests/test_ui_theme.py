@@ -26,3 +26,4 @@ def test_build_theme_css_contains_key_selectors() -> None:
     assert "--mm-bg" in css
     assert '#mm-nav-anchor + div[data-testid="stRadio"]' in css
     assert ".data-status" in css
+    assert "label:nth-of-type(1)::before" in css
