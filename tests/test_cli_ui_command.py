@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -44,5 +45,7 @@ def test_ui_install_flag_bootstraps_and_launches(monkeypatch) -> None:
 
     cli.ui(install=True)
 
-    assert str(calls[0][-1]).endswith("scripts/install_ui_deps.py")
+    install_script = Path(str(calls[0][-1]))
+    assert install_script.name == "install_ui_deps.py"
+    assert install_script.parent.name == "scripts"
     assert calls[1][1:4] == ["-m", "streamlit", "run"]
