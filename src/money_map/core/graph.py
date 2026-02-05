@@ -14,6 +14,7 @@ def build_plan(
     variant: Variant,
     rulepack,
     staleness_policy: StalenessPolicy,
+    compliance_mode: str = "include_with_prep",
 ) -> RoutePlan:
     legal = evaluate_legal(rulepack, variant, staleness_policy)
     prep_detail = "; ".join(variant.prep_steps) if variant.prep_steps else "No prep tasks provided."
@@ -45,8 +46,9 @@ def build_plan(
     }
 
     compliance_items = []
-    for kit, items in rulepack.compliance_kits.items():
-        compliance_items.append(f"{kit}: {', '.join(items)}")
+    if compliance_mode == "include_with_prep" and legal.legal_gate != "ok":
+        for kit, items in rulepack.compliance_kits.items():
+            compliance_items.append(f"{kit}: {', '.join(items)}")
     compliance_items.extend(legal.checklist)
 
     rulepack_staleness = evaluate_staleness(

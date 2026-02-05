@@ -8,6 +8,8 @@ def test_feasibility_language_ordering_and_status():
         title="Test",
         summary="Test",
         tags=[],
+        taxonomy_id="M00",
+        cells=["cell_1"],
         feasibility={
             "min_language_level": "A2",
             "min_capital": 500,

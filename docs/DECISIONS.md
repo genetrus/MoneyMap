@@ -129,3 +129,13 @@
 - Consequences: Every page responds to the Light/Dark switch; UI structure remains unchanged while presentation matches the reference mock more closely.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
 - Owner: team
+
+## 2026-02-08 — Projection-block navigation and centralized projection state
+- Date: 2026-02-08
+- Title: UI navigation aligned to projection blocks + centralized projection state + filters are not data edits
+- Context: Entity/block diagram requires each block to be explicit in UI and data-flow contracts. Existing UI mixed profile/filters/selection keys and hid parts of the block graph.
+- Decision: Added 9 block-aligned pages (AppData, UserProfile, Variant, Taxonomy/Cells, Bridges/Paths, RulePack, RecommendationResult, RoutePlan, Exports) and centralized all state transitions in `ui/projection_state.py`. Filters remain user knobs (ranking/selection only), while Variant feasibility/economics/legal stay read-only facts from YAML.
+- Alternatives: (1) Keep compact 5-page UI with implicit block mapping. (2) Allow editing Variant facts in User mode.
+- Consequences: Dependencies and invalidation are explicit; recommend/plan/export become auditable and deterministic via one projection state graph.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.6–10, p.12
+- Owner: team

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 NAV_ITEMS: list[tuple[str, str]] = [
-    ("Data status", "data-status"),
-    ("Profile", "profile"),
-    ("Recommendations", "recommendations"),
-    ("Plan", "plan"),
-    ("Export", "export"),
+    ("AppData", "appdata"),
+    ("UserProfile", "profile"),
+    ("Variant", "variant"),
+    ("Taxonomy/Cells", "taxonomy-cells"),
+    ("Bridges/Paths", "bridges-paths"),
+    ("RulePack", "rulepack"),
+    ("RecommendationResult", "recommendations"),
+    ("RoutePlan", "plan"),
+    ("Exports", "export"),
 ]
 
 NAV_LABEL_BY_SLUG = {slug: label for label, slug in NAV_ITEMS}

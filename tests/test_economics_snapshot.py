@@ -8,6 +8,8 @@ def test_economics_snapshot_fields():
         title="Economics",
         summary="Economics",
         tags=[],
+        taxonomy_id="M00",
+        cells=["cell_1"],
         feasibility={},
         prep_steps=[],
         economics={

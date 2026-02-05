@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from money_map.core.model import AppData, Meta, Rule, Rulepack, StalenessPolicy, Variant
+from money_map.core.model import AppData, BridgePath, Meta, Rule, Rulepack, StalenessPolicy, Variant
 from money_map.storage.fs import read_yaml
 
 
@@ -48,6 +48,8 @@ def _load_variants(variants_path: Path) -> list[Variant]:
                 title=str(entry.get("title", "")),
                 summary=str(entry.get("summary", "")),
                 tags=list(entry.get("tags", [])),
+                taxonomy_id=str(entry.get("taxonomy_id", "unknown")),
+                cells=list(entry.get("cells", [])),
                 feasibility=entry.get("feasibility", {}),
                 prep_steps=list(entry.get("prep_steps", [])),
                 economics=entry.get("economics", {}),
@@ -58,12 +60,29 @@ def _load_variants(variants_path: Path) -> list[Variant]:
     return variants
 
 
+def _load_bridges(bridges_path: Path) -> list[BridgePath]:
+    raw = read_yaml(bridges_path) if bridges_path.exists() else {}
+    bridges: list[BridgePath] = []
+    for entry in raw.get("bridges", []):
+        bridges.append(
+            BridgePath(
+                bridge_id=str(entry.get("bridge_id", "")),
+                from_cell=str(entry.get("from_cell", "")),
+                to_cell=str(entry.get("to_cell", "")),
+                preconditions=list(entry.get("preconditions", [])),
+                steps=list(entry.get("steps", [])),
+            )
+        )
+    return bridges
+
+
 def load_app_data(data_dir: str | Path = "data") -> AppData:
     data_dir = Path(data_dir)
     meta = _load_meta(data_dir / "meta.yaml")
     rulepack = _load_rulepack(data_dir / "rulepacks" / "DE.yaml", meta.staleness_policy)
     variants = _load_variants(data_dir / "variants.yaml")
-    return AppData(meta=meta, rulepack=rulepack, variants=variants)
+    bridges = _load_bridges(data_dir / "bridges.yaml")
+    return AppData(meta=meta, rulepack=rulepack, variants=variants, bridges=bridges)
 
 
 def load_profile(profile_path: str | Path) -> dict[str, Any]:
