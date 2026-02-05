@@ -210,7 +210,7 @@ def run_app() -> None:
         active_attr = ' aria-current="page"' if label == page else ""
         nav_links.append(
             f'<a class="mm-nav-link {active_class}" data-mm-nav="{slug}" '
-            f'href="?page={quote(slug)}"{active_attr}>{label}</a>'
+            f'href="?page={quote(slug)}" target="_self"{active_attr}>{label}</a>'
         )
     sidebar_html = f"""
     <div class="mm-sidebar">
