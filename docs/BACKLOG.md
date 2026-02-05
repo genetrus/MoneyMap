@@ -6,7 +6,7 @@ Canonical backlog: `docs/backlog.yaml`.
 
 Current focus (2 stages requested by stakeholder):
 
-- [ ] **Stage 1 — E2E frame + DoD lock**: confirm target flow (`Data status → Profile → Recommendations → Plan → Export`) and fix explicit completion criteria.
+- [x] **Stage 1 — E2E frame + DoD lock**: confirm target flow (`Data status → Profile → Recommendations → Plan → Export`) and fix explicit completion criteria. See `docs/releases/STAGE_01_E2E_DOD.md`.
 - [ ] **Stage 2 — AppData loading foundation**: load local YAML/JSON dataset, `meta.yaml` and DE rulepack into unified app data before recommendation flows.
 
 ## Requirements summary (from PDFs)
