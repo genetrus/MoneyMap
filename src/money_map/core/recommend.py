@@ -16,6 +16,14 @@ from money_map.core.profile import profile_hash as compute_profile_hash
 from money_map.core.rules import evaluate_legal
 from money_map.core.staleness import evaluate_staleness
 
+LEGAL_FRICTION_SCORE = {
+    "ok": 0,
+    "require_check": 1,
+    "registration": 2,
+    "license": 3,
+    "blocked": 4,
+}
+
 
 def is_variant_stale(variant: Variant, policy: StalenessPolicy) -> bool:
     return evaluate_staleness(variant.review_date, policy, label="variant").is_stale
@@ -33,6 +41,12 @@ def _score_variant(variant: Variant, objective: str) -> float:
     return (-time_mid) + net_mid * 0.01
 
 
+def _inc_reason(diagnostics: dict, code: str) -> None:
+    diagnostics["filtered_out"] += 1
+    diagnostics["reasons"].setdefault(code, 0)
+    diagnostics["reasons"][code] += 1
+
+
 def recommend(
     profile: dict,
     variants: list[Variant],
@@ -48,6 +62,7 @@ def recommend(
         "reasons": {},
         "warnings": {},
         "evaluated": len(variants),
+        "applied_filters": dict(filters),
     }
 
     profile_fingerprint = compute_profile_hash(profile)
@@ -67,16 +82,54 @@ def recommend(
             diagnostics["warnings"].setdefault("stale_variant", 0)
             diagnostics["warnings"]["stale_variant"] += 1
 
-        max_time = filters.get("max_time_to_money_days")
-        if max_time and economics.time_to_first_money_days_range[1] > max_time:
-            diagnostics["filtered_out"] += 1
-            diagnostics["reasons"].setdefault("time_to_money", 0)
-            diagnostics["reasons"]["time_to_money"] += 1
+        max_time = filters.get("max_time_to_first_money_days") or filters.get(
+            "max_time_to_money_days"
+        )
+        if max_time and economics.time_to_first_money_days_range[1] > int(max_time):
+            _inc_reason(diagnostics, "time_to_money")
             continue
+
+        min_net = filters.get("min_typical_net_month")
+        if min_net and economics.typical_net_month_eur_range[0] < int(min_net):
+            _inc_reason(diagnostics, "min_typical_net_month")
+            continue
+
+        allowed_gates = filters.get("allowed_legal_gates")
+        if allowed_gates and legal.legal_gate not in allowed_gates:
+            _inc_reason(diagnostics, "allowed_legal_gates")
+            continue
+
+        max_legal_friction = filters.get("max_legal_friction")
+        if max_legal_friction is not None and LEGAL_FRICTION_SCORE.get(legal.legal_gate, 99) > int(
+            max_legal_friction
+        ):
+            _inc_reason(diagnostics, "max_legal_friction")
+            continue
+
         if filters.get("exclude_blocked") and legal.legal_gate == "blocked":
-            diagnostics["filtered_out"] += 1
-            diagnostics["reasons"].setdefault("blocked", 0)
-            diagnostics["reasons"]["blocked"] += 1
+            _inc_reason(diagnostics, "blocked")
+            continue
+
+        if (
+            filters.get("compliance_mode") == "exclude_if_requires_prep"
+            and legal.legal_gate != "ok"
+        ):
+            _inc_reason(diagnostics, "compliance_mode")
+            continue
+
+        allowed_feasibility = filters.get("allowed_feasibility_status")
+        if allowed_feasibility and feasibility.status not in allowed_feasibility:
+            _inc_reason(diagnostics, "allowed_feasibility_status")
+            continue
+
+        include_tags = set(filters.get("include_tags") or [])
+        if include_tags and not include_tags.intersection(set(variant.tags)):
+            _inc_reason(diagnostics, "include_tags")
+            continue
+
+        exclude_tags = set(filters.get("exclude_tags") or [])
+        if exclude_tags and exclude_tags.intersection(set(variant.tags)):
+            _inc_reason(diagnostics, "exclude_tags")
             continue
 
         score = _score_variant(variant, objective_preset)
@@ -113,7 +166,6 @@ def recommend(
             )
         )
 
-    # Deterministic ordering: score desc, then variant_id asc for tie-breaks.
     ranked.sort(key=lambda item: (-item.score, item.variant.variant_id))
     return RecommendationResult(
         ranked_variants=ranked[:top_n],

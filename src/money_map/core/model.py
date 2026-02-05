@@ -38,6 +38,8 @@ class Variant:
     title: str
     summary: str
     tags: list[str]
+    taxonomy_id: str
+    cells: list[str]
     feasibility: dict[str, Any]
     prep_steps: list[str]
     economics: dict[str, Any]
@@ -46,10 +48,20 @@ class Variant:
 
 
 @dataclass(frozen=True)
+class BridgePath:
+    bridge_id: str
+    from_cell: str
+    to_cell: str
+    preconditions: list[str]
+    steps: list[str]
+
+
+@dataclass(frozen=True)
 class AppData:
     meta: Meta
     rulepack: Rulepack
     variants: list[Variant]
+    bridges: list[BridgePath]
 
 
 @dataclass(frozen=True)

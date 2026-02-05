@@ -1,0 +1,19 @@
+bridges:
+  - bridge_id: bridge.local_to_remote
+    from_cell: cell_2
+    to_cell: cell_5
+    preconditions:
+      - Portfolio draft ready
+      - Basic online profile
+    steps:
+      - Publish service listing
+      - Send first 10 outreach messages
+  - bridge_id: bridge.remote_to_regulated
+    from_cell: cell_5
+    to_cell: cell_7
+    preconditions:
+      - Income tracking started
+      - Compliance prep accepted
+    steps:
+      - Collect mandatory documents
+      - Submit registration/licensing request

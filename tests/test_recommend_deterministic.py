@@ -48,6 +48,8 @@ def test_recommend_tiebreaker_orders_by_variant_id():
             title=f"Variant {variant_id}",
             summary="Summary",
             tags=[],
+            taxonomy_id="M00",
+            cells=["cell_1"],
             feasibility={},
             prep_steps=[],
             economics={

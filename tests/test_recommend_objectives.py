@@ -18,6 +18,8 @@ def test_recommend_objectives_rankings():
         title="Fast money",
         summary="Fast",
         tags=[],
+        taxonomy_id="M00",
+        cells=["cell_1"],
         feasibility={},
         prep_steps=[],
         economics={
@@ -33,6 +35,8 @@ def test_recommend_objectives_rankings():
         title="High net",
         summary="High",
         tags=[],
+        taxonomy_id="M00",
+        cells=["cell_1"],
         feasibility={},
         prep_steps=[],
         economics={

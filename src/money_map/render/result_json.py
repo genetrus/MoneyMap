@@ -16,6 +16,7 @@ def render_result_json(
     diagnostics: dict[str, Any] | None = None,
     profile_hash: str | None = None,
     run_id: str | None = None,
+    applied_filters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     variant = recommendation.variant
     applied_rules = plan.applied_rules
@@ -34,6 +35,7 @@ def render_result_json(
             "legal_checklist": plan.compliance,
         },
         "diagnostics": diagnostics,
+        "applied_filters": applied_filters or {},
         "feasibility": asdict(recommendation.feasibility),
         "economics": asdict(recommendation.economics),
         "legal": {
