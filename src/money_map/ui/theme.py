@@ -284,11 +284,11 @@ def build_theme_css(theme_name: str) -> str:
       margin: 0.35rem 0.2rem 0.6rem;
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {{
+    #mm-nav-anchor + div[data-testid="stRadio"] > div {{
       gap: 0.25rem;
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label {{
       display: flex;
       align-items: center;
       gap: 0.6rem;
@@ -306,11 +306,11 @@ def build_theme_css(theme_name: str) -> str:
       text-overflow: ellipsis;
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:hover {{
       background: var(--mm-nav-hover-bg);
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label::before {{
       content: "";
       position: absolute;
       left: 0.7rem;
@@ -325,41 +325,41 @@ def build_theme_css(theme_name: str) -> str:
       mask-size: contain;
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(1)::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="data-status"])::before {{
       -webkit-mask-image: var(--mm-icon-data-status);
       mask-image: var(--mm-icon-data-status);
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(2)::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="profile"])::before {{
       -webkit-mask-image: var(--mm-icon-profile);
       mask-image: var(--mm-icon-profile);
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(3)::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="recommendations"])::before {{
       -webkit-mask-image: var(--mm-icon-recommendations);
       mask-image: var(--mm-icon-recommendations);
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(4)::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="plan"])::before {{
       -webkit-mask-image: var(--mm-icon-plan);
       mask-image: var(--mm-icon-plan);
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] label:nth-of-type(5)::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="export"])::before {{
       -webkit-mask-image: var(--mm-icon-export);
       mask-image: var(--mm-icon-export);
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] input:checked + div {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input:checked) {{
       background: var(--mm-nav-active-bg);
       border-radius: 999px;
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] input:checked ~ div {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input:checked) {{
       font-weight: 600;
     }}
 
-    section[data-testid="stSidebar"] div[data-testid="stRadio"] input:checked + div::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input:checked)::before {{
       background-color: var(--mm-nav-icon-active);
     }}
 
