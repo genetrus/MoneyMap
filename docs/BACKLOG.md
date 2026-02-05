@@ -2,6 +2,13 @@
 
 Canonical backlog: `docs/backlog.yaml`.
 
+## Incremental execution checklist (20-stage baseline)
+
+Current focus (2 stages requested by stakeholder):
+
+- [ ] **Stage 1 — E2E frame + DoD lock**: confirm target flow (`Data status → Profile → Recommendations → Plan → Export`) and fix explicit completion criteria.
+- [ ] **Stage 2 — AppData loading foundation**: load local YAML/JSON dataset, `meta.yaml` and DE rulepack into unified app data before recommendation flows.
+
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.
 - Output includes ranked Top-N variants with feasibility, legal gate, time-to-first-money, net income ranges (no promises). Spec refs: Money_Map_Spec_Packet.pdf p.3-4, p.6-7.
