@@ -206,7 +206,7 @@ def run_app() -> None:
 
     inject_global_theme(st.session_state.get("theme_preset", "Light"))
 
-    sidebar_html = f"""
+    sidebar_html = """
     <div class="mm-sidebar">
       <div class="mm-sidebar-header">
         <div class="mm-sidebar-brand">
