@@ -1,6 +1,7 @@
 reviewed_at: "2026-01-01"
 staleness_policy:
-  stale_after_days: 180
+  warn_after_days: 180
+  hard_after_days: 365
 compliance_kits:
   tax_basics:
     - Track invoices and receipts weekly

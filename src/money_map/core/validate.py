@@ -84,7 +84,7 @@ def validate(app_data: AppData) -> ValidationReport:
         app_data.meta.staleness_policy,
         label="rulepack",
     )
-    if rulepack_staleness.severity == "fatal":
+    if rulepack_staleness.age_days is None and rulepack_staleness.severity == "fatal":
         fatals.append(
             _issue(
                 "RULEPACK_REVIEWED_AT_INVALID",
@@ -308,8 +308,12 @@ def validate(app_data: AppData) -> ValidationReport:
         stale = True
         warns.append(
             _issue(
-                "STALE_RULEPACK",
-                message="Rulepack is stale.",
+                "STALE_RULEPACK_HARD" if rulepack_staleness.is_hard_stale else "STALE_RULEPACK",
+                message=(
+                    "Rulepack is hard-stale."
+                    if rulepack_staleness.is_hard_stale
+                    else "Rulepack is stale."
+                ),
                 source="rulepack",
                 location="rulepack.reviewed_at",
             )
@@ -338,7 +342,7 @@ def validate(app_data: AppData) -> ValidationReport:
         dataset_version=app_data.meta.dataset_version,
         reviewed_at=app_data.rulepack.reviewed_at,
         stale=stale,
-        staleness_policy_days=app_data.meta.staleness_policy.stale_after_days,
+        staleness_policy_days=app_data.meta.staleness_policy.warn_after_days,
         generated_at=datetime.utcnow().replace(microsecond=0).isoformat(),
         staleness={
             "rulepack": asdict(rulepack_staleness),

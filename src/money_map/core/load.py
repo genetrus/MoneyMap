@@ -24,7 +24,10 @@ def _load_meta(meta_path: Path) -> Meta:
     return Meta(
         dataset_version=str(raw.get("dataset_version", "")),
         staleness_policy=StalenessPolicy(
-            stale_after_days=int(staleness_policy.get("stale_after_days", 180))
+            warn_after_days=int(
+                staleness_policy.get("warn_after_days", staleness_policy.get("stale_after_days", 180))
+            ),
+            hard_after_days=int(staleness_policy.get("hard_after_days", 365)),
         ),
     )
 
@@ -33,9 +36,15 @@ def _load_rulepack(rulepack_path: Path, meta_policy: StalenessPolicy) -> Rulepac
     raw = read_mapping(rulepack_path)
     staleness_policy_raw = raw.get("staleness_policy") or {}
     staleness_policy = StalenessPolicy(
-        stale_after_days=int(
-            staleness_policy_raw.get("stale_after_days", meta_policy.stale_after_days)
-        )
+        warn_after_days=int(
+            staleness_policy_raw.get(
+                "warn_after_days",
+                staleness_policy_raw.get("stale_after_days", meta_policy.warn_after_days),
+            )
+        ),
+        hard_after_days=int(
+            staleness_policy_raw.get("hard_after_days", meta_policy.hard_after_days)
+        ),
     )
     rules = [Rule(rule_id=r["rule_id"], reason=r.get("reason", "")) for r in raw.get("rules", [])]
     return Rulepack(
