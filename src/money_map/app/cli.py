@@ -88,8 +88,6 @@ def _render_error(err: MoneyMapError) -> None:
         typer.echo(f"Details: {err.details}", err=True)
 
 
-
-
 def _streamlit_installed() -> bool:
     return importlib.util.find_spec("streamlit") is not None
 
@@ -113,6 +111,7 @@ def _install_ui_dependencies() -> int:
     repo_root = Path(__file__).resolve().parents[3]
     script_path = repo_root / "scripts" / "install_ui_deps.py"
     return subprocess.run([sys.executable, str(script_path)], cwd=repo_root, check=False).returncode
+
 
 def _summarize_legal_reasons(checklist: list[str]) -> str | None:
     markers = ("DATE_INVALID", "DATA_STALE")
