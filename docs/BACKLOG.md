@@ -7,7 +7,7 @@ Canonical backlog: `docs/backlog.yaml`.
 Current focus (2 stages requested by stakeholder):
 
 - [x] **Stage 1 — E2E frame + DoD lock**: confirm target flow (`Data status → Profile → Recommendations → Plan → Export`) and fix explicit completion criteria. See `docs/releases/STAGE_01_E2E_DOD.md`.
-- [ ] **Stage 2 — AppData loading foundation**: load local YAML/JSON dataset, `meta.yaml` and DE rulepack into unified app data before recommendation flows.
+- [x] **Stage 2 — AppData loading foundation**: load local YAML/JSON dataset, `meta.yaml` and DE rulepack into unified app data before recommendation flows. See `docs/releases/STAGE_02_APPDATA_LOADING.md`.
 
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.
