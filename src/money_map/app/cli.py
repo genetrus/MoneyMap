@@ -88,6 +88,32 @@ def _render_error(err: MoneyMapError) -> None:
         typer.echo(f"Details: {err.details}", err=True)
 
 
+
+
+def _streamlit_installed() -> bool:
+    return importlib.util.find_spec("streamlit") is not None
+
+
+def _ui_install_hints() -> list[str]:
+    return [
+        'python -m pip install -e ".[ui]"',
+        "python scripts/install_ui_deps.py",
+        "python scripts/install_ui_offline.py --wheelhouse wheelhouse",
+    ]
+
+
+def _print_ui_install_guidance() -> None:
+    typer.echo("Streamlit is not installed in this Python environment.")
+    typer.echo("Install UI dependencies with one of these commands:")
+    for command in _ui_install_hints():
+        typer.echo(f"  - {command}")
+
+
+def _install_ui_dependencies() -> int:
+    repo_root = Path(__file__).resolve().parents[3]
+    script_path = repo_root / "scripts" / "install_ui_deps.py"
+    return subprocess.run([sys.executable, str(script_path)], cwd=repo_root, check=False).returncode
+
 def _summarize_legal_reasons(checklist: list[str]) -> str | None:
     markers = ("DATE_INVALID", "DATA_STALE")
     highlighted: list[str] = []
@@ -282,13 +308,32 @@ def export(
 
 
 @app.command()
-def ui() -> None:
+def ui(
+    install: bool = typer.Option(
+        False,
+        "--install",
+        help="Attempt to install UI dependencies before launching Streamlit.",
+    ),
+) -> None:
     """Launch the UI."""
-    if importlib.util.find_spec("streamlit") is None:
-        typer.echo('Streamlit is not installed. Install with: pip install -e ".[ui]"')
-        raise typer.Exit(code=1)
+    if not _streamlit_installed():
+        if install:
+            typer.echo("Installing UI dependencies...")
+            status = _install_ui_dependencies()
+            if status != 0:
+                _print_ui_install_guidance()
+                raise typer.Exit(code=status)
+        if not _streamlit_installed():
+            _print_ui_install_guidance()
+            raise typer.Exit(code=1)
+
     app_path = Path(__file__).resolve().parents[1] / "ui" / "app.py"
-    subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], check=False)
+    process = subprocess.run(
+        [sys.executable, "-m", "streamlit", "run", str(app_path)],
+        check=False,
+    )
+    if process.returncode != 0:
+        raise typer.Exit(code=process.returncode)
 
 
 def main() -> None:
