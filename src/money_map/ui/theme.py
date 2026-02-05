@@ -325,6 +325,31 @@ def build_theme_css(theme_name: str) -> str:
       mask-size: contain;
     }}
 
+    #mm-nav-anchor + div[data-testid="stRadio"] label:nth-of-type(1)::before {{
+      -webkit-mask-image: var(--mm-icon-data-status);
+      mask-image: var(--mm-icon-data-status);
+    }}
+
+    #mm-nav-anchor + div[data-testid="stRadio"] label:nth-of-type(2)::before {{
+      -webkit-mask-image: var(--mm-icon-profile);
+      mask-image: var(--mm-icon-profile);
+    }}
+
+    #mm-nav-anchor + div[data-testid="stRadio"] label:nth-of-type(3)::before {{
+      -webkit-mask-image: var(--mm-icon-recommendations);
+      mask-image: var(--mm-icon-recommendations);
+    }}
+
+    #mm-nav-anchor + div[data-testid="stRadio"] label:nth-of-type(4)::before {{
+      -webkit-mask-image: var(--mm-icon-plan);
+      mask-image: var(--mm-icon-plan);
+    }}
+
+    #mm-nav-anchor + div[data-testid="stRadio"] label:nth-of-type(5)::before {{
+      -webkit-mask-image: var(--mm-icon-export);
+      mask-image: var(--mm-icon-export);
+    }}
+
     #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="data-status"])::before {{
       -webkit-mask-image: var(--mm-icon-data-status);
       mask-image: var(--mm-icon-data-status);
