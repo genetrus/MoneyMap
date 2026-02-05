@@ -20,7 +20,7 @@ from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
-from money_map.ui.data_status import data_status_visibility
+from money_map.ui.data_status import data_status_visibility, user_alert_for_status
 from money_map.ui.navigation import NAV_ITEMS, resolve_page_from_query
 from money_map.ui.theme import inject_global_theme
 from money_map.ui.view_mode import get_view_mode, render_view_mode_control
@@ -341,24 +341,29 @@ def run_app() -> None:
                         "Status", status_label, badge=status_label, badge_class=status_class
                     )
 
-                stale_label = "Yes" if report["stale"] else "No"
-                _render_kpi_card("Stale", stale_label)
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    stale_label = "Yes" if report["stale"] else "No"
+                    _render_kpi_card("Stale", stale_label)
+                with col5:
+                    if warns_count > 0:
+                        _render_kpi_card("Warnings", str(warns_count))
+                with col6:
+                    if fatals_count > 0:
+                        _render_kpi_card("Fatals", str(fatals_count))
 
                 if warns_count > 0 or fatals_count > 0:
-                    cols = st.columns(2)
-                    if warns_count > 0:
-                        with cols[0]:
-                            _render_kpi_card("Warnings", str(warns_count))
-                    if fatals_count > 0:
-                        with cols[1]:
-                            _render_kpi_card("Fatals", str(fatals_count))
                     st.caption("Switch to Developer mode for details.")
 
-                summary = {
-                    "invalid": "Data validation failed.",
-                    "stale": "Data is stale.",
-                }.get(report["status"], "Data is valid.")
-                st.caption(summary)
+                user_alert = user_alert_for_status(report["status"])
+                if user_alert:
+                    alert_kind, alert_text = user_alert
+                    if alert_kind == "error":
+                        st.error(alert_text)
+                    else:
+                        st.warning(alert_text)
+                else:
+                    st.caption("Data is valid.")
 
             if visibility["show_validate_report"]:
                 st.markdown('<div class="section-card">', unsafe_allow_html=True)
