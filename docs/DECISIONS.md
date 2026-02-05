@@ -129,3 +129,13 @@
 - Consequences: Every page responds to the Light/Dark switch; UI structure remains unchanged while presentation matches the reference mock more closely.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8
 - Owner: team
+
+## 2026-02-05 — Stakeholder "maximum E2E" brief as primary execution baseline
+- Date: 2026-02-05
+- Title: Use the stakeholder-provided maximum E2E scenario as the primary execution baseline
+- Context: The stakeholder provided a detailed end-to-end "maximum" scenario (Profile → Recommendations + Reality Check → Plan → Export) with strict output templates and asked to execute delivery in 20 incremental stages instead of implementing everything at once.
+- Decision: Treat the stakeholder-provided maximum E2E scenario as the primary implementation baseline for planning and task sequencing, while enforcing a non-contradiction gate against the PDF specification. When a conflict appears, resolve it by aligning the implementation to the PDF and recording the discrepancy.
+- Alternatives: (1) Follow only the minimal PDF framing without using the stakeholder's detailed scenario for backlog decomposition. (2) Treat the stakeholder scenario as optional notes only.
+- Consequences: Work can proceed in clear 20-step increments with richer acceptance details and output templates, while still preserving compatibility with MVP boundaries and DoD constraints from the PDF spec.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.3–8, p.13–14
+- Owner: team
