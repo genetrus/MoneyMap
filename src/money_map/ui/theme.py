@@ -284,14 +284,11 @@ def build_theme_css(theme_name: str) -> str:
       margin: 0.35rem 0.2rem 0.6rem;
     }}
 
-    .mm-nav {{
-      display: flex;
-      flex-direction: column;
+    #mm-nav-anchor + div[data-testid="stRadio"] > div {{
       gap: 0.25rem;
-      padding: 0 0.4rem;
     }}
 
-    .mm-nav-link {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label {{
       display: flex;
       align-items: center;
       gap: 0.6rem;
@@ -309,11 +306,11 @@ def build_theme_css(theme_name: str) -> str:
       text-overflow: ellipsis;
     }}
 
-    .mm-nav-link:hover {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:hover {{
       background: var(--mm-nav-hover-bg);
     }}
 
-    .mm-nav-link::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label::before {{
       content: "";
       position: absolute;
       left: 0.7rem;
@@ -328,51 +325,42 @@ def build_theme_css(theme_name: str) -> str:
       mask-size: contain;
     }}
 
-    .mm-nav-link[data-mm-nav="data-status"]::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="data-status"])::before {{
       -webkit-mask-image: var(--mm-icon-data-status);
       mask-image: var(--mm-icon-data-status);
     }}
 
-    .mm-nav-link[data-mm-nav="profile"]::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="profile"])::before {{
       -webkit-mask-image: var(--mm-icon-profile);
       mask-image: var(--mm-icon-profile);
     }}
 
-    .mm-nav-link[data-mm-nav="recommendations"]::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="recommendations"])::before {{
       -webkit-mask-image: var(--mm-icon-recommendations);
       mask-image: var(--mm-icon-recommendations);
     }}
 
-    .mm-nav-link[data-mm-nav="plan"]::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="plan"])::before {{
       -webkit-mask-image: var(--mm-icon-plan);
       mask-image: var(--mm-icon-plan);
     }}
 
-    .mm-nav-link[data-mm-nav="export"]::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input[value="export"])::before {{
       -webkit-mask-image: var(--mm-icon-export);
       mask-image: var(--mm-icon-export);
     }}
 
-    .mm-nav-link.active {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input:checked) {{
       background: var(--mm-nav-active-bg);
-      border-color: var(--mm-nav-active-border);
+      border-radius: 999px;
+    }}
+
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input:checked) {{
       font-weight: 600;
     }}
 
-    .mm-nav-link.active::before {{
+    #mm-nav-anchor + div[data-testid="stRadio"] label:has(input:checked)::before {{
       background-color: var(--mm-nav-icon-active);
-    }}
-
-    .mm-nav-link.active::after {{
-      content: "";
-      position: absolute;
-      left: 0.35rem;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 60%;
-      border-radius: 999px;
-      background: var(--mm-nav-active-bar);
     }}
 
     .data-status {{

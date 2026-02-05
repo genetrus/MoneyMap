@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from collections import Counter
 from pathlib import Path
-from urllib.parse import quote
 from uuid import uuid4
 
 import streamlit as st
@@ -21,7 +20,7 @@ from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
 from money_map.ui.data_status import data_status_visibility, user_alert_for_status
-from money_map.ui.navigation import NAV_ITEMS, resolve_page_from_query
+from money_map.ui.navigation import NAV_ITEMS, NAV_LABEL_BY_SLUG, resolve_page_from_query
 from money_map.ui.theme import inject_global_theme
 from money_map.ui.view_mode import get_view_mode, render_view_mode_control
 
@@ -45,9 +44,10 @@ def _init_state() -> None:
     st.session_state.setdefault("export_paths", None)
     st.session_state.setdefault("profile_source", "Demo profile")
     st.session_state.setdefault("ui_run_id", str(uuid4()))
-    st.session_state.setdefault("page", "Data status")
+    st.session_state.setdefault("page", "data-status")
     st.session_state.setdefault("theme_preset", "Light")
     st.session_state.setdefault("view_mode", "User")
+    st.session_state.setdefault("profile_quick_mode", True)
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -197,22 +197,16 @@ def run_app() -> None:
     _init_state()
 
     params = st.query_params if hasattr(st, "query_params") else st.experimental_get_query_params()
-    st.session_state["page"] = resolve_page_from_query(
-        params, st.session_state.get("page", "Data status")
-    )
+    resolved_page = resolve_page_from_query(params, st.session_state.get("page", "data-status"))
+    st.session_state["page"] = resolved_page
 
-    page = st.session_state.get("page", "Data status")
+    page_slugs = [slug for _, slug in NAV_ITEMS]
+    if st.session_state["page"] not in page_slugs:
+        st.session_state["page"] = page_slugs[0]
+
     inject_global_theme(st.session_state.get("theme_preset", "Light"))
 
-    nav_links = []
-    for label, slug in NAV_ITEMS:
-        active_class = "active" if label == page else ""
-        active_attr = ' aria-current="page"' if label == page else ""
-        nav_links.append(
-            f'<a class="mm-nav-link {active_class}" data-mm-nav="{slug}" '
-            f'href="?page={quote(slug)}" target="_self"{active_attr}>{label}</a>'
-        )
-    sidebar_html = f"""
+    sidebar_html = """
     <div class="mm-sidebar">
       <div class="mm-sidebar-header">
         <div class="mm-sidebar-brand">
@@ -233,12 +227,22 @@ def run_app() -> None:
       </div>
       <div class="mm-sidebar-divider"></div>
       <div class="mm-sidebar-section-title">Navigate</div>
-      <nav class="mm-nav" aria-label="Primary">
-        {"".join(nav_links)}
-      </nav>
     </div>
     """
     st.sidebar.markdown(sidebar_html, unsafe_allow_html=True)
+    st.sidebar.markdown('<div id="mm-nav-anchor"></div>', unsafe_allow_html=True)
+    page_slug = st.sidebar.radio(
+        "Navigate",
+        page_slugs,
+        format_func=lambda slug: NAV_LABEL_BY_SLUG.get(slug, slug),
+        index=page_slugs.index(st.session_state["page"]),
+        key="page",
+        label_visibility="collapsed",
+    )
+    if hasattr(st, "query_params"):
+        st.query_params["page"] = page_slug
+    else:
+        st.experimental_set_query_params(page=page_slug)
     render_view_mode_control("sidebar")
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
@@ -267,7 +271,7 @@ def run_app() -> None:
             )
             st.markdown("</div>", unsafe_allow_html=True)
 
-    if page == "Data status":
+    if page_slug == "data-status":
         st.markdown('<div class="data-status">', unsafe_allow_html=True)
         _render_page_header(
             "Data status",
@@ -496,28 +500,37 @@ def run_app() -> None:
         _run_with_error_boundary(_render_status)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    elif page == "Profile":
+    elif page_slug == "profile":
         _render_page_header("Profile")
 
         def _render_profile() -> None:
             repo_root = Path(__file__).resolve().parents[3]
             profiles_dir = repo_root / "profiles"
             demo_profiles = sorted([path.name for path in profiles_dir.glob("*.yaml")])
+            profile_loaded = False
             if demo_profiles:
+                profile_choices = ["Demo profile"] + demo_profiles
+                current_source = st.session_state.get("profile_source", "Demo profile")
+                if current_source not in profile_choices:
+                    current_source = "Demo profile"
+                previous_source = st.session_state.get("profile_source")
                 selected = st.selectbox(
                     "Load demo profile",
-                    ["Demo profile"] + demo_profiles,
-                    index=0,
+                    profile_choices,
+                    index=profile_choices.index(current_source),
+                    key="profile_source",
                 )
-                if selected != st.session_state.get("profile_source"):
-                    st.session_state["profile_source"] = selected
+                if selected != previous_source:
                     if selected != "Demo profile":
                         try:
                             st.session_state["profile"] = read_yaml(profiles_dir / selected)
+                            profile_loaded = True
                         except ValueError as exc:
                             st.error(str(exc))
+                    else:
+                        st.session_state["profile"] = DEFAULT_PROFILE.copy()
+                        profile_loaded = True
             st.caption(f"Profile source: {st.session_state['profile_source']}")
-            quick_mode = st.toggle("Quick mode", value=True)
             profile = st.session_state["profile"]
             profile.setdefault("name", "")
             profile.setdefault("location", "")
@@ -525,23 +538,46 @@ def run_app() -> None:
             profile.setdefault("capital_eur", 0)
             profile.setdefault("time_per_week", 0)
             profile.setdefault("assets", [])
+            if profile_loaded or "profile_name" not in st.session_state:
+                st.session_state["profile_name"] = profile["name"]
+            if profile_loaded or "profile_location" not in st.session_state:
+                st.session_state["profile_location"] = profile["location"]
+            if profile_loaded or "profile_language_level" not in st.session_state:
+                st.session_state["profile_language_level"] = profile["language_level"]
+            if profile_loaded or "profile_capital_eur" not in st.session_state:
+                st.session_state["profile_capital_eur"] = profile["capital_eur"]
+            if profile_loaded or "profile_time_per_week" not in st.session_state:
+                st.session_state["profile_time_per_week"] = profile["time_per_week"]
+            if profile_loaded or "profile_assets_text" not in st.session_state:
+                st.session_state["profile_assets_text"] = ", ".join(profile["assets"])
 
-            profile["name"] = st.text_input("Name", value=profile["name"])
-            profile["location"] = st.text_input("Location", value=profile["location"])
+            quick_mode = st.toggle(
+                "Quick mode",
+                value=st.session_state.get("profile_quick_mode", True),
+                key="profile_quick_mode",
+            )
+            profile["name"] = st.text_input("Name", key="profile_name")
+            profile["location"] = st.text_input("Location", key="profile_location")
             profile["language_level"] = st.selectbox(
                 "Language level",
                 ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
-                index=2,
+                index=["A1", "A2", "B1", "B2", "C1", "C2", "native"].index(
+                    st.session_state.get("profile_language_level", "B1")
+                ),
+                key="profile_language_level",
             )
-            profile["capital_eur"] = st.number_input("Capital (EUR)", value=profile["capital_eur"])
+            profile["capital_eur"] = st.number_input(
+                "Capital (EUR)",
+                value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
+                key="profile_capital_eur",
+            )
             profile["time_per_week"] = st.number_input(
-                "Time per week", value=profile["time_per_week"]
+                "Time per week",
+                value=st.session_state.get("profile_time_per_week", profile["time_per_week"]),
+                key="profile_time_per_week",
             )
             if not quick_mode:
-                assets = st.text_input(
-                    "Assets (comma separated)",
-                    value=", ".join(profile["assets"]),
-                )
+                assets = st.text_input("Assets (comma separated)", key="profile_assets_text")
                 profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
 
             st.session_state["profile"] = profile
@@ -549,7 +585,7 @@ def run_app() -> None:
 
         _run_with_error_boundary(_render_profile)
 
-    elif page == "Recommendations":
+    elif page_slug == "recommendations":
         _render_page_header("Recommendations")
 
         def _render_recommendations() -> None:
@@ -561,20 +597,31 @@ def run_app() -> None:
             selected_objective = st.selectbox(
                 "Objective preset",
                 objective_options,
-                index=objective_options.index(current_objective),
+                index=objective_options.index(
+                    st.session_state.get("rec_objective", current_objective)
+                ),
+                key="rec_objective",
             )
             st.caption("Objective preset affects ranking and diagnostics.")
             profile["objective"] = selected_objective
             st.session_state["profile"] = profile
-            top_n = st.slider("Top N", min_value=1, max_value=10, value=10)
+            top_n = st.slider(
+                "Top N",
+                min_value=1,
+                max_value=10,
+                value=st.session_state.get("rec_top_n", 10),
+                key="rec_top_n",
+            )
             max_time = st.number_input(
                 "Max time to first money (days)",
                 value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
+                key="rec_max_time_to_money_days",
             )
             st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
             st.session_state["filters"]["exclude_blocked"] = st.checkbox(
                 "Exclude blocked",
                 value=st.session_state["filters"].get("exclude_blocked", True),
+                key="rec_exclude_blocked",
             )
 
             def _run_recommendations() -> None:
@@ -642,7 +689,7 @@ def run_app() -> None:
 
         _run_with_error_boundary(_render_recommendations)
 
-    elif page == "Plan":
+    elif page_slug == "plan":
         _render_page_header("Plan")
 
         def _render_plan() -> None:
@@ -688,7 +735,7 @@ def run_app() -> None:
 
         _run_with_error_boundary(_render_plan)
 
-    elif page == "Export":
+    elif page_slug == "export":
         _render_page_header("Export")
 
         def _render_export() -> None:

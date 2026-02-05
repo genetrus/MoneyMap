@@ -24,5 +24,5 @@ def resolve_page_from_query(params: dict | None, default: str) -> str:
     if isinstance(page, str):
         resolved = NAV_LABEL_BY_SLUG.get(page)
         if resolved:
-            return resolved
+            return page
     return default

@@ -24,5 +24,5 @@ def test_theme_palettes_have_required_tokens() -> None:
 def test_build_theme_css_contains_key_selectors() -> None:
     css = build_theme_css("Light")
     assert "--mm-bg" in css
-    assert ".mm-nav-link" in css
+    assert '#mm-nav-anchor + div[data-testid="stRadio"]' in css
     assert ".data-status" in css
