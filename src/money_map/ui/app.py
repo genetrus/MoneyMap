@@ -614,9 +614,7 @@ def run_app() -> None:
             )
             max_time = st.number_input(
                 "Max time to first money (days)",
-                value=int(
-                    st.session_state["filters"].get("max_time_to_money_days", 60)
-                ),
+                value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
                 key="rec_max_time_to_money_days",
             )
             st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
