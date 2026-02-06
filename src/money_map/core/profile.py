@@ -75,3 +75,14 @@ def validate_profile(profile: dict) -> dict:
         "missing": missing,
         "warnings": warnings,
     }
+
+
+def profile_reproducibility_state(profile: dict, previous_hash: str | None = None) -> dict:
+    current_hash = profile_hash(profile)
+    objective_preset = str(profile.get("objective", "fastest_money") or "fastest_money")
+    changed = previous_hash is not None and previous_hash != current_hash
+    return {
+        "profile_hash": current_hash,
+        "objective_preset": objective_preset,
+        "changed": changed,
+    }

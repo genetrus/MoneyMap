@@ -14,7 +14,13 @@ from money_map.app.api import export_bundle
 from money_map.core.errors import InternalError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data
-from money_map.core.profile import validate_profile
+from money_map.core.profile import (
+    profile_hash as compute_profile_hash,
+)
+from money_map.core.profile import (
+    profile_reproducibility_state,
+    validate_profile,
+)
 from money_map.core.recommend import is_variant_stale, recommend
 from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
@@ -45,7 +51,7 @@ DEFAULT_PROFILE = {
 
 def _init_state() -> None:
     st.session_state.setdefault("profile", DEFAULT_PROFILE.copy())
-    st.session_state.setdefault("filters", {"exclude_blocked": True})
+    st.session_state.setdefault("filters", {"exclude_blocked": True, "max_time_to_money_days": 60})
     st.session_state.setdefault("selected_variant_id", "")
     st.session_state.setdefault("plan", None)
     st.session_state.setdefault("last_recommendations", None)
@@ -56,6 +62,10 @@ def _init_state() -> None:
     st.session_state.setdefault("theme_preset", "Light")
     st.session_state.setdefault("view_mode", "User")
     st.session_state.setdefault("profile_quick_mode", True)
+    st.session_state.setdefault(
+        "objective_preset", st.session_state["profile"].get("objective", "fastest_money")
+    )
+    st.session_state.setdefault("profile_hash", compute_profile_hash(st.session_state["profile"]))
     st.session_state.setdefault("page_initialized", False)
 
 
@@ -127,6 +137,18 @@ def _ensure_plan(profile: dict, variant_id: str):
     if variant is None:
         raise ValueError(f"Variant '{variant_id}' not found.")
     return build_plan(profile, variant, app_data.rulepack, app_data.meta.staleness_policy)
+
+
+def _sync_profile_session_state(profile: dict) -> None:
+    reproducibility = profile_reproducibility_state(
+        profile, previous_hash=st.session_state.get("profile_hash")
+    )
+    st.session_state["profile_hash"] = reproducibility["profile_hash"]
+    st.session_state["objective_preset"] = reproducibility["objective_preset"]
+    if reproducibility["changed"]:
+        st.session_state["selected_variant_id"] = ""
+        st.session_state["plan"] = None
+        st.session_state["last_recommendations"] = None
 
 
 def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
@@ -592,11 +614,13 @@ def run_app() -> None:
             ]
 
             st.session_state["profile"] = profile
+            _sync_profile_session_state(profile)
             profile_validation = validate_profile(profile)
             if profile_validation["missing"]:
                 st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
             for warning in profile_validation["warnings"]:
                 st.warning(warning)
+            st.caption(f"Profile hash: {st.session_state.get('profile_hash', '')}")
             if profile_validation["is_ready"]:
                 st.success("Profile ready")
             else:
@@ -634,6 +658,7 @@ def run_app() -> None:
             st.caption("Objective preset affects ranking and diagnostics.")
             profile["objective"] = selected_objective
             st.session_state["profile"] = profile
+            _sync_profile_session_state(profile)
             top_n = st.slider(
                 "Top N",
                 min_value=1,
@@ -656,11 +681,16 @@ def run_app() -> None:
             def _run_recommendations() -> None:
                 result = _get_recommendations(
                     json.dumps(profile, ensure_ascii=False),
-                    profile["objective"],
+                    st.session_state.get("objective_preset", profile["objective"]),
                     st.session_state["filters"],
                     top_n,
                 )
                 st.session_state["last_recommendations"] = result
+                ranked_ids = {item.variant.variant_id for item in result.ranked_variants}
+                selected = st.session_state.get("selected_variant_id")
+                if selected and selected not in ranked_ids:
+                    st.session_state["selected_variant_id"] = ""
+                    st.session_state["plan"] = None
 
             if st.button("Run recommendations"):
                 _run_recommendations()
@@ -711,6 +741,7 @@ def run_app() -> None:
                     profile["objective"] = "fastest_money"
                     st.session_state["filters"]["max_time_to_money_days"] = 30
                     st.session_state["profile"] = profile
+                    _sync_profile_session_state(profile)
                     _run_recommendations()
                 if st.button("Reduce legal friction"):
                     st.session_state["filters"]["exclude_blocked"] = True

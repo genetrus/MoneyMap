@@ -1,4 +1,4 @@
-from money_map.core.profile import validate_profile
+from money_map.core.profile import profile_reproducibility_state, validate_profile
 
 
 def test_profile_ready_with_minimum_fields() -> None:
@@ -64,3 +64,42 @@ def test_profile_draft_with_out_of_range_values() -> None:
         "Time per week should be at least 1 hour for realistic recommendations."
         in result["warnings"]
     )
+
+
+def test_profile_reproducibility_state_hash_is_deterministic() -> None:
+    profile = {
+        "country": "DE",
+        "language_level": "B1",
+        "objective": "max_net",
+        "capital_eur": 100,
+        "time_per_week": 8,
+        "assets": ["laptop"],
+        "skills": ["sales"],
+        "constraints": [],
+    }
+
+    state1 = profile_reproducibility_state(profile)
+    state2 = profile_reproducibility_state(profile, previous_hash=state1["profile_hash"])
+
+    assert state1["profile_hash"] == state2["profile_hash"]
+    assert state1["objective_preset"] == "max_net"
+    assert state2["changed"] is False
+
+
+def test_profile_reproducibility_state_detects_change() -> None:
+    profile = {
+        "country": "DE",
+        "language_level": "B1",
+        "objective": "fastest_money",
+        "capital_eur": 100,
+        "time_per_week": 8,
+        "assets": ["laptop"],
+        "skills": ["sales"],
+        "constraints": [],
+    }
+    baseline = profile_reproducibility_state(profile)
+
+    changed_profile = {**profile, "time_per_week": 12}
+    changed = profile_reproducibility_state(changed_profile, previous_hash=baseline["profile_hash"])
+
+    assert changed["changed"] is True
