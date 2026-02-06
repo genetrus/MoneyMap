@@ -45,8 +45,12 @@ def build_plan(
     }
 
     compliance_items = []
-    for kit, items in rulepack.compliance_kits.items():
-        compliance_items.append(f"{kit}: {', '.join(items)}")
+    for kit in legal.compliance_kits:
+        items = rulepack.compliance_kits.get(kit, [])
+        if items:
+            compliance_items.append(f"{kit}: {', '.join(items)}")
+        else:
+            compliance_items.append(f"{kit}: (kit definition missing)")
     compliance_items.extend(legal.checklist)
 
     rulepack_staleness = evaluate_staleness(

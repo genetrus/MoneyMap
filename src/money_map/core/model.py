@@ -108,6 +108,7 @@ class EconomicsResult:
 class LegalResult:
     legal_gate: str
     checklist: list[str]
+    compliance_kits: list[str]
     applied_rules: list[Rule]
 
 

@@ -39,6 +39,7 @@ def render_result_json(
         "legal": {
             "legal_gate": plan.legal_gate,
             "checklist": plan.compliance,
+            "compliance_kits": recommendation.legal.compliance_kits,
             "applied_rule_ids": [rule.rule_id for rule in applied_rules],
             "applied_rules": [asdict(rule) for rule in applied_rules],
         },
