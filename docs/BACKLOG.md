@@ -11,6 +11,7 @@ Current focus (4 stages requested by stakeholder):
 - [x] **Stage 3 — `validate(AppData)` implementation**: add refs/enums/min-semantic checks with `FATAL/WARN` report output and status derivation. See `docs/releases/STAGE_03_VALIDATE_APPDATA.md`.
 - [x] **Stage 4 — staleness policy**: implement `warn_after_days`/`hard_after_days` and stale/hard-stale flags in core staleness evaluation. See `docs/releases/STAGE_04_STALENESS_POLICY.md`.
 - [x] **Stage 5 — Data status screen**: implement UI for versions, reviewed_at, WARN/FATAL counters, stale alerts, and safe scenario entry without crashes. See `docs/releases/STAGE_05_DATA_STATUS_SCREEN.md`.
+- [x] **Stage 6 — Profile screen (MVP fields)**: implement minimal profile inputs (country, time, capital, language, assets, skills, constraints, objective preset). See `docs/releases/STAGE_06_PROFILE_SCREEN.md`.
 
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.

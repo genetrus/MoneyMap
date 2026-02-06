@@ -30,12 +30,15 @@ from money_map.ui.view_mode import get_view_mode, render_view_mode_control
 
 DEFAULT_PROFILE = {
     "name": "Demo",
+    "country": "DE",
+    "location": "Berlin",
     "objective": "fastest_money",
     "language_level": "B1",
     "capital_eur": 300,
     "time_per_week": 15,
     "assets": ["laptop", "phone"],
-    "location": "Berlin",
+    "skills": ["customer_service"],
+    "constraints": ["no_night_shifts"],
 }
 
 
@@ -507,15 +510,24 @@ def run_app() -> None:
             st.caption(f"Profile source: {st.session_state['profile_source']}")
             profile = st.session_state["profile"]
             profile.setdefault("name", "")
+            profile.setdefault("country", "DE")
             profile.setdefault("location", "")
+            profile.setdefault("objective", "fastest_money")
             profile.setdefault("language_level", "B1")
             profile.setdefault("capital_eur", 0)
             profile.setdefault("time_per_week", 0)
             profile.setdefault("assets", [])
+            profile.setdefault("skills", [])
+            profile.setdefault("constraints", [])
+
             if profile_loaded or "profile_name" not in st.session_state:
                 st.session_state["profile_name"] = profile["name"]
+            if profile_loaded or "profile_country" not in st.session_state:
+                st.session_state["profile_country"] = profile["country"]
             if profile_loaded or "profile_location" not in st.session_state:
                 st.session_state["profile_location"] = profile["location"]
+            if profile_loaded or "profile_objective" not in st.session_state:
+                st.session_state["profile_objective"] = profile["objective"]
             if profile_loaded or "profile_language_level" not in st.session_state:
                 st.session_state["profile_language_level"] = profile["language_level"]
             if profile_loaded or "profile_capital_eur" not in st.session_state:
@@ -524,14 +536,28 @@ def run_app() -> None:
                 st.session_state["profile_time_per_week"] = profile["time_per_week"]
             if profile_loaded or "profile_assets_text" not in st.session_state:
                 st.session_state["profile_assets_text"] = ", ".join(profile["assets"])
+            if profile_loaded or "profile_skills_text" not in st.session_state:
+                st.session_state["profile_skills_text"] = ", ".join(profile["skills"])
+            if profile_loaded or "profile_constraints_text" not in st.session_state:
+                st.session_state["profile_constraints_text"] = ", ".join(profile["constraints"])
 
-            quick_mode = st.toggle(
-                "Quick mode",
-                value=st.session_state.get("profile_quick_mode", True),
-                key="profile_quick_mode",
-            )
             profile["name"] = st.text_input("Name", key="profile_name")
+            profile["country"] = st.selectbox(
+                "Country",
+                ["DE"],
+                index=0,
+                key="profile_country",
+            )
             profile["location"] = st.text_input("Location", key="profile_location")
+            objective_options = ["fastest_money", "max_net"]
+            profile["objective"] = st.selectbox(
+                "Objective preset",
+                objective_options,
+                index=objective_options.index(
+                    st.session_state.get("profile_objective", profile["objective"])
+                ),
+                key="profile_objective",
+            )
             profile["language_level"] = st.selectbox(
                 "Language level",
                 ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
@@ -542,20 +568,31 @@ def run_app() -> None:
             )
             profile["capital_eur"] = st.number_input(
                 "Capital (EUR)",
+                min_value=0,
                 value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
                 key="profile_capital_eur",
             )
             profile["time_per_week"] = st.number_input(
                 "Time per week",
+                min_value=0,
                 value=st.session_state.get("profile_time_per_week", profile["time_per_week"]),
                 key="profile_time_per_week",
             )
-            if not quick_mode:
-                assets = st.text_input("Assets (comma separated)", key="profile_assets_text")
-                profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
+            assets_text = st.text_input("Assets (comma separated)", key="profile_assets_text")
+            skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
+            constraints_text = st.text_area(
+                "Constraints (comma separated)", key="profile_constraints_text"
+            )
+
+            profile["assets"] = [item.strip() for item in assets_text.split(",") if item.strip()]
+            profile["skills"] = [item.strip() for item in skills_text.split(",") if item.strip()]
+            profile["constraints"] = [
+                item.strip() for item in constraints_text.split(",") if item.strip()
+            ]
 
             st.session_state["profile"] = profile
-            st.success("Profile ready" if profile["name"] else "Profile draft")
+            required_fields_ready = bool(profile["country"]) and bool(profile["language_level"])
+            st.success("Profile ready" if required_fields_ready else "Profile draft")
 
         _run_with_error_boundary(_render_profile)
 
