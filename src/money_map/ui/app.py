@@ -51,7 +51,10 @@ DEFAULT_PROFILE = {
 
 def _init_state() -> None:
     st.session_state.setdefault("profile", DEFAULT_PROFILE.copy())
-    st.session_state.setdefault("filters", {"exclude_blocked": True, "max_time_to_money_days": 60})
+    st.session_state.setdefault(
+        "filters",
+        {"exclude_blocked": True, "exclude_not_feasible": False, "max_time_to_money_days": 60},
+    )
     st.session_state.setdefault("selected_variant_id", "")
     st.session_state.setdefault("plan", None)
     st.session_state.setdefault("last_recommendations", None)
@@ -676,6 +679,11 @@ def run_app() -> None:
                 "Exclude blocked",
                 value=st.session_state["filters"].get("exclude_blocked", True),
                 key="rec_exclude_blocked",
+            )
+            st.session_state["filters"]["exclude_not_feasible"] = st.checkbox(
+                "Exclude not feasible",
+                value=st.session_state["filters"].get("exclude_not_feasible", False),
+                key="rec_exclude_not_feasible",
             )
 
             def _run_recommendations() -> None:

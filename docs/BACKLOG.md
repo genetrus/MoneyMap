@@ -14,6 +14,7 @@ Current focus (4 stages requested by stakeholder):
 - [x] **Stage 6 — Profile screen (MVP fields)**: implement minimal profile inputs (country, time, capital, language, assets, skills, constraints, objective preset). See `docs/releases/STAGE_06_PROFILE_SCREEN.md`.
 - [x] **Stage 7 — Profile validation + draft/ready state**: enforce required fields, ranges, soft warnings, and clear readiness gate before recommendations. See `docs/releases/STAGE_07_PROFILE_VALIDATION.md`.
 - [x] **Stage 8 — Session state + reproducibility**: persist profile/filters/objective/profile_hash/selected variant and keep stable behavior on recompute/navigation. See `docs/releases/STAGE_08_SESSION_STATE_REPRODUCIBILITY.md`.
+- [x] **Stage 9 — Candidates + feasibility pipeline (A+B)**: add coarse candidate filtering and feasibility-aware candidate handling with blockers/prep semantics. See `docs/releases/STAGE_09_CANDIDATES_FEASIBILITY.md`.
 
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.

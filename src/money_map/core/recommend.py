@@ -33,6 +33,43 @@ def _score_variant(variant: Variant, objective: str) -> float:
     return (-time_mid) + net_mid * 0.01
 
 
+def _normalized_constraints(profile: dict) -> set[str]:
+    raw = profile.get("constraints", [])
+    if not isinstance(raw, list):
+        return set()
+    return {str(item).strip().lower() for item in raw if str(item).strip()}
+
+
+def _is_regulated_excluded(constraints: set[str], variant: Variant) -> bool:
+    if not constraints:
+        return False
+    regulated_markers = {
+        "без лицензируемых сфер",
+        "no_regulated",
+        "no_regulated_domains",
+        "no_license",
+    }
+    if constraints.isdisjoint(regulated_markers):
+        return False
+    tags = {str(tag).strip().lower() for tag in variant.tags}
+    gate = str((variant.legal or {}).get("legal_gate", "")).lower()
+    return "regulated" in tags or gate in {"registration", "license", "blocked"}
+
+
+def _candidate_filter_reason(profile: dict, variant: Variant) -> str | None:
+    constraints = _normalized_constraints(profile)
+    if _is_regulated_excluded(constraints, variant):
+        return "constraint_regulated"
+
+    required_assets = set((variant.feasibility or {}).get("required_assets", []))
+    available_assets = (
+        set(profile.get("assets", [])) if isinstance(profile.get("assets"), list) else set()
+    )
+    if required_assets and not available_assets:
+        return "missing_assets_all"
+    return None
+
+
 def recommend(
     profile: dict,
     variants: list[Variant],
@@ -48,11 +85,25 @@ def recommend(
         "reasons": {},
         "warnings": {},
         "evaluated": len(variants),
+        "candidates": 0,
     }
 
     profile_fingerprint = compute_profile_hash(profile)
-    ranked: list[RecommendationVariant] = []
+
+    candidate_variants: list[Variant] = []
     for variant in variants:
+        reason = _candidate_filter_reason(profile, variant)
+        if reason:
+            diagnostics["filtered_out"] += 1
+            diagnostics["reasons"].setdefault(reason, 0)
+            diagnostics["reasons"][reason] += 1
+            continue
+        candidate_variants.append(variant)
+
+    diagnostics["candidates"] = len(candidate_variants)
+
+    ranked: list[RecommendationVariant] = []
+    for variant in candidate_variants:
         feasibility = assess_feasibility(profile, variant)
         economics = assess_economics(variant)
         legal = evaluate_legal(rulepack, variant, staleness_policy)
@@ -78,12 +129,22 @@ def recommend(
             diagnostics["reasons"].setdefault("blocked", 0)
             diagnostics["reasons"]["blocked"] += 1
             continue
+        if filters.get("exclude_not_feasible") and feasibility.status == "not_feasible":
+            diagnostics["filtered_out"] += 1
+            diagnostics["reasons"].setdefault("not_feasible", 0)
+            diagnostics["reasons"]["not_feasible"] += 1
+            continue
 
         score = _score_variant(variant, objective_preset)
         if not variant.economics:
             score -= 50
             diagnostics["warnings"].setdefault("missing_economics", 0)
             diagnostics["warnings"]["missing_economics"] += 1
+        if feasibility.status == "not_feasible":
+            score -= 75
+            diagnostics["warnings"].setdefault("not_feasible_penalized", 0)
+            diagnostics["warnings"]["not_feasible_penalized"] += 1
+
         pros = [
             "Estimated net "
             f"{economics.typical_net_month_eur_range[0]}–"
@@ -96,6 +157,8 @@ def recommend(
         cons = []
         if feasibility.blockers:
             cons.append("Prep needed: " + "; ".join(feasibility.blockers[:2]))
+        if feasibility.status == "not_feasible":
+            cons.append("Not feasible now: requires major prep")
         if legal.legal_gate != "ok":
             cons.append(f"Legal gate: {legal.legal_gate}")
 
