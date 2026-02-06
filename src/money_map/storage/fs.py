@@ -9,15 +9,36 @@ from typing import Any, Callable
 import yaml
 
 
+def _ensure_mapping(data: Any, path: str | Path, kind: str) -> dict[str, Any]:
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise ValueError(f"{kind} root must be a mapping: {path}")
+    return data
+
+
 def read_yaml(path: str | Path) -> dict[str, Any]:
     """Read a YAML file using safe loading."""
     payload = Path(path).read_text(encoding="utf-8")
     data = yaml.safe_load(payload)
-    if data is None:
-        return {}
-    if not isinstance(data, dict):
-        raise ValueError(f"YAML root must be a mapping: {path}")
-    return data
+    return _ensure_mapping(data, path, "YAML")
+
+
+def read_json(path: str | Path) -> dict[str, Any]:
+    """Read a JSON file."""
+    payload = Path(path).read_text(encoding="utf-8")
+    data = json.loads(payload)
+    return _ensure_mapping(data, path, "JSON")
+
+
+def read_mapping(path: str | Path) -> dict[str, Any]:
+    """Read YAML/JSON mapping based on file extension."""
+    path = Path(path)
+    if path.suffix.lower() == ".json":
+        return read_json(path)
+    if path.suffix.lower() in {".yaml", ".yml"}:
+        return read_yaml(path)
+    raise ValueError(f"Unsupported mapping file extension: {path}")
 
 
 def write_yaml(path: str | Path, obj: Any) -> None:

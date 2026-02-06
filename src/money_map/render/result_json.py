@@ -16,11 +16,13 @@ def render_result_json(
     diagnostics: dict[str, Any] | None = None,
     profile_hash: str | None = None,
     run_id: str | None = None,
+    meta: Any | None = None,
+    rulepack: Any | None = None,
 ) -> dict[str, Any]:
     variant = recommendation.variant
     applied_rules = plan.applied_rules
     diagnostics = diagnostics or {}
-    return {
+    payload = {
         "run_id": run_id,
         "profile_hash": profile_hash,
         "profile": profile,
@@ -39,6 +41,7 @@ def render_result_json(
         "legal": {
             "legal_gate": plan.legal_gate,
             "checklist": plan.compliance,
+            "compliance_kits": recommendation.legal.compliance_kits,
             "applied_rule_ids": [rule.rule_id for rule in applied_rules],
             "applied_rules": [asdict(rule) for rule in applied_rules],
         },
@@ -49,3 +52,8 @@ def render_result_json(
             "staleness": plan.staleness,
         },
     }
+    if meta is not None:
+        payload["meta"] = asdict(meta)
+    if rulepack is not None:
+        payload["rulepack"] = asdict(rulepack)
+    return payload

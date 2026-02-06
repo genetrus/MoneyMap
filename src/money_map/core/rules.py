@@ -5,6 +5,27 @@ from __future__ import annotations
 from money_map.core.model import LegalResult, Rule, Rulepack, StalenessPolicy, Variant
 from money_map.core.staleness import evaluate_staleness, is_freshness_unknown
 
+ALLOWED_LEGAL_GATES = {"ok", "require_check", "registration", "license", "blocked"}
+
+
+def _normalized_legal_gate(raw_gate: object) -> str:
+    gate = str(raw_gate or "ok").strip().lower()
+    if gate in ALLOWED_LEGAL_GATES:
+        return gate
+    return "require_check"
+
+
+def _select_compliance_kits(rulepack: Rulepack, legal_gate: str, regulated: bool) -> list[str]:
+    available = set(rulepack.compliance_kits.keys())
+    baseline = [kit for kit in ("tax_basics", "invoicing_basics") if kit in available]
+    expanded = [
+        kit for kit in ("tax_basics", "invoicing_basics", "insurance_basics") if kit in available
+    ]
+
+    if legal_gate in {"require_check", "registration", "license", "blocked"} or regulated:
+        return expanded or sorted(available)
+    return baseline or sorted(available)
+
 
 def evaluate_legal(
     rulepack: Rulepack,
@@ -12,7 +33,7 @@ def evaluate_legal(
     staleness_policy: StalenessPolicy,
 ) -> LegalResult:
     legal = variant.legal
-    legal_gate = str(legal.get("legal_gate", "ok"))
+    legal_gate = _normalized_legal_gate(legal.get("legal_gate", "ok"))
     checklist = list(legal.get("checklist", []))
     applied_rules: list[Rule] = []
 
@@ -34,6 +55,7 @@ def evaluate_legal(
     regulated = any(tag in rulepack.regulated_domains for tag in variant.tags) or (
         "regulated" in variant.tags
     )
+
     if regulated and (stale or freshness_unknown):
         legal_gate = "require_check"
         if freshness_unknown:
@@ -56,4 +78,13 @@ def evaluate_legal(
             )
         applied_rules.extend(blocked_rules)
 
-    return LegalResult(legal_gate=legal_gate, checklist=checklist, applied_rules=applied_rules)
+    compliance_kits = _select_compliance_kits(rulepack, legal_gate, regulated)
+    if legal_gate in {"require_check", "registration", "license", "blocked"}:
+        checklist.append("Regulatory review required before launch.")
+
+    return LegalResult(
+        legal_gate=legal_gate,
+        checklist=checklist,
+        compliance_kits=compliance_kits,
+        applied_rules=applied_rules,
+    )

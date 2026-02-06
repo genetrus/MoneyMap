@@ -48,4 +48,4 @@ def test_stale_warnings_emit_codes() -> None:
     stale_rulepack = replace(app_data.rulepack, reviewed_at="2000-01-01")
     report = validate(replace(app_data, rulepack=stale_rulepack))
     warn_codes = _issue_codes(report.warns)
-    assert "STALE_RULEPACK" in warn_codes
+    assert "STALE_RULEPACK" in warn_codes or "STALE_RULEPACK_HARD" in warn_codes

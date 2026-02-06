@@ -13,8 +13,10 @@ _DATE_FORMATS = ["%Y-%m-%d"]
 @dataclass(frozen=True)
 class StalenessResult:
     is_stale: bool
+    is_hard_stale: bool
     age_days: int | None
-    threshold_days: int
+    warn_after_days: int
+    hard_after_days: int
     severity: str
     message: str
 
@@ -49,24 +51,46 @@ def evaluate_staleness(
         parsed = _parse_date(value) if value else None
     else:
         parsed = None
-    threshold = int(policy.stale_after_days)
+
+    warn_after_days = int(policy.warn_after_days)
+    hard_after_days = int(policy.hard_after_days)
+    if hard_after_days < warn_after_days:
+        hard_after_days = warn_after_days
+
     if not parsed:
         return StalenessResult(
             is_stale=False,
+            is_hard_stale=False,
             age_days=None,
-            threshold_days=threshold,
+            warn_after_days=warn_after_days,
+            hard_after_days=hard_after_days,
             severity=invalid_severity,
             message=f"{label} reviewed_at is missing or invalid.",
         )
 
     age_days = (date.today() - parsed).days
-    is_stale = age_days > threshold
-    severity = "warn" if is_stale else "ok"
-    state = "stale" if is_stale else "fresh"
+    is_hard_stale = age_days > hard_after_days
+    is_stale = age_days > warn_after_days
+
+    if is_hard_stale:
+        severity = "fatal"
+        state = "hard-stale"
+    elif is_stale:
+        severity = "warn"
+        state = "stale"
+    else:
+        severity = "ok"
+        state = "fresh"
+
     return StalenessResult(
         is_stale=is_stale,
+        is_hard_stale=is_hard_stale,
         age_days=age_days,
-        threshold_days=threshold,
+        warn_after_days=warn_after_days,
+        hard_after_days=hard_after_days,
         severity=severity,
-        message=f"{label} is {state} ({age_days} days old, threshold {threshold}).",
+        message=(
+            f"{label} is {state} ({age_days} days old, warn after {warn_after_days}, "
+            f"hard after {hard_after_days})."
+        ),
     )

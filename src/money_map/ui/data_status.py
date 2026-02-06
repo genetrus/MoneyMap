@@ -4,13 +4,12 @@ from __future__ import annotations
 
 
 def data_status_visibility(view_mode: str) -> dict[str, bool]:
-    is_developer = view_mode == "Developer"
     return {
-        "show_validate_report": is_developer,
-        "show_validation_summary": is_developer,
-        "show_raw_report_json": is_developer,
-        "show_staleness_details": is_developer,
-        "show_data_sources": is_developer,
+        "show_validate_report": True,
+        "show_validation_summary": True,
+        "show_raw_report_json": True,
+        "show_staleness_details": True,
+        "show_data_sources": True,
     }
 
 

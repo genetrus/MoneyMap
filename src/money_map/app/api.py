@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -260,6 +261,9 @@ def export_bundle(
     plan_path = out_dir / "plan.md"
     result_path = out_dir / "result.json"
     profile_path_out = out_dir / "profile.yaml"
+    meta_path = out_dir / "meta.yaml"
+    rulepack_path = out_dir / "rulepack.yaml"
+    diagnostics_path = out_dir / "diagnostics.json"
     artifacts_dir = out_dir / "artifacts"
 
     write_text(plan_path, render_plan_md(plan))
@@ -272,9 +276,14 @@ def export_bundle(
             diagnostics=diagnostics,
             profile_hash=recommendations.profile_hash,
             run_id=run_context.run_id if run_context else None,
+            meta=app_data.meta,
+            rulepack=app_data.rulepack,
         ),
     )
     write_yaml(profile_path_out, profile)
+    write_yaml(meta_path, asdict(app_data.meta))
+    write_yaml(rulepack_path, asdict(app_data.rulepack))
+    write_json(diagnostics_path, diagnostics)
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     log_event(
         "export",
@@ -335,5 +344,8 @@ def export_bundle(
         "plan": str(plan_path),
         "result": str(result_path),
         "profile": str(profile_path_out),
+        "meta": str(meta_path),
+        "rulepack": str(rulepack_path),
+        "diagnostics": str(diagnostics_path),
         "artifacts": artifact_paths,
     }
