@@ -19,8 +19,12 @@ from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
-from money_map.ui.data_status import data_status_visibility, user_alert_for_status
-from money_map.ui.navigation import NAV_ITEMS, NAV_LABEL_BY_SLUG, resolve_page_from_query
+from money_map.ui.data_status import data_status_visibility
+from money_map.ui.navigation import (
+    NAV_ITEMS,
+    NAV_LABEL_BY_SLUG,
+    resolve_page_from_query,
+)
 from money_map.ui.theme import inject_global_theme
 from money_map.ui.view_mode import get_view_mode, render_view_mode_control
 
@@ -118,7 +122,9 @@ def _ensure_plan(profile: dict, variant_id: str):
     variant = next((v for v in app_data.variants if v.variant_id == variant_id), None)
     if variant is None:
         raise ValueError(f"Variant '{variant_id}' not found.")
-    return build_plan(profile, variant, app_data.rulepack, app_data.meta.staleness_policy)
+    return build_plan(
+        profile, variant, app_data.rulepack, app_data.meta.staleness_policy
+    )
 
 
 def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
@@ -157,7 +163,10 @@ def _issue_summary(issues: list[dict], limit: int = 3) -> str | None:
 
 def _guard_fatals(report: dict) -> None:
     if report["fatals"]:
-        st.error("Validation fatals block actions: " + ", ".join(_issue_codes(report["fatals"])))
+        st.error(
+            "Validation fatals block actions: "
+            + ", ".join(_issue_codes(report["fatals"]))
+        )
         st.stop()
 
 
@@ -198,7 +207,11 @@ def run_app() -> None:
     _init_state()
     page_slugs = [slug for _, slug in NAV_ITEMS]
 
-    params = st.query_params if hasattr(st, "query_params") else st.experimental_get_query_params()
+    params = (
+        st.query_params
+        if hasattr(st, "query_params")
+        else st.experimental_get_query_params()
+    )
     if not st.session_state.get("page_initialized", False):
         st.session_state["page"] = resolve_page_from_query(
             params,
@@ -271,7 +284,9 @@ def run_app() -> None:
             st.selectbox(
                 "",
                 ["Light", "Dark"],
-                index=0 if st.session_state.get("theme_preset", "Light") == "Light" else 1,
+                index=(
+                    0 if st.session_state.get("theme_preset", "Light") == "Light" else 1
+                ),
                 key="theme_preset",
                 label_visibility="collapsed",
             )
@@ -292,7 +307,6 @@ def run_app() -> None:
             warn_summary = _issue_summary(report["warns"])
             view_mode = get_view_mode()
             visibility = data_status_visibility(view_mode)
-            is_developer = visibility["show_validation_summary"]
 
             status_label = report["status"].upper()
             status_class = {
@@ -301,88 +315,55 @@ def run_app() -> None:
                 "stale": "stale",
             }.get(report["status"], "valid")
 
-            if is_developer:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    _render_kpi_card("Dataset version", str(report["dataset_version"]))
-                with col2:
-                    _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
-                with col3:
-                    _render_kpi_card(
-                        "Status", status_label, badge=status_label, badge_class=status_class
-                    )
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                _render_kpi_card("Dataset version", str(report["dataset_version"]))
+            with col2:
+                _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
+            with col3:
+                _render_kpi_card(
+                    "Status", status_label, badge=status_label, badge_class=status_class
+                )
 
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
-                with col5:
-                    _render_kpi_card("Fatals", str(fatals_count))
-                with col6:
-                    _render_kpi_card(
-                        "Stale",
-                        str(report["stale"]),
-                        chip=f"Staleness policy: {report['staleness_policy_days']} days",
-                    )
+            col4, col5, col6 = st.columns(3)
+            with col4:
+                _render_kpi_card(
+                    "Warnings", str(warns_count), subtext=warn_summary or ""
+                )
+            with col5:
+                _render_kpi_card("Fatals", str(fatals_count))
+            with col6:
+                _render_kpi_card(
+                    "Stale",
+                    str(report["stale"]),
+                    chip=f"Staleness policy: {report['staleness_policy_days']} days",
+                )
 
-                if report["status"] == "invalid":
-                    st.error(
-                        "**Data validation failed**\n\n"
-                        "Fix FATAL issues and re-run validation. Recommendations/Plan/Export may "
-                        "be unreliable until data is valid."
-                    )
-                elif report["status"] == "stale":
-                    st.warning(
-                        "**Data is stale**\n\n"
-                        "Reviewed_at is older than staleness_policy. Show warnings and apply "
-                        "cautious behavior.\n\n"
-                        "For regulated domains: force legal_gate=require_check when rulepack is "
-                        "stale."
-                    )
-                else:
-                    st.caption("Data is valid.")
+            if report["status"] == "invalid":
+                st.error(
+                    "**Data validation failed**\n\n"
+                    "Fix FATAL issues and re-run validation. Recommendations/Plan/Export may "
+                    "be unreliable until data is valid."
+                )
+            elif report["status"] == "stale":
+                st.warning(
+                    "**Data is stale**\n\n"
+                    "Reviewed_at is older than staleness_policy. Show warnings and apply "
+                    "cautious behavior.\n\n"
+                    "For regulated domains: force legal_gate=require_check when rulepack is "
+                    "stale."
+                )
             else:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    _render_kpi_card("Dataset version", str(report["dataset_version"]))
-                with col2:
-                    _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
-                with col3:
-                    _render_kpi_card(
-                        "Status", status_label, badge=status_label, badge_class=status_class
-                    )
-
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    stale_label = "Yes" if report["stale"] else "No"
-                    _render_kpi_card("Stale", stale_label)
-                with col5:
-                    if warns_count > 0:
-                        _render_kpi_card("Warnings", str(warns_count))
-                with col6:
-                    if fatals_count > 0:
-                        _render_kpi_card("Fatals", str(fatals_count))
-
-                if warns_count > 0 or fatals_count > 0:
-                    st.caption("Switch to Developer mode for details.")
-
-                user_alert = user_alert_for_status(report["status"])
-                if user_alert:
-                    alert_kind, alert_text = user_alert
-                    if alert_kind == "error":
-                        st.error(alert_text)
-                    else:
-                        st.warning(alert_text)
-                else:
-                    st.caption("Data is valid.")
+                st.caption("Data is valid.")
 
             if visibility["show_validate_report"]:
                 st.markdown('<div class="section-card">', unsafe_allow_html=True)
                 st.subheader("Validate report")
-                report_json = json.dumps(report, ensure_ascii=False, indent=2, default=str)
-                safe_ts = report["generated_at"].replace(":", "-")
-                file_name = (
-                    f"money_map_validate_report__{report['dataset_version']}__{safe_ts}.json"
+                report_json = json.dumps(
+                    report, ensure_ascii=False, indent=2, default=str
                 )
+                safe_ts = report["generated_at"].replace(":", "-")
+                file_name = f"money_map_validate_report__{report['dataset_version']}__{safe_ts}.json"
                 st.download_button(
                     "Download validate report",
                     data=report_json,
@@ -412,8 +393,12 @@ def run_app() -> None:
                 if visibility["show_staleness_details"]:
                     with st.expander("Staleness details"):
                         st.write("RulePack: DE")
-                        st.write(f"rulepack_reviewed_at: {app_data.rulepack.reviewed_at}")
-                        st.write(f"staleness_policy_days: {report['staleness_policy_days']}")
+                        st.write(
+                            f"rulepack_reviewed_at: {app_data.rulepack.reviewed_at}"
+                        )
+                        st.write(
+                            f"staleness_policy_days: {report['staleness_policy_days']}"
+                        )
                         rulepack_stale = report["staleness"]["rulepack"].get("is_stale")
                         st.write(f"rulepack_stale: {rulepack_stale}")
                         variant_dates = [
@@ -423,8 +408,12 @@ def run_app() -> None:
                         ]
                         st.write(f"variants_count: {len(app_data.variants)}")
                         if variant_dates:
-                            st.write(f"oldest_variant_review_date: {min(variant_dates)}")
-                            st.write(f"newest_variant_review_date: {max(variant_dates)}")
+                            st.write(
+                                f"oldest_variant_review_date: {min(variant_dates)}"
+                            )
+                            st.write(
+                                f"newest_variant_review_date: {max(variant_dates)}"
+                            )
                         variants_stale = any(
                             detail.get("is_stale")
                             for detail in report["staleness"]["variants"].values()
@@ -447,7 +436,9 @@ def run_app() -> None:
                                 {
                                     "Source": "data/meta.yaml",
                                     "Type": "meta",
-                                    "Schema version": str(meta_payload.get("schema_version", "")),
+                                    "Schema version": str(
+                                        meta_payload.get("schema_version", "")
+                                    ),
                                     "Items": len(meta_payload),
                                 }
                             )
@@ -529,7 +520,9 @@ def run_app() -> None:
                 if selected != previous_source:
                     if selected != "Demo profile":
                         try:
-                            st.session_state["profile"] = read_yaml(profiles_dir / selected)
+                            st.session_state["profile"] = read_yaml(
+                                profiles_dir / selected
+                            )
                             profile_loaded = True
                         except ValueError as exc:
                             st.error(str(exc))
@@ -574,17 +567,25 @@ def run_app() -> None:
             )
             profile["capital_eur"] = st.number_input(
                 "Capital (EUR)",
-                value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
+                value=st.session_state.get(
+                    "profile_capital_eur", profile["capital_eur"]
+                ),
                 key="profile_capital_eur",
             )
             profile["time_per_week"] = st.number_input(
                 "Time per week",
-                value=st.session_state.get("profile_time_per_week", profile["time_per_week"]),
+                value=st.session_state.get(
+                    "profile_time_per_week", profile["time_per_week"]
+                ),
                 key="profile_time_per_week",
             )
             if not quick_mode:
-                assets = st.text_input("Assets (comma separated)", key="profile_assets_text")
-                profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
+                assets = st.text_input(
+                    "Assets (comma separated)", key="profile_assets_text"
+                )
+                profile["assets"] = [
+                    item.strip() for item in assets.split(",") if item.strip()
+                ]
 
             st.session_state["profile"] = profile
             st.success("Profile ready" if profile["name"] else "Profile draft")
@@ -620,7 +621,9 @@ def run_app() -> None:
             )
             max_time = st.number_input(
                 "Max time to first money (days)",
-                value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
+                value=int(
+                    st.session_state["filters"].get("max_time_to_money_days", 60)
+                ),
                 key="rec_max_time_to_money_days",
             )
             st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
@@ -678,7 +681,9 @@ def run_app() -> None:
                     blocker_counts.update(rec.feasibility.blockers)
                 top_blockers = blocker_counts.most_common(3)
                 if top_blockers:
-                    formatted = ", ".join([f"{name} ({count})" for name, count in top_blockers])
+                    formatted = ", ".join(
+                        [f"{name} ({count})" for name, count in top_blockers]
+                    )
                     st.warning("Top blockers: " + formatted)
                 if st.button("Startable in 2 weeks"):
                     st.session_state["filters"]["max_time_to_money_days"] = 14
@@ -706,7 +711,9 @@ def run_app() -> None:
                 st.info("Select a variant in Recommendations.")
             else:
                 profile = st.session_state["profile"]
-                st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
+                st.caption(
+                    f"Objective preset: {profile.get('objective', 'fastest_money')}"
+                )
                 try:
                     plan = _ensure_plan(profile, variant_id)
                 except ValueError as exc:
@@ -714,7 +721,11 @@ def run_app() -> None:
                 else:
                     app_data = _get_app_data()
                     variant = next(
-                        (item for item in app_data.variants if item.variant_id == variant_id),
+                        (
+                            item
+                            for item in app_data.variants
+                            if item.variant_id == variant_id
+                        ),
                         None,
                     )
                     variant_stale = (
@@ -783,7 +794,9 @@ def run_app() -> None:
                     if selected_rec
                     else None
                 )
-                profile_yaml = yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
+                profile_yaml = yaml.safe_dump(
+                    profile, sort_keys=False, allow_unicode=True
+                )
                 if selected_rec is None:
                     st.error(f"Variant '{variant_id}' not found in recommendations.")
 
