@@ -49,23 +49,23 @@ def build_plan(
     ]
 
     week_plan = {
-        "week_1": [
+        "Week1": [
             "Route: confirm scope",
             "Prep: assess feasibility",
             "Prep: complete prep tasks",
             "Prep: prepare assets",
         ],
-        "week_2": [
+        "Week2": [
             "Core: define offer",
             "Core: setup operations",
             "Compliance: legal checklist",
         ],
-        "week_3": [
+        "Week3": [
             "Economics: baseline tracking",
             "Core: pilot outreach",
             "Core: refine delivery",
         ],
-        "week_4": [
+        "Week4": [
             "Checkpoint: first customer",
             "Checkpoint: week 4 review",
         ],
