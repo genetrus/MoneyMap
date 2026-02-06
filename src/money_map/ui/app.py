@@ -74,11 +74,32 @@ def _init_state() -> None:
 
 def _render_error(err: MoneyMapError) -> None:
     run_id = err.run_id or st.session_state.get("ui_run_id", "unknown")
-    st.error(f"[ERROR {err.code}] {err.message} (run_id={run_id})")
+    reasons = []
     if err.hint:
-        st.info(f"Hint: {err.hint}")
+        reasons.append(f"Hint: {err.hint}")
     if err.details:
-        st.caption(f"Details: {err.details}")
+        reasons.append(f"Details: {err.details}")
+    reasons.append(f"run_id: {run_id}")
+    _render_status("error", f"{err.code}: {err.message}", reasons=reasons, level="error")
+
+
+def _render_status(
+    status: str,
+    message: str,
+    *,
+    reasons: list[str] | None = None,
+    level: str = "info",
+) -> None:
+    header = f"Status: {status} — {message}"
+    if level == "error":
+        st.error(header)
+    elif level == "warning":
+        st.warning(header)
+    else:
+        st.info(header)
+    if reasons:
+        for reason in reasons:
+            st.caption(f"Reason: {reason}")
 
 
 def _run_with_error_boundary(action) -> None:
@@ -190,7 +211,12 @@ def _issue_summary(issues: list[dict], limit: int = 3) -> str | None:
 
 def _guard_fatals(report: dict) -> None:
     if report["fatals"]:
-        st.error("Validation fatals block actions: " + ", ".join(_issue_codes(report["fatals"])))
+        _render_status(
+            "error",
+            "Validation fatals block actions",
+            reasons=[", ".join(_issue_codes(report["fatals"]))],
+            level="error",
+        )
         st.stop()
 
 
@@ -640,13 +666,16 @@ def run_app() -> None:
             profile = st.session_state["profile"]
             profile_validation = validate_profile(profile)
             if not profile_validation["is_ready"]:
-                st.error(
-                    "Profile is not ready for recommendations. Complete required fields first."
-                )
+                reasons = []
                 if profile_validation["missing"]:
-                    st.caption("Missing: " + ", ".join(profile_validation["missing"]))
-                for warning in profile_validation["warnings"]:
-                    st.caption(f"Warning: {warning}")
+                    reasons.append("Missing: " + ", ".join(profile_validation["missing"]))
+                reasons.extend([f"Warning: {warning}" for warning in profile_validation["warnings"]])
+                _render_status(
+                    "not_ready",
+                    "Profile is not ready for recommendations.",
+                    reasons=reasons,
+                    level="warning",
+                )
                 return
             objective_options = ["fastest_money", "max_net"]
             current_objective = _ensure_objective(profile, objective_options)
@@ -705,9 +734,18 @@ def run_app() -> None:
 
             result = st.session_state.get("last_recommendations")
             if result is None:
-                st.info("Run recommendations to see results.")
+                _render_status(
+                    "not_ready",
+                    "Run recommendations to see results.",
+                    reasons=["No recommendations have been generated yet."],
+                )
             elif not result.ranked_variants:
-                st.warning("No results. Adjust filters and try again.")
+                _render_status(
+                    "not_ready",
+                    "No results found.",
+                    reasons=["All candidates were filtered out by current constraints."],
+                    level="warning",
+                )
                 if result.diagnostics.get("reasons"):
                     st.caption("Filtered out reasons:")
                     for reason, count in result.diagnostics["reasons"].items():
@@ -833,14 +871,18 @@ def run_app() -> None:
             _guard_fatals(report)
             variant_id = st.session_state.get("selected_variant_id")
             if not variant_id:
-                st.info("Select a variant in Recommendations.")
+                _render_status(
+                    "not_ready",
+                    "Plan is not ready.",
+                    reasons=["Select a variant in Recommendations."],
+                )
             else:
                 profile = st.session_state["profile"]
                 st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
                 try:
                     plan = _ensure_plan(profile, variant_id)
                 except ValueError as exc:
-                    st.error(str(exc))
+                    _render_status("error", "Plan generation failed.", reasons=[str(exc)], level="error")
                 else:
                     app_data = _get_app_data()
                     variant = next(
@@ -880,7 +922,12 @@ def run_app() -> None:
             variant_id = st.session_state.get("selected_variant_id")
             plan = st.session_state.get("plan")
             if not variant_id or plan is None:
-                st.info("Select a variant and generate a plan first.")
+                reasons = []
+                if not variant_id:
+                    reasons.append("Select a variant in Recommendations.")
+                if plan is None:
+                    reasons.append("Generate a plan in the Plan screen.")
+                _render_status("not_ready", "Export is not ready.", reasons=reasons)
             else:
                 profile = st.session_state["profile"]
                 app_data = _get_app_data()
@@ -917,7 +964,12 @@ def run_app() -> None:
                 )
                 profile_yaml = yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
                 if selected_rec is None:
-                    st.error(f"Variant '{variant_id}' not found in recommendations.")
+                    _render_status(
+                        "error",
+                        "Variant not found in recommendations.",
+                        reasons=[f"Variant '{variant_id}' was not returned."],
+                        level="error",
+                    )
 
                 if st.button("Generate export files"):
                     try:
