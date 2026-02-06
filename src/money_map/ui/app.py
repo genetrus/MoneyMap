@@ -14,6 +14,7 @@ from money_map.app.api import export_bundle
 from money_map.core.errors import InternalError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data
+from money_map.core.profile import validate_profile
 from money_map.core.recommend import is_variant_stale, recommend
 from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
@@ -591,8 +592,15 @@ def run_app() -> None:
             ]
 
             st.session_state["profile"] = profile
-            required_fields_ready = bool(profile["country"]) and bool(profile["language_level"])
-            st.success("Profile ready" if required_fields_ready else "Profile draft")
+            profile_validation = validate_profile(profile)
+            if profile_validation["missing"]:
+                st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
+            for warning in profile_validation["warnings"]:
+                st.warning(warning)
+            if profile_validation["is_ready"]:
+                st.success("Profile ready")
+            else:
+                st.caption("Profile draft")
 
         _run_with_error_boundary(_render_profile)
 
@@ -603,6 +611,16 @@ def run_app() -> None:
             report = _get_validation()
             _guard_fatals(report)
             profile = st.session_state["profile"]
+            profile_validation = validate_profile(profile)
+            if not profile_validation["is_ready"]:
+                st.error(
+                    "Profile is not ready for recommendations. Complete required fields first."
+                )
+                if profile_validation["missing"]:
+                    st.caption("Missing: " + ", ".join(profile_validation["missing"]))
+                for warning in profile_validation["warnings"]:
+                    st.caption(f"Warning: {warning}")
+                return
             objective_options = ["fastest_money", "max_net"]
             current_objective = _ensure_objective(profile, objective_options)
             selected_objective = st.selectbox(
