@@ -17,18 +17,29 @@ def build_plan(
 ) -> RoutePlan:
     legal = evaluate_legal(rulepack, variant, staleness_policy)
     prep_detail = "; ".join(variant.prep_steps) if variant.prep_steps else "No prep tasks provided."
+    economics = variant.economics or {}
+    time_to_money = economics.get("time_to_first_money_days_range", [])
+    net_range = economics.get("typical_net_month_eur_range", [])
+    cost_range = economics.get("costs_eur_range", [])
+    economics_detail = (
+        "Capture baseline economics: "
+        f"time-to-first-money {time_to_money or 'n/a'} days, "
+        f"net {net_range or 'n/a'} EUR/month, "
+        f"costs {cost_range or 'n/a'} EUR."
+    )
     steps = [
-        PlanStep("Confirm scope", f"Review summary: {variant.summary}"),
-        PlanStep("Assess feasibility", "Validate time, capital, and assets requirements."),
-        PlanStep("Prep tasks", prep_detail),
-        PlanStep("Prepare assets", "Gather required assets and tooling."),
-        PlanStep("Compliance check", "Complete compliance checklist before launch."),
-        PlanStep("Setup operations", "Create basic workflow and tracking sheet."),
-        PlanStep("Build offer", "Define the first offer and pricing range."),
-        PlanStep("Pilot outreach", "Contact initial prospects for feedback."),
-        PlanStep("Refine delivery", "Adjust offer based on pilot feedback."),
-        PlanStep("Launch week", "Start serving first customers."),
-        PlanStep("Review results", "Record early performance and decide next steps."),
+        PlanStep("Route: confirm scope", f"Review summary: {variant.summary}"),
+        PlanStep("Prep: assess feasibility", "Validate time, capital, and assets requirements."),
+        PlanStep("Prep: complete prep tasks", prep_detail),
+        PlanStep("Prep: prepare assets", "Gather required assets and tooling."),
+        PlanStep("Core: define offer", "Define the first offer, pricing, and delivery promise."),
+        PlanStep("Core: setup operations", "Create workflow, calendar, and tracking sheet."),
+        PlanStep("Compliance: legal checklist", "Complete compliance checklist before launch."),
+        PlanStep("Economics: baseline tracking", economics_detail),
+        PlanStep("Core: pilot outreach", "Contact initial prospects and gather feedback."),
+        PlanStep("Core: refine delivery", "Adjust offer based on pilot feedback."),
+        PlanStep("Checkpoint: first customer", "Confirm first paid engagement is completed."),
+        PlanStep("Checkpoint: week 4 review", "Review results and decide scale or iterate."),
     ]
 
     artifacts = [
@@ -38,10 +49,26 @@ def build_plan(
     ]
 
     week_plan = {
-        "week_1": ["Confirm scope", "Assess feasibility", "Prep tasks"],
-        "week_2": ["Compliance check", "Setup operations", "Build offer"],
-        "week_3": ["Pilot outreach", "Refine delivery"],
-        "week_4": ["Launch week", "Review results"],
+        "week_1": [
+            "Route: confirm scope",
+            "Prep: assess feasibility",
+            "Prep: complete prep tasks",
+            "Prep: prepare assets",
+        ],
+        "week_2": [
+            "Core: define offer",
+            "Core: setup operations",
+            "Compliance: legal checklist",
+        ],
+        "week_3": [
+            "Economics: baseline tracking",
+            "Core: pilot outreach",
+            "Core: refine delivery",
+        ],
+        "week_4": [
+            "Checkpoint: first customer",
+            "Checkpoint: week 4 review",
+        ],
     }
 
     compliance_items = []
