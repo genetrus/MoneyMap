@@ -909,6 +909,8 @@ def run_app() -> None:
                         plan,
                         diagnostics=recommendations.diagnostics,
                         profile_hash=recommendations.profile_hash,
+                        meta=app_data.meta,
+                        rulepack=app_data.rulepack,
                     )
                     if selected_rec
                     else None
