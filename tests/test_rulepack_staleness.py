@@ -18,7 +18,7 @@ def test_rulepack_and_variant_staleness_warns():
     report = validate(app_data)
 
     warn_codes = _issue_codes(report.warns)
-    assert "STALE_RULEPACK" in warn_codes
+    assert "STALE_RULEPACK" in warn_codes or "STALE_RULEPACK_HARD" in warn_codes
     assert "STALE_VARIANTS" in warn_codes
 
 

@@ -14,30 +14,47 @@ from money_map.app.api import export_bundle
 from money_map.core.errors import InternalError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data
+from money_map.core.profile import (
+    profile_hash as compute_profile_hash,
+)
+from money_map.core.profile import (
+    profile_reproducibility_state,
+    validate_profile,
+)
 from money_map.core.recommend import is_variant_stale, recommend
 from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
-from money_map.ui.data_status import data_status_visibility, user_alert_for_status
-from money_map.ui.navigation import NAV_ITEMS, NAV_LABEL_BY_SLUG, resolve_page_from_query
+from money_map.ui.data_status import data_status_visibility
+from money_map.ui.navigation import (
+    NAV_ITEMS,
+    NAV_LABEL_BY_SLUG,
+    resolve_page_from_query,
+)
 from money_map.ui.theme import inject_global_theme
 from money_map.ui.view_mode import get_view_mode, render_view_mode_control
 
 DEFAULT_PROFILE = {
     "name": "Demo",
+    "country": "DE",
+    "location": "Berlin",
     "objective": "fastest_money",
     "language_level": "B1",
     "capital_eur": 300,
     "time_per_week": 15,
     "assets": ["laptop", "phone"],
-    "location": "Berlin",
+    "skills": ["customer_service"],
+    "constraints": ["no_night_shifts"],
 }
 
 
 def _init_state() -> None:
     st.session_state.setdefault("profile", DEFAULT_PROFILE.copy())
-    st.session_state.setdefault("filters", {"exclude_blocked": True})
+    st.session_state.setdefault(
+        "filters",
+        {"exclude_blocked": True, "exclude_not_feasible": False, "max_time_to_money_days": 60},
+    )
     st.session_state.setdefault("selected_variant_id", "")
     st.session_state.setdefault("plan", None)
     st.session_state.setdefault("last_recommendations", None)
@@ -48,6 +65,10 @@ def _init_state() -> None:
     st.session_state.setdefault("theme_preset", "Light")
     st.session_state.setdefault("view_mode", "User")
     st.session_state.setdefault("profile_quick_mode", True)
+    st.session_state.setdefault(
+        "objective_preset", st.session_state["profile"].get("objective", "fastest_money")
+    )
+    st.session_state.setdefault("profile_hash", compute_profile_hash(st.session_state["profile"]))
     st.session_state.setdefault("page_initialized", False)
 
 
@@ -119,6 +140,18 @@ def _ensure_plan(profile: dict, variant_id: str):
     if variant is None:
         raise ValueError(f"Variant '{variant_id}' not found.")
     return build_plan(profile, variant, app_data.rulepack, app_data.meta.staleness_policy)
+
+
+def _sync_profile_session_state(profile: dict) -> None:
+    reproducibility = profile_reproducibility_state(
+        profile, previous_hash=st.session_state.get("profile_hash")
+    )
+    st.session_state["profile_hash"] = reproducibility["profile_hash"]
+    st.session_state["objective_preset"] = reproducibility["objective_preset"]
+    if reproducibility["changed"]:
+        st.session_state["selected_variant_id"] = ""
+        st.session_state["plan"] = None
+        st.session_state["last_recommendations"] = None
 
 
 def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
@@ -271,7 +304,7 @@ def run_app() -> None:
             st.selectbox(
                 "",
                 ["Light", "Dark"],
-                index=0 if st.session_state.get("theme_preset", "Light") == "Light" else 1,
+                index=(0 if st.session_state.get("theme_preset", "Light") == "Light" else 1),
                 key="theme_preset",
                 label_visibility="collapsed",
             )
@@ -292,7 +325,6 @@ def run_app() -> None:
             warn_summary = _issue_summary(report["warns"])
             view_mode = get_view_mode()
             visibility = data_status_visibility(view_mode)
-            is_developer = visibility["show_validation_summary"]
 
             status_label = report["status"].upper()
             status_class = {
@@ -301,79 +333,44 @@ def run_app() -> None:
                 "stale": "stale",
             }.get(report["status"], "valid")
 
-            if is_developer:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    _render_kpi_card("Dataset version", str(report["dataset_version"]))
-                with col2:
-                    _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
-                with col3:
-                    _render_kpi_card(
-                        "Status", status_label, badge=status_label, badge_class=status_class
-                    )
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                _render_kpi_card("Dataset version", str(report["dataset_version"]))
+            with col2:
+                _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
+            with col3:
+                _render_kpi_card(
+                    "Status", status_label, badge=status_label, badge_class=status_class
+                )
 
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
-                with col5:
-                    _render_kpi_card("Fatals", str(fatals_count))
-                with col6:
-                    _render_kpi_card(
-                        "Stale",
-                        str(report["stale"]),
-                        chip=f"Staleness policy: {report['staleness_policy_days']} days",
-                    )
+            col4, col5, col6 = st.columns(3)
+            with col4:
+                _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
+            with col5:
+                _render_kpi_card("Fatals", str(fatals_count))
+            with col6:
+                _render_kpi_card(
+                    "Stale",
+                    str(report["stale"]),
+                    chip=f"Staleness policy: {report['staleness_policy_days']} days",
+                )
 
-                if report["status"] == "invalid":
-                    st.error(
-                        "**Data validation failed**\n\n"
-                        "Fix FATAL issues and re-run validation. Recommendations/Plan/Export may "
-                        "be unreliable until data is valid."
-                    )
-                elif report["status"] == "stale":
-                    st.warning(
-                        "**Data is stale**\n\n"
-                        "Reviewed_at is older than staleness_policy. Show warnings and apply "
-                        "cautious behavior.\n\n"
-                        "For regulated domains: force legal_gate=require_check when rulepack is "
-                        "stale."
-                    )
-                else:
-                    st.caption("Data is valid.")
+            if report["status"] == "invalid":
+                st.error(
+                    "**Data validation failed**\n\n"
+                    "Fix FATAL issues and re-run validation. Recommendations/Plan/Export may "
+                    "be unreliable until data is valid."
+                )
+            elif report["status"] == "stale":
+                st.warning(
+                    "**Data is stale**\n\n"
+                    "Reviewed_at is older than staleness_policy. Show warnings and apply "
+                    "cautious behavior.\n\n"
+                    "For regulated domains: force legal_gate=require_check when rulepack is "
+                    "stale."
+                )
             else:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    _render_kpi_card("Dataset version", str(report["dataset_version"]))
-                with col2:
-                    _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
-                with col3:
-                    _render_kpi_card(
-                        "Status", status_label, badge=status_label, badge_class=status_class
-                    )
-
-                col4, col5, col6 = st.columns(3)
-                with col4:
-                    stale_label = "Yes" if report["stale"] else "No"
-                    _render_kpi_card("Stale", stale_label)
-                with col5:
-                    if warns_count > 0:
-                        _render_kpi_card("Warnings", str(warns_count))
-                with col6:
-                    if fatals_count > 0:
-                        _render_kpi_card("Fatals", str(fatals_count))
-
-                if warns_count > 0 or fatals_count > 0:
-                    st.caption("Switch to Developer mode for details.")
-
-                user_alert = user_alert_for_status(report["status"])
-                if user_alert:
-                    alert_kind, alert_text = user_alert
-                    if alert_kind == "error":
-                        st.error(alert_text)
-                    else:
-                        st.warning(alert_text)
-                else:
-                    st.caption("Data is valid.")
+                st.caption("Data is valid.")
 
             if visibility["show_validate_report"]:
                 st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -539,15 +536,24 @@ def run_app() -> None:
             st.caption(f"Profile source: {st.session_state['profile_source']}")
             profile = st.session_state["profile"]
             profile.setdefault("name", "")
+            profile.setdefault("country", "DE")
             profile.setdefault("location", "")
+            profile.setdefault("objective", "fastest_money")
             profile.setdefault("language_level", "B1")
             profile.setdefault("capital_eur", 0)
             profile.setdefault("time_per_week", 0)
             profile.setdefault("assets", [])
+            profile.setdefault("skills", [])
+            profile.setdefault("constraints", [])
+
             if profile_loaded or "profile_name" not in st.session_state:
                 st.session_state["profile_name"] = profile["name"]
+            if profile_loaded or "profile_country" not in st.session_state:
+                st.session_state["profile_country"] = profile["country"]
             if profile_loaded or "profile_location" not in st.session_state:
                 st.session_state["profile_location"] = profile["location"]
+            if profile_loaded or "profile_objective" not in st.session_state:
+                st.session_state["profile_objective"] = profile["objective"]
             if profile_loaded or "profile_language_level" not in st.session_state:
                 st.session_state["profile_language_level"] = profile["language_level"]
             if profile_loaded or "profile_capital_eur" not in st.session_state:
@@ -556,14 +562,28 @@ def run_app() -> None:
                 st.session_state["profile_time_per_week"] = profile["time_per_week"]
             if profile_loaded or "profile_assets_text" not in st.session_state:
                 st.session_state["profile_assets_text"] = ", ".join(profile["assets"])
+            if profile_loaded or "profile_skills_text" not in st.session_state:
+                st.session_state["profile_skills_text"] = ", ".join(profile["skills"])
+            if profile_loaded or "profile_constraints_text" not in st.session_state:
+                st.session_state["profile_constraints_text"] = ", ".join(profile["constraints"])
 
-            quick_mode = st.toggle(
-                "Quick mode",
-                value=st.session_state.get("profile_quick_mode", True),
-                key="profile_quick_mode",
-            )
             profile["name"] = st.text_input("Name", key="profile_name")
+            profile["country"] = st.selectbox(
+                "Country",
+                ["DE"],
+                index=0,
+                key="profile_country",
+            )
             profile["location"] = st.text_input("Location", key="profile_location")
+            objective_options = ["fastest_money", "max_net"]
+            profile["objective"] = st.selectbox(
+                "Objective preset",
+                objective_options,
+                index=objective_options.index(
+                    st.session_state.get("profile_objective", profile["objective"])
+                ),
+                key="profile_objective",
+            )
             profile["language_level"] = st.selectbox(
                 "Language level",
                 ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
@@ -574,20 +594,40 @@ def run_app() -> None:
             )
             profile["capital_eur"] = st.number_input(
                 "Capital (EUR)",
+                min_value=0,
                 value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
                 key="profile_capital_eur",
             )
             profile["time_per_week"] = st.number_input(
                 "Time per week",
+                min_value=0,
                 value=st.session_state.get("profile_time_per_week", profile["time_per_week"]),
                 key="profile_time_per_week",
             )
-            if not quick_mode:
-                assets = st.text_input("Assets (comma separated)", key="profile_assets_text")
-                profile["assets"] = [item.strip() for item in assets.split(",") if item.strip()]
+            assets_text = st.text_input("Assets (comma separated)", key="profile_assets_text")
+            skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
+            constraints_text = st.text_area(
+                "Constraints (comma separated)", key="profile_constraints_text"
+            )
+
+            profile["assets"] = [item.strip() for item in assets_text.split(",") if item.strip()]
+            profile["skills"] = [item.strip() for item in skills_text.split(",") if item.strip()]
+            profile["constraints"] = [
+                item.strip() for item in constraints_text.split(",") if item.strip()
+            ]
 
             st.session_state["profile"] = profile
-            st.success("Profile ready" if profile["name"] else "Profile draft")
+            _sync_profile_session_state(profile)
+            profile_validation = validate_profile(profile)
+            if profile_validation["missing"]:
+                st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
+            for warning in profile_validation["warnings"]:
+                st.warning(warning)
+            st.caption(f"Profile hash: {st.session_state.get('profile_hash', '')}")
+            if profile_validation["is_ready"]:
+                st.success("Profile ready")
+            else:
+                st.caption("Profile draft")
 
         _run_with_error_boundary(_render_profile)
 
@@ -598,6 +638,16 @@ def run_app() -> None:
             report = _get_validation()
             _guard_fatals(report)
             profile = st.session_state["profile"]
+            profile_validation = validate_profile(profile)
+            if not profile_validation["is_ready"]:
+                st.error(
+                    "Profile is not ready for recommendations. Complete required fields first."
+                )
+                if profile_validation["missing"]:
+                    st.caption("Missing: " + ", ".join(profile_validation["missing"]))
+                for warning in profile_validation["warnings"]:
+                    st.caption(f"Warning: {warning}")
+                return
             objective_options = ["fastest_money", "max_net"]
             current_objective = _ensure_objective(profile, objective_options)
             selected_objective = st.selectbox(
@@ -611,6 +661,7 @@ def run_app() -> None:
             st.caption("Objective preset affects ranking and diagnostics.")
             profile["objective"] = selected_objective
             st.session_state["profile"] = profile
+            _sync_profile_session_state(profile)
             top_n = st.slider(
                 "Top N",
                 min_value=1,
@@ -629,15 +680,25 @@ def run_app() -> None:
                 value=st.session_state["filters"].get("exclude_blocked", True),
                 key="rec_exclude_blocked",
             )
+            st.session_state["filters"]["exclude_not_feasible"] = st.checkbox(
+                "Exclude not feasible",
+                value=st.session_state["filters"].get("exclude_not_feasible", False),
+                key="rec_exclude_not_feasible",
+            )
 
             def _run_recommendations() -> None:
                 result = _get_recommendations(
                     json.dumps(profile, ensure_ascii=False),
-                    profile["objective"],
+                    st.session_state.get("objective_preset", profile["objective"]),
                     st.session_state["filters"],
                     top_n,
                 )
                 st.session_state["last_recommendations"] = result
+                ranked_ids = {item.variant.variant_id for item in result.ranked_variants}
+                selected = st.session_state.get("selected_variant_id")
+                if selected and selected not in ranked_ids:
+                    st.session_state["selected_variant_id"] = ""
+                    st.session_state["plan"] = None
 
             if st.button("Run recommendations"):
                 _run_recommendations()
@@ -688,6 +749,7 @@ def run_app() -> None:
                     profile["objective"] = "fastest_money"
                     st.session_state["filters"]["max_time_to_money_days"] = 30
                     st.session_state["profile"] = profile
+                    _sync_profile_session_state(profile)
                     _run_recommendations()
                 if st.button("Reduce legal friction"):
                     st.session_state["filters"]["exclude_blocked"] = True
