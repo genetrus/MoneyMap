@@ -17,6 +17,7 @@ Current focus (4 stages requested by stakeholder):
 - [x] **Stage 9 — Candidates + feasibility pipeline (A+B)**: add coarse candidate filtering and feasibility-aware candidate handling with blockers/prep semantics. See `docs/releases/STAGE_09_CANDIDATES_FEASIBILITY.md`.
 - [x] **Stage 10 — Economics snapshot pipeline (C)**: ensure first-money/net/costs/volatility/confidence economics block per candidate with robust defaults/diagnostics. See `docs/releases/STAGE_10_ECONOMICS_SNAPSHOT.md`.
 - [x] **Stage 11 — Legal gate + compliance pipeline (D)**: enforce legal gates, checklist/kits, and stale-driven cautious legal behavior. See `docs/releases/STAGE_11_LEGAL_COMPLIANCE.md`.
+- [x] **Stage 12 — Scoring + determinism pipeline (E)**: objective-weighted scoring with deterministic tie-break by `variant_id` for reproducible Top-N. See `docs/releases/STAGE_12_SCORING_DETERMINISM.md`.
 
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.

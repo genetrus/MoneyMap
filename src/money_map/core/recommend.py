@@ -21,16 +21,78 @@ def is_variant_stale(variant: Variant, policy: StalenessPolicy) -> bool:
     return evaluate_staleness(variant.review_date, policy, label="variant").is_stale
 
 
-def _score_variant(variant: Variant, objective: str) -> float:
-    economics = variant.economics
-    time_range = economics.get("time_to_first_money_days_range", [0, 0])
-    net_range = economics.get("typical_net_month_eur_range", [0, 0])
-    time_mid = sum(time_range) / 2 if time_range else 0
-    net_mid = sum(net_range) / 2 if net_range else 0
-
+def _objective_weights(objective: str) -> dict[str, float]:
     if objective == "max_net":
-        return net_mid - time_mid * 0.5
-    return (-time_mid) + net_mid * 0.01
+        return {
+            "time": 0.4,
+            "net": 1.2,
+            "legal": 0.7,
+            "feasibility": 0.8,
+            "prep": 0.5,
+            "confidence": 0.4,
+        }
+    if objective == "balanced":
+        return {
+            "time": 0.9,
+            "net": 0.9,
+            "legal": 0.9,
+            "feasibility": 0.9,
+            "prep": 0.9,
+            "confidence": 0.6,
+        }
+    # fastest_money default
+    return {
+        "time": 1.2,
+        "net": 0.35,
+        "legal": 0.8,
+        "feasibility": 1.0,
+        "prep": 0.9,
+        "confidence": 0.4,
+    }
+
+
+def _score_variant(feasibility, economics, legal, objective: str) -> float:
+    weights = _objective_weights(objective)
+
+    time_min, time_max = economics.time_to_first_money_days_range
+    net_min, net_max = economics.typical_net_month_eur_range
+    prep_min, prep_max = feasibility.estimated_prep_weeks_range
+
+    time_mid = (time_min + time_max) / 2
+    net_mid = (net_min + net_max) / 2
+    prep_mid = (prep_min + prep_max) / 2
+
+    legal_score_map = {
+        "ok": 1.0,
+        "require_check": 0.4,
+        "registration": 0.2,
+        "license": 0.1,
+        "blocked": -1.0,
+    }
+    feasibility_score_map = {
+        "feasible": 1.0,
+        "feasible_with_prep": 0.4,
+        "not_feasible": -0.8,
+    }
+    confidence_score_map = {
+        "low": 0.2,
+        "medium": 0.6,
+        "high": 1.0,
+        "unknown": 0.4,
+    }
+
+    legal_score = legal_score_map.get(legal.legal_gate, 0.0)
+    feasibility_score = feasibility_score_map.get(feasibility.status, 0.0)
+    confidence_score = confidence_score_map.get(economics.confidence, 0.4)
+
+    return (
+        weights["time"] * (-time_mid)
+        + weights["net"] * (net_mid / 100)
+        + weights["legal"] * legal_score
+        + weights["feasibility"] * feasibility_score
+        + weights["prep"] * (-prep_mid)
+        + weights["confidence"] * confidence_score
+    )
 
 
 def _normalized_constraints(profile: dict) -> set[str]:
@@ -135,7 +197,7 @@ def recommend(
             diagnostics["reasons"]["not_feasible"] += 1
             continue
 
-        score = _score_variant(variant, objective_preset)
+        score = _score_variant(feasibility, economics, legal, objective_preset)
         if not variant.economics:
             score -= 50
             diagnostics["warnings"].setdefault("missing_economics", 0)
