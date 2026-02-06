@@ -140,6 +140,16 @@ def recommend(
             score -= 50
             diagnostics["warnings"].setdefault("missing_economics", 0)
             diagnostics["warnings"]["missing_economics"] += 1
+
+        if economics.time_to_first_money_days_range == [0, 0]:
+            diagnostics["warnings"].setdefault("economics_first_money_unknown", 0)
+            diagnostics["warnings"]["economics_first_money_unknown"] += 1
+        if economics.typical_net_month_eur_range == [0, 0]:
+            diagnostics["warnings"].setdefault("economics_net_unknown", 0)
+            diagnostics["warnings"]["economics_net_unknown"] += 1
+        if economics.costs_eur_range == [0, 0]:
+            diagnostics["warnings"].setdefault("economics_costs_unknown", 0)
+            diagnostics["warnings"]["economics_costs_unknown"] += 1
         if feasibility.status == "not_feasible":
             score -= 75
             diagnostics["warnings"].setdefault("not_feasible_penalized", 0)

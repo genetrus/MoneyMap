@@ -127,3 +127,49 @@ def test_feasibility_not_feasible_filtered_when_requested() -> None:
     ids = [item.variant.variant_id for item in result.ranked_variants]
     assert ids == ["feasible"]
     assert result.diagnostics["reasons"].get("not_feasible", 0) == 1
+
+
+def test_pipeline_c_emits_economics_snapshot_warnings_for_unknown_ranges() -> None:
+    profile = {
+        "country": "DE",
+        "language_level": "B1",
+        "capital_eur": 300,
+        "time_per_week": 10,
+        "assets": ["phone"],
+        "constraints": [],
+    }
+    bad_econ = Variant(
+        variant_id="bad-econ",
+        title="bad-econ",
+        summary="bad-econ",
+        tags=[],
+        feasibility={
+            "min_language_level": "A2",
+            "min_capital": 0,
+            "min_time_per_week": 1,
+            "required_assets": [],
+        },
+        prep_steps=["step1"],
+        economics={"confidence": "low"},
+        legal={"legal_gate": "ok", "checklist": []},
+        review_date="2026-01-01",
+    )
+
+    result = recommend(
+        profile,
+        [bad_econ],
+        _rulepack(),
+        StalenessPolicy(stale_after_days=180),
+        objective_preset="fastest_money",
+        filters={},
+        top_n=5,
+    )
+
+    assert len(result.ranked_variants) == 1
+    econ = result.ranked_variants[0].economics
+    assert econ.time_to_first_money_days_range == [0, 0]
+    assert econ.typical_net_month_eur_range == [0, 0]
+    assert econ.costs_eur_range == [0, 0]
+    assert result.diagnostics["warnings"].get("economics_first_money_unknown", 0) == 1
+    assert result.diagnostics["warnings"].get("economics_net_unknown", 0) == 1
+    assert result.diagnostics["warnings"].get("economics_costs_unknown", 0) == 1
