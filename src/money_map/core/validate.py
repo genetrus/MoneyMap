@@ -31,8 +31,10 @@ def _issue(
 
 
 def _is_range(value: Any) -> bool:
-    return isinstance(value, list) and len(value) == 2 and all(
-        isinstance(v, (int, float)) for v in value
+    return (
+        isinstance(value, list)
+        and len(value) == 2
+        and all(isinstance(v, (int, float)) for v in value)
     )
 
 
@@ -265,7 +267,9 @@ def validate(app_data: AppData) -> ValidationReport:
                         warns.append(
                             _issue(
                                 "VARIANT_RULE_REF_UNKNOWN",
-                                message=f"Unknown rule reference '{rule_id}' in {variant.variant_id}",
+                                message=(
+                                    f"Unknown rule reference '{rule_id}' in {variant.variant_id}"
+                                ),
                                 source="variants",
                                 location=f"variants[{variant.variant_id}].legal.rule_ids[{idx}]",
                             )

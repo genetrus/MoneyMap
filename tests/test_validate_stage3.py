@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from money_map.core.load import load_app_data
-from money_map.core.model import Rule, Variant
+from money_map.core.model import Rule
 from money_map.core.validate import validate
 
 

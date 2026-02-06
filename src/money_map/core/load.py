@@ -25,7 +25,9 @@ def _load_meta(meta_path: Path) -> Meta:
         dataset_version=str(raw.get("dataset_version", "")),
         staleness_policy=StalenessPolicy(
             warn_after_days=int(
-                staleness_policy.get("warn_after_days", staleness_policy.get("stale_after_days", 180))
+                staleness_policy.get(
+                    "warn_after_days", staleness_policy.get("stale_after_days", 180)
+                )
             ),
             hard_after_days=int(staleness_policy.get("hard_after_days", 365)),
         ),

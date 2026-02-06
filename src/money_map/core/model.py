@@ -20,7 +20,6 @@ class StalenessPolicy:
         object.__setattr__(self, "stale_after_days", int(self.warn_after_days))
 
 
-
 @dataclass(frozen=True)
 class Meta:
     dataset_version: str
