@@ -709,30 +709,6 @@ def run_app() -> None:
             elif not result.ranked_variants:
                 st.warning("No results. Adjust filters and try again.")
             else:
-                for rec in result.ranked_variants:
-                    st.subheader(rec.variant.title)
-                    st.caption(rec.variant.variant_id)
-                    stale_label = " (stale)" if rec.stale else ""
-                    st.write(
-                        f"Feasibility: {rec.feasibility.status} | "
-                        f"Legal: {rec.legal.legal_gate}{stale_label}"
-                    )
-                    if rec.stale or rec.legal.legal_gate != "ok":
-                        warnings = []
-                        if rec.stale:
-                            warnings.append("Variant data is stale")
-                        if rec.legal.legal_gate != "ok":
-                            warnings.append(f"Legal gate: {rec.legal.legal_gate}")
-                        st.warning(" | ".join(warnings))
-                    st.write("Why: " + "; ".join(rec.pros))
-                    if rec.cons:
-                        st.write("Concerns: " + "; ".join(rec.cons))
-                    if st.button(
-                        f"Select {rec.variant.variant_id}",
-                        key=f"select-{rec.variant.variant_id}",
-                    ):
-                        st.session_state["selected_variant_id"] = rec.variant.variant_id
-
                 st.subheader("Reality Check")
                 blocker_counts = Counter()
                 for rec in result.ranked_variants:
@@ -741,6 +717,71 @@ def run_app() -> None:
                 if top_blockers:
                     formatted = ", ".join([f"{name} ({count})" for name, count in top_blockers])
                     st.warning("Top blockers: " + formatted)
+
+                if result.diagnostics.get("reasons"):
+                    st.caption("Diagnostics (filtered out):")
+                    for reason, count in result.diagnostics["reasons"].items():
+                        st.write(f"- {reason}: {count}")
+
+                for rec in result.ranked_variants:
+                    with st.container():
+                        stale_label = " (stale)" if rec.stale else ""
+                        st.subheader(rec.variant.title)
+                        st.caption(f"ID: {rec.variant.variant_id}{stale_label}")
+                        if rec.stale or rec.legal.legal_gate != "ok":
+                            warnings = []
+                            if rec.stale:
+                                warnings.append("Variant data is stale")
+                            if rec.legal.legal_gate != "ok":
+                                warnings.append(f"Legal gate: {rec.legal.legal_gate}")
+                            st.warning(" | ".join(warnings))
+
+                        st.markdown("**Feasibility**")
+                        st.write(f"Status: {rec.feasibility.status}")
+                        if rec.feasibility.blockers:
+                            st.write("Blockers: " + "; ".join(rec.feasibility.blockers))
+                        if rec.feasibility.prep_steps:
+                            st.write("Prep steps: " + "; ".join(rec.feasibility.prep_steps))
+                        st.write(
+                            "Prep estimate (weeks): "
+                            + "–".join(map(str, rec.feasibility.estimated_prep_weeks_range))
+                        )
+
+                        st.markdown("**Economics**")
+                        st.write(
+                            "Time to first money (days): "
+                            + "–".join(map(str, rec.economics.time_to_first_money_days_range))
+                        )
+                        st.write(
+                            "Typical net/month: €"
+                            + "–".join(map(str, rec.economics.typical_net_month_eur_range))
+                        )
+                        st.write(
+                            "Costs range: €" + "–".join(map(str, rec.economics.costs_eur_range))
+                        )
+                        st.write(
+                            f"Volatility/seasonality: {rec.economics.volatility_or_seasonality}"
+                        )
+                        st.write(f"Confidence: {rec.economics.confidence}")
+
+                        st.markdown("**Legal Gate + Compliance**")
+                        st.write(f"Gate: {rec.legal.legal_gate}")
+                        if rec.legal.checklist:
+                            st.write("Checklist: " + "; ".join(rec.legal.checklist))
+                        if rec.legal.compliance_kits:
+                            st.write("Kits: " + ", ".join(rec.legal.compliance_kits))
+
+                        st.markdown("**Why this is in Top-N**")
+                        st.write("; ".join(rec.pros))
+                        if rec.cons:
+                            st.markdown("**What can block you**")
+                            st.write("; ".join(rec.cons))
+
+                        if st.button(
+                            f"Select {rec.variant.variant_id}",
+                            key=f"select-{rec.variant.variant_id}",
+                        ):
+                            st.session_state["selected_variant_id"] = rec.variant.variant_id
                 if st.button("Startable in 2 weeks"):
                     st.session_state["filters"]["max_time_to_money_days"] = 14
                     st.session_state["filters"]["exclude_blocked"] = True
