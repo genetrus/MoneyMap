@@ -2,6 +2,24 @@
 
 Canonical backlog: `docs/backlog.yaml`.
 
+## Incremental execution checklist (20-stage baseline)
+
+Current focus (4 stages requested by stakeholder):
+
+- [x] **Stage 1 — E2E frame + DoD lock**: confirm target flow (`Data status → Profile → Recommendations → Plan → Export`) and fix explicit completion criteria. See `docs/releases/STAGE_01_E2E_DOD.md`.
+- [x] **Stage 2 — AppData loading foundation**: load local YAML/JSON dataset, `meta.yaml` and DE rulepack into unified app data before recommendation flows. See `docs/releases/STAGE_02_APPDATA_LOADING.md`.
+- [x] **Stage 3 — `validate(AppData)` implementation**: add refs/enums/min-semantic checks with `FATAL/WARN` report output and status derivation. See `docs/releases/STAGE_03_VALIDATE_APPDATA.md`.
+- [x] **Stage 4 — staleness policy**: implement `warn_after_days`/`hard_after_days` and stale/hard-stale flags in core staleness evaluation. See `docs/releases/STAGE_04_STALENESS_POLICY.md`.
+- [x] **Stage 5 — Data status screen**: implement UI for versions, reviewed_at, WARN/FATAL counters, stale alerts, and safe scenario entry without crashes. See `docs/releases/STAGE_05_DATA_STATUS_SCREEN.md`.
+- [x] **Stage 6 — Profile screen (MVP fields)**: implement minimal profile inputs (country, time, capital, language, assets, skills, constraints, objective preset). See `docs/releases/STAGE_06_PROFILE_SCREEN.md`.
+- [x] **Stage 7 — Profile validation + draft/ready state**: enforce required fields, ranges, soft warnings, and clear readiness gate before recommendations. See `docs/releases/STAGE_07_PROFILE_VALIDATION.md`.
+- [x] **Stage 8 — Session state + reproducibility**: persist profile/filters/objective/profile_hash/selected variant and keep stable behavior on recompute/navigation. See `docs/releases/STAGE_08_SESSION_STATE_REPRODUCIBILITY.md`.
+- [x] **Stage 9 — Candidates + feasibility pipeline (A+B)**: add coarse candidate filtering and feasibility-aware candidate handling with blockers/prep semantics. See `docs/releases/STAGE_09_CANDIDATES_FEASIBILITY.md`.
+- [x] **Stage 10 — Economics snapshot pipeline (C)**: ensure first-money/net/costs/volatility/confidence economics block per candidate with robust defaults/diagnostics. See `docs/releases/STAGE_10_ECONOMICS_SNAPSHOT.md`.
+- [x] **Stage 11 — Legal gate + compliance pipeline (D)**: enforce legal gates, checklist/kits, and stale-driven cautious legal behavior. See `docs/releases/STAGE_11_LEGAL_COMPLIANCE.md`.
+- [x] **Stage 12 — Scoring + determinism pipeline (E)**: objective-weighted scoring with deterministic tie-break by `variant_id` for reproducible Top-N. See `docs/releases/STAGE_12_SCORING_DETERMINISM.md`.
+- [x] **Stage 13 — Explanations + diagnostics pipeline (F)**: 3 reasons pro / 1–2 cons plus explicit filter diagnostics. See `docs/releases/STAGE_13_EXPLANATIONS_DIAGNOSTICS.md`.
+
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.
 - Output includes ranked Top-N variants with feasibility, legal gate, time-to-first-money, net income ranges (no promises). Spec refs: Money_Map_Spec_Packet.pdf p.3-4, p.6-7.

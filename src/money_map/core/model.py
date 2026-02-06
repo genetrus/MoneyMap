@@ -8,7 +8,16 @@ from typing import Any
 
 @dataclass(frozen=True)
 class StalenessPolicy:
-    stale_after_days: int = 180
+    warn_after_days: int = 180
+    hard_after_days: int = 365
+    stale_after_days: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.stale_after_days is not None:
+            object.__setattr__(self, "warn_after_days", int(self.stale_after_days))
+        if self.hard_after_days < self.warn_after_days:
+            object.__setattr__(self, "hard_after_days", int(self.warn_after_days))
+        object.__setattr__(self, "stale_after_days", int(self.warn_after_days))
 
 
 @dataclass(frozen=True)
@@ -99,6 +108,7 @@ class EconomicsResult:
 class LegalResult:
     legal_gate: str
     checklist: list[str]
+    compliance_kits: list[str]
     applied_rules: list[Rule]
 
 
