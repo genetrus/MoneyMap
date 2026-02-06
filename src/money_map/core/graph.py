@@ -30,7 +30,7 @@ def build_plan(
     steps = [
         PlanStep("Route: confirm scope", f"Review summary: {variant.summary}"),
         PlanStep("Prep: assess feasibility", "Validate time, capital, and assets requirements."),
-        PlanStep("Prep: complete prep tasks", prep_detail),
+        PlanStep("Prep tasks", f"Prep: complete tasks. {prep_detail}"),
         PlanStep("Prep: prepare assets", "Gather required assets and tooling."),
         PlanStep("Core: define offer", "Define the first offer, pricing, and delivery promise."),
         PlanStep("Core: setup operations", "Create workflow, calendar, and tracking sheet."),
@@ -52,7 +52,7 @@ def build_plan(
         "Week1": [
             "Route: confirm scope",
             "Prep: assess feasibility",
-            "Prep: complete prep tasks",
+            "Prep tasks",
             "Prep: prepare assets",
         ],
         "Week2": [
