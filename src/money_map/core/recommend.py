@@ -95,6 +95,101 @@ def _score_variant(feasibility, economics, legal, objective: str) -> float:
     )
 
 
+def _explanation_signals(feasibility, economics, legal, objective: str) -> list[tuple[float, str]]:
+    weights = _objective_weights(objective)
+    time_min, time_max = economics.time_to_first_money_days_range
+    net_min, net_max = economics.typical_net_month_eur_range
+    prep_min, prep_max = feasibility.estimated_prep_weeks_range
+
+    time_mid = (time_min + time_max) / 2
+    net_mid = (net_min + net_max) / 2
+    prep_mid = (prep_min + prep_max) / 2
+
+    legal_score_map = {
+        "ok": 1.0,
+        "require_check": 0.4,
+        "registration": 0.2,
+        "license": 0.1,
+        "blocked": -1.0,
+    }
+    feasibility_score_map = {
+        "feasible": 1.0,
+        "feasible_with_prep": 0.4,
+        "not_feasible": -0.8,
+    }
+    confidence_score_map = {
+        "low": 0.2,
+        "medium": 0.6,
+        "high": 1.0,
+        "unknown": 0.4,
+    }
+
+    signals = []
+    signals.append((weights["time"] * (-time_mid), "Fast time-to-money"))
+    signals.append((weights["net"] * (net_mid / 100), "Strong net range"))
+    signals.append(
+        (weights["legal"] * legal_score_map.get(legal.legal_gate, 0.0), "Lower legal friction")
+    )
+    signals.append(
+        (
+            weights["feasibility"] * feasibility_score_map.get(feasibility.status, 0.0),
+            "Feasibility fit",
+        )
+    )
+    signals.append((weights["prep"] * (-prep_mid), "Low prep effort"))
+    signals.append(
+        (
+            weights["confidence"] * confidence_score_map.get(economics.confidence, 0.4),
+            "Confidence signal",
+        )
+    )
+    return signals
+
+
+def _build_explanations(
+    feasibility, economics, legal, objective: str
+) -> tuple[list[str], list[str]]:
+    signals = sorted(
+        _explanation_signals(feasibility, economics, legal, objective),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    pros = []
+    for _, label in signals:
+        if label not in pros:
+            pros.append(label)
+        if len(pros) == 3:
+            break
+
+    cons = []
+    if feasibility.blockers:
+        cons.append("Prep needed: " + "; ".join(feasibility.blockers[:2]))
+    if feasibility.status == "not_feasible":
+        cons.append("Not feasible now")
+    if legal.legal_gate != "ok":
+        cons.append(f"Legal gate: {legal.legal_gate}")
+    time_min, time_max = economics.time_to_first_money_days_range
+    if time_max >= 30:
+        cons.append("Slow time-to-money")
+    if economics.typical_net_month_eur_range == [0, 0]:
+        cons.append("Economics unknown")
+
+    cons_unique = []
+    for item in cons:
+        if item not in cons_unique:
+            cons_unique.append(item)
+        if len(cons_unique) == 2:
+            break
+
+    if len(cons_unique) < 1:
+        cons_unique.append("Constraints to verify")
+
+    if len(pros) < 3:
+        pros.extend(["Objective alignment"] * (3 - len(pros)))
+
+    return pros[:3], cons_unique[:2]
+
+
 def _normalized_constraints(profile: dict) -> set[str]:
     raw = profile.get("constraints", [])
     if not isinstance(raw, list):
@@ -217,22 +312,12 @@ def recommend(
             diagnostics["warnings"].setdefault("not_feasible_penalized", 0)
             diagnostics["warnings"]["not_feasible_penalized"] += 1
 
-        pros = [
-            "Estimated net "
-            f"{economics.typical_net_month_eur_range[0]}–"
-            f"{economics.typical_net_month_eur_range[1]} €/mo",
-            "Time to first money "
-            f"{economics.time_to_first_money_days_range[0]}–"
-            f"{economics.time_to_first_money_days_range[1]} days",
-            f"Confidence: {economics.confidence}",
-        ]
-        cons = []
-        if feasibility.blockers:
-            cons.append("Prep needed: " + "; ".join(feasibility.blockers[:2]))
-        if feasibility.status == "not_feasible":
-            cons.append("Not feasible now: requires major prep")
-        if legal.legal_gate != "ok":
-            cons.append(f"Legal gate: {legal.legal_gate}")
+        pros, cons = _build_explanations(
+            feasibility,
+            economics,
+            legal,
+            objective_preset,
+        )
 
         ranked.append(
             RecommendationVariant(
