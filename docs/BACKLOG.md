@@ -20,6 +20,7 @@ Current focus (4 stages requested by stakeholder):
 - [x] **Stage 12 — Scoring + determinism pipeline (E)**: objective-weighted scoring with deterministic tie-break by `variant_id` for reproducible Top-N. See `docs/releases/STAGE_12_SCORING_DETERMINISM.md`.
 - [x] **Stage 13 — Explanations + diagnostics pipeline (F)**: 3 reasons pro / 1–2 cons plus explicit filter diagnostics. See `docs/releases/STAGE_13_EXPLANATIONS_DIAGNOSTICS.md`.
 - [x] **Stage 14 — Recommendations UI + Reality Check**: add filter controls, reality check quick fixes, and full card sections. See `docs/releases/STAGE_14_RECOMMENDATIONS_UI.md`.
+- [x] **Stage 15 — Edge-case handling**: handle empty results, stale warnings, and all-not-feasible cases with next-step guidance. See `docs/releases/STAGE_15_EDGE_CASES.md`.
 
 ## Requirements summary (from PDFs)
 - Product is an offline-first tool that recommends income options per country/profile; deliverable as Python package with Typer CLI and Streamlit UI. Spec refs: Money_Map_Spec_Packet.pdf p.1, p.3.

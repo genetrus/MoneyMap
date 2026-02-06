@@ -708,7 +708,34 @@ def run_app() -> None:
                 st.info("Run recommendations to see results.")
             elif not result.ranked_variants:
                 st.warning("No results. Adjust filters and try again.")
+                if result.diagnostics.get("reasons"):
+                    st.caption("Filtered out reasons:")
+                    for reason, count in result.diagnostics["reasons"].items():
+                        st.write(f"- {reason}: {count}")
+                st.info("Quick fixes: relax filters or adjust objective.")
+                if st.button("Allow not feasible"):
+                    st.session_state["filters"]["exclude_not_feasible"] = False
+                    _run_recommendations()
+                if st.button("Allow blocked"):
+                    st.session_state["filters"]["exclude_blocked"] = False
+                    _run_recommendations()
+                if st.button("Extend time window"):
+                    st.session_state["filters"]["max_time_to_money_days"] = 60
+                    _run_recommendations()
+                return
             else:
+                all_not_feasible = all(
+                    rec.feasibility.status == "not_feasible" for rec in result.ranked_variants
+                )
+                if all_not_feasible:
+                    st.warning("All results are currently not feasible.")
+                    st.info("Quick fixes: loosen constraints or allow prep time.")
+                    if st.button("Allow not feasible (show all)"):
+                        st.session_state["filters"]["exclude_not_feasible"] = False
+                        _run_recommendations()
+                    if st.button("Extend time window"):
+                        st.session_state["filters"]["max_time_to_money_days"] = 60
+                        _run_recommendations()
                 st.subheader("Reality Check")
                 blocker_counts = Counter()
                 for rec in result.ranked_variants:
