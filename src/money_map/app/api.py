@@ -8,6 +8,7 @@ from time import perf_counter
 from typing import Any
 
 from money_map.app.observability import get_run_context, log_event
+from money_map.core.classify import classify_idea_text
 from money_map.core.errors import DataValidationError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data, load_profile
@@ -162,6 +163,32 @@ def recommend_variants(
         diagnostics=diagnostics,
         profile_hash=result.profile_hash,
     )
+
+
+def classify_idea(
+    idea_text: str,
+    data_dir: str | Path = "data",
+):
+    app_data = load_app_data(data_dir)
+    run_context = get_run_context()
+    report, payload = _validate_app_data(
+        app_data,
+        run_context.out_dir if run_context else None,
+        run_context.run_id if run_context else None,
+    )
+    _raise_on_fatals(report, payload, run_context.run_id if run_context else None)
+
+    result = classify_idea_text(idea_text, app_data=app_data, data_dir=data_dir)
+    log_event(
+        "classify",
+        run_id=run_context.run_id if run_context else None,
+        dataset_version=payload["dataset_version"],
+        stale=payload["stale"],
+        ambiguity=result.ambiguity,
+        confidence=result.confidence,
+        cell_guess=result.cell_guess,
+    )
+    return result
 
 
 def plan_variant(

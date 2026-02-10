@@ -14,4 +14,4 @@ def test_plan_contains_compliance_and_artifacts():
         for item in items:
             assert item in step_titles
     rendered = render_plan_md(plan)
-    assert "## Compliance" in rendered
+    assert "## 7) Compliance & Legal checks" in rendered

@@ -14,7 +14,13 @@ from uuid import uuid4
 
 import typer
 
-from money_map.app.api import export_bundle, plan_variant, recommend_variants, validate_data
+from money_map.app.api import (
+    classify_idea,
+    export_bundle,
+    plan_variant,
+    recommend_variants,
+    validate_data,
+)
 from money_map.app.observability import get_run_context, init_run_context, log_exception
 from money_map.core.errors import DataValidationError, InternalError, MoneyMapError
 from money_map.storage.fs import write_json
@@ -249,6 +255,76 @@ def recommend(
         )
         _render_error(error)
         log_exception("Unhandled recommend exception", run_id=run_context.run_id)
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def classify(
+    idea_text: str = typer.Option(..., "--idea-text", help="Free-text idea to classify"),
+    data_dir: str = typer.Option("data", "--data-dir", "--data", help="Data directory"),
+    output_format: str = typer.Option("text", "--format", help="Output format: text or json"),
+) -> None:
+    """Classify idea text into taxonomy + cell with deterministic explanations."""
+    run_context = init_run_context("classify", data_dir)
+    try:
+        result = classify_idea(idea_text=idea_text, data_dir=data_dir)
+        output_format = output_format.strip().lower()
+        if output_format not in {"text", "json"}:
+            raise MoneyMapError(
+                code="INVALID_FORMAT",
+                message="Output format must be 'text' or 'json'.",
+                hint="Use --format text or --format json.",
+                run_id=run_context.run_id,
+            )
+
+        payload = {
+            "run_id": run_context.run_id,
+            "idea_text": result.idea_text,
+            "cell_guess": result.cell_guess,
+            "backup_cell_guess": result.backup_cell_guess,
+            "matched_keywords": result.matched_keywords,
+            "suggested_tags": result.suggested_tags,
+            "reasons": result.reasons,
+            "confidence": result.confidence,
+            "ambiguity": result.ambiguity,
+            "top3": [
+                {
+                    "taxonomy_id": candidate.taxonomy_id,
+                    "taxonomy_label": candidate.taxonomy_label,
+                    "score": candidate.score,
+                    "cell_guess": candidate.cell_guess,
+                    "reasons": candidate.reasons,
+                }
+                for candidate in result.top3
+            ],
+        }
+
+        if output_format == "json":
+            typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+            return
+
+        typer.echo(f"cell_guess: {result.cell_guess}")
+        typer.echo(f"ambiguity: {result.ambiguity} | confidence={result.confidence:.2f}")
+        if result.matched_keywords:
+            typer.echo(f"matched_keywords: {', '.join(result.matched_keywords)}")
+        for idx, candidate in enumerate(result.top3, start=1):
+            typer.echo(
+                f"{idx}. {candidate.taxonomy_id} | score={candidate.score:.2f} "
+                f"| cell={candidate.cell_guess}"
+            )
+            if candidate.reasons:
+                typer.echo(f"   reasons: {'; '.join(candidate.reasons[:3])}")
+    except MoneyMapError as exc:
+        _render_error(exc)
+        raise typer.Exit(code=1)
+    except Exception as exc:
+        error = InternalError(
+            message=str(exc) or "Unexpected error",
+            hint="Check logs for details.",
+            run_id=run_context.run_id,
+        )
+        _render_error(error)
+        log_exception("Unhandled classify exception", run_id=run_context.run_id)
         raise typer.Exit(code=1)
 
 

@@ -131,6 +131,29 @@ The UI extra lives in `pyproject.toml` under `project.optional-dependencies`; in
 ## Installing behind a proxy / restricted network
 If you are on a corporate network or behind a proxy, configure the proxy for PowerShell and pip before running installs.
 
+## Agent vs local environment (important)
+Installed Python packages are environment-local and are **not** stored in git commits. This means:
+- Streamlit installed on your laptop does not automatically exist in CI/agent containers.
+- Streamlit installed in CI/agent containers does not automatically exist on your laptop.
+
+To avoid confusion, treat UI checks as a separate environment gate and run the same preflight in every runtime where UI checks are expected:
+
+```bash
+python -c "import sys; print(sys.executable)"
+python -m pip show streamlit
+python -c "import streamlit as st; print(st.__version__)"
+```
+
+If preflight fails in CI/agent due to network policy, use a mirror or offline wheelhouse for that environment (see sections below). (Money_Map_Spec_Packet.pdf p.11, p.14)
+
+### Current execution policy (Variant A for now)
+For the current environment, run core/CLI gates by default and treat container UI checks as skipped when Streamlit install is blocked by proxy `403`.
+
+- Use `make mvp-lite` (or equivalent core/CLI checks) as the default gate in agent runs.
+- Keep full UI/container checks as deferred Variant B and re-enable once mirror/proxy access or wheelhouse transfer is available.
+
+This avoids repeating the same failed UI installation loop while preserving a clear path to re-enable full UI gates later. (Money_Map_Spec_Packet.pdf p.11, p.14)
+
 ### PowerShell: HTTP(S) proxy environment variables
 ```powershell
 $env:HTTP_PROXY = "http://proxy.example.com:8080"
@@ -142,6 +165,20 @@ $env:HTTPS_PROXY = "http://proxy.example.com:8080"
 pip config set global.index-url https://mirror.example.com/simple
 pip config set global.trusted-host mirror.example.com
 ```
+
+### What you need to provide so the agent can install Streamlit in the container
+If container installs fail with `Tunnel connection failed: 403 Forbidden`, provide **one** of these inputs:
+
+1. **Working mirror/index details** (preferred):
+   - `index-url` (example: `https://<your-mirror>/simple`)
+   - `trusted-host` (host name only)
+   - proxy requirements (if any): `HTTP_PROXY`, `HTTPS_PROXY`
+2. **Offline wheelhouse artifact**:
+   - a folder/archive with wheels that includes `streamlit` and transitive dependencies
+   - installation command baseline: `python -m pip install --no-index --find-links=<wheelhouse> -e ".[ui]"`
+
+Without one of these, the container cannot install UI dependencies when outbound package access is blocked. (Money_Map_Spec_Packet.pdf p.11, p.14)
+
 
 ### Run `make mvp` behind a proxy/mirror
 ```bash
