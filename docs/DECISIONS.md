@@ -191,3 +191,14 @@
 - Consequences: Classify becomes reproducible and testable now; richer mappings can be expanded later without changing stage order.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.8, p.9-10, p.11, p.14
 - Owner: team
+
+
+## 2026-02-10 — Plan markdown renderer upgraded to Plan Template v1 with quota validation
+- Date: 2026-02-10
+- Title: Enforce Plan Template v1 section order and minimum quotas in plan.md generation
+- Context: The new planning flow requires a strict section order with explicit disclaimers, compliance section, and evidence/staleness appendix; generator output must remain actionable and auditable.
+- Decision: Replace the legacy plan markdown with Template v1 order (metadata → executive summary → feasibility/blockers → targets → artifacts → checklist → 4-week plan → compliance → economics/tracking → risks → decision points/fallbacks → evidence/staleness) and enforce minimum quotas at render time: `>=10` steps, `>=3` artifacts, mandatory compliance entries.
+- Alternatives: (1) Keep old compact plan layout and validate only in tests. (2) Enforce quotas only in graph builder.
+- Consequences: plan.md export now has stable structure and guardrails by construction; invalid plans fail fast with explicit errors.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-7, p.11, p.14
+- Owner: team

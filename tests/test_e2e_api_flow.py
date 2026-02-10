@@ -6,7 +6,7 @@ from money_map.app.api import export_bundle, recommend_variants
 from tests.helpers import (
     block_network,
     count_bullet_lines,
-    count_numbered_lines,
+    count_checkbox_lines,
     extract_section,
 )
 
@@ -58,12 +58,12 @@ def test_e2e_api_flow(tmp_path: Path, monkeypatch) -> None:
         assert "artifacts" in artifact.as_posix()
 
     plan_md = plan_path.read_text(encoding="utf-8")
-    assert "## Compliance" in plan_md
+    assert "## 7) Compliance & Legal checks" in plan_md
     assert "Prep tasks" in plan_md
 
-    steps_section = extract_section(plan_md, "## Steps")
-    artifacts_section = extract_section(plan_md, "## Artifacts")
+    steps_section = extract_section(plan_md, "## 5) Step-by-step checklist — minimum 10")
+    artifacts_section = extract_section(plan_md, "## 4) Required artifacts (minimum 3)")
 
-    assert count_numbered_lines(steps_section) >= 10
+    assert count_checkbox_lines(steps_section) >= 10
     assert count_bullet_lines(artifacts_section) >= 3
     assert any("artifacts/" in line for line in artifacts_section)

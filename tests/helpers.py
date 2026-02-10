@@ -33,5 +33,9 @@ def count_numbered_lines(lines: list[str]) -> int:
     return sum(1 for line in lines if re.match(r"^\d+\.\s", line.strip()))
 
 
+def count_checkbox_lines(lines: list[str]) -> int:
+    return sum(1 for line in lines if line.strip().startswith("- [ ]"))
+
+
 def count_bullet_lines(lines: list[str]) -> int:
     return sum(1 for line in lines if line.strip().startswith("- "))

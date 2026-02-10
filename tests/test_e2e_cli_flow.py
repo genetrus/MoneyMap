@@ -8,7 +8,7 @@ from pathlib import Path
 from shutil import copytree, which
 
 from money_map.storage.fs import read_yaml, write_yaml
-from tests.helpers import count_bullet_lines, count_numbered_lines, extract_section
+from tests.helpers import count_bullet_lines, count_checkbox_lines, extract_section
 
 
 def _run_cli_module(
@@ -152,9 +152,9 @@ def test_e2e_cli_flow(tmp_path: Path) -> None:
     assert (tmp_path / "profile.yaml").exists()
 
     plan_md = (tmp_path / "plan.md").read_text(encoding="utf-8")
-    steps_section = extract_section(plan_md, "## Steps")
-    artifacts_section = extract_section(plan_md, "## Artifacts")
-    assert count_numbered_lines(steps_section) >= 10
+    steps_section = extract_section(plan_md, "## 5) Step-by-step checklist — minimum 10")
+    artifacts_section = extract_section(plan_md, "## 4) Required artifacts (minimum 3)")
+    assert count_checkbox_lines(steps_section) >= 10
     assert count_bullet_lines(artifacts_section) >= 3
     artifact_names = {
         line.strip()[2:] for line in artifacts_section if line.strip().startswith("- ")
