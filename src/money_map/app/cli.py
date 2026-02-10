@@ -258,8 +258,6 @@ def recommend(
         raise typer.Exit(code=1)
 
 
-
-
 @app.command()
 def classify(
     idea_text: str = typer.Option(..., "--idea-text", help="Free-text idea to classify"),

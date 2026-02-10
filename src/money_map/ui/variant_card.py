@@ -139,6 +139,5 @@ def build_explore_card_copy(
 
 def has_income_promise(text: str) -> bool:
     return any(
-        re.search(pattern, text, flags=re.IGNORECASE)
-        for pattern in _FORBIDDEN_PROMISE_PATTERNS
+        re.search(pattern, text, flags=re.IGNORECASE) for pattern in _FORBIDDEN_PROMISE_PATTERNS
     )

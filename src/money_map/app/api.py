@@ -165,8 +165,6 @@ def recommend_variants(
     )
 
 
-
-
 def classify_idea(
     idea_text: str,
     data_dir: str | Path = "data",
@@ -191,6 +189,7 @@ def classify_idea(
         cell_guess=result.cell_guess,
     )
     return result
+
 
 def plan_variant(
     profile_path: str | Path | None,

@@ -1032,8 +1032,7 @@ def run_app() -> None:
 
             selected_for_plan = st.session_state.get("classify_selected_variant_id", "")
             st.caption(
-                "Selected for Plan: "
-                + (f"`{selected_for_plan}`" if selected_for_plan else "none")
+                "Selected for Plan: " + (f"`{selected_for_plan}`" if selected_for_plan else "none")
             )
             if st.button(
                 "Go to Plan",
