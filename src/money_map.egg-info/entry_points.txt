@@ -1,0 +1,2 @@
+[console_scripts]
+money-map = money_map.app.cli:main
