@@ -72,8 +72,7 @@ def test_no_guaranteed_income_wording_in_variant_card_copy() -> None:
     spoofed = replace(
         variant,
         summary=(
-            "Guaranteed stable 500€ monthly, you will definitely earn quickly "
-            "without any risks"
+            "Guaranteed stable 500€ monthly, you will definitely earn quickly without any risks"
         ),
     )
 
