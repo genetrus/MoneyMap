@@ -133,6 +133,172 @@ class RecommendationResult:
 
 
 @dataclass(frozen=True)
+class StalenessContract:
+    """Unified staleness payload for UI/DTO contracts."""
+
+    status: str  # fresh|warn|hard|unknown
+    is_stale: bool
+    reviewed_at: str | None
+    warn_after_days: int | None
+    hard_after_days: int | None
+    message: str
+
+
+@dataclass(frozen=True)
+class LegalContract:
+    """Unified legal/compliance payload for UI/DTO contracts."""
+
+    gate: str  # ok|require_check|registration|license|blocked
+    regulated_domain: str | None
+    checklist: list[str]
+    compliance_kits: list[str]
+    requires_human_check: bool
+
+
+@dataclass(frozen=True)
+class EvidenceContract:
+    """Unified evidence payload for UI/DTO contracts."""
+
+    reviewed_at: str | None
+    source_refs: list[str]
+    note: str | None
+    confidence: float | None
+
+
+@dataclass(frozen=True)
+class FeasibilityFloorsContract:
+    language: str | None
+    assets: list[str]
+    time_per_week_hours: int | None
+    other: list[str]
+
+
+@dataclass(frozen=True)
+class EconomicsContract:
+    time_to_first_money_days_range: list[int] | None
+    typical_net_month_eur_range: list[int] | None
+    costs_fixed_eur: int | None
+    costs_variable_eur_range: list[int] | None
+    volatility: str | None
+    ceiling: str | None
+    note: str | None
+
+
+@dataclass(frozen=True)
+class VariantCardV1:
+    """Expanded variant card contract for Explore/Recommendations."""
+
+    variant_id: str
+    title: str
+    country: str
+    taxonomy_id: str
+    taxonomy_label: str
+    cells: list[str]
+    one_liner: str
+    feasibility_status: str
+    prep_weeks_range: list[int] | None
+    blockers: list[str]
+    prep_steps: list[str]
+    feasibility_floors: FeasibilityFloorsContract
+    economics: EconomicsContract
+    legal: LegalContract
+    evidence: EvidenceContract
+    staleness: StalenessContract
+    pros: list[str]
+    cons: list[str]
+
+
+@dataclass(frozen=True)
+class MiniVariantCard:
+    """Compact variant card contract for Classify examples."""
+
+    variant_id: str
+    title: str
+    taxonomy_id: str
+    taxonomy_label: str
+    cell: str
+    feasibility_status: str
+    time_to_first_money_days_range: list[int] | None
+    typical_net_month_eur_range: list[int] | None
+    legal: LegalContract
+    evidence: EvidenceContract
+    staleness: StalenessContract
+
+
+@dataclass(frozen=True)
+class ClassifyCandidate:
+    taxonomy_id: str
+    taxonomy_label: str
+    cell_guess: str
+    score: float
+    reasons: list[str]
+    legal: LegalContract
+    evidence: EvidenceContract
+    staleness: StalenessContract
+    sample_variants: list[MiniVariantCard]
+
+
+@dataclass(frozen=True)
+class ClassifyResultV1:
+    """Deterministic text-classification result contract."""
+
+    idea_text: str
+    top3: list[ClassifyCandidate]
+    cell_guess: str
+    backup_cell_guess: str | None
+    matched_keywords: list[str]
+    suggested_tags: dict[str, str | None]  # sell, to_whom, value_measure
+    reasons: list[str]
+    confidence: float
+    ambiguity: str  # clear|ambiguous
+    legal: LegalContract
+    evidence: EvidenceContract
+    staleness: StalenessContract
+
+
+@dataclass(frozen=True)
+class PlanStepV1:
+    step_id: str
+    action: str
+    output: str
+    eta: str
+    depends_on: list[str]
+
+
+@dataclass(frozen=True)
+class PlanArtifactV1:
+    artifact_id: str
+    name: str
+    definition: str
+    done_criteria: str
+
+
+@dataclass(frozen=True)
+class PlanTemplateV1:
+    """Plan export contract aligned with Plan Template v1 sections."""
+
+    variant_id: str
+    variant_title: str
+    country: str
+    objective_preset: str
+    profile_hash: str
+    confidence: float
+    one_liner: str
+    feasibility_status: str
+    prep_weeks_range: list[int] | None
+    blockers: list[str]
+    prep_steps: list[str]
+    artifacts: list[PlanArtifactV1]
+    steps: list[PlanStepV1]
+    week_plan: dict[str, list[str]]
+    kpis: list[str]
+    legal: LegalContract
+    economics: EconomicsContract
+    evidence: EvidenceContract
+    staleness: StalenessContract
+
+
+@dataclass(frozen=True)
 class PlanStep:
     title: str
     detail: str

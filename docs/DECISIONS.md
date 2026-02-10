@@ -139,3 +139,55 @@
 - Consequences: Work can proceed in clear 20-step increments with richer acceptance details and output templates, while still preserving compatibility with MVP boundaries and DoD constraints from the PDF spec.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.3–8, p.13–14
 - Owner: team
+
+## 2026-02-10 — MVP приоритезация второстепенных сценариев Explore/Classify
+- Date: 2026-02-10
+- Title: Treat Explore as SHOULD in MVP UI scope and keep Classify baseline minimal/explainable
+- Context: Спецификация фиксирует Explore и Classify как вторичные сценарии, но MoSCoW выделяет MUST/SHOULD/COULD для MVP, где "более богатая классификация" указана как COULD.
+- Decision: Для MVP считать Explore частью SHOULD-области UI (browse-режим), а Classify внедрять в базовом, объяснимом и детерминированном виде без усложнений; расширенную классификацию относить к post-MVP backlog.
+- Alternatives: (1) Поднять Explore/Classify до MUST и расширить MVP-состав. (2) Полностью отложить оба сценария до post-MVP.
+- Consequences: MVP остается в зафиксированных границах, при этом вторичные сценарии внедряются без нарушения MUST-ограничений (offline, deterministic, staleness/legal safety).
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.5, p.8, p.11, p.14
+- Owner: team
+
+## 2026-02-10 — DTO-контракты v1 для Explore/Classify/Plan и унификация staleness/legal/evidence
+- Date: 2026-02-10
+- Title: Introduce DTO contracts VariantCardV1, MiniVariantCard, ClassifyResultV1, PlanTemplateV1
+- Context: Для второстепенных сценариев нужны фиксированные контракты данных и единый формат real-world полей, чтобы UI/engine интеграции были совместимыми и объяснимыми.
+- Decision: Добавить в `core/model.py` набор DTO-контрактов v1: `VariantCardV1`, `MiniVariantCard`, `ClassifyResultV1` (с `ClassifyCandidate`), `PlanTemplateV1`; а также унифицированные контракты `StalenessContract`, `LegalContract`, `EvidenceContract`.
+- Alternatives: (1) Оставить ad-hoc словари в каждом сценарии. (2) Зафиксировать только UI-типизацию без core-контрактов.
+- Consequences: Появляется единая точка типизации для Explore/Classify/Plan и единый формат staleness/legal/evidence; дальнейший маппинг в UI/engine можно реализовывать поэтапно без разъезда полей.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.6-7, p.8, p.9-10, p.11, p.14
+- Owner: team
+
+## 2026-02-10 — Explore MVP uses deterministic heuristic mapping for cell/taxonomy
+- Date: 2026-02-10
+- Title: Use tag-based deterministic mapping for Explore Matrix/Taxonomy/Bridges until dedicated datasets are added
+- Context: Current data bundle includes `variants.yaml` with tags but no dedicated matrix/taxonomy/bridges source files required for full Explore browse content.
+- Decision: Implement Explore baseline with deterministic local heuristics: `tags -> taxonomy` and `tags -> cell`; Bridges use fixed hooks with stable variant ordering (`time_to_first_money_days_range` then `variant_id`).
+- Alternatives: (1) Block Explore until dedicated files are available. (2) Add non-deterministic placeholder content.
+- Consequences: Explore UI can ship with stable states/tabs and empty-view behavior now; richer content can replace heuristics without changing navigation/state contracts.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.5, p.8, p.9-10, p.11, p.14
+- Owner: team
+
+
+## 2026-02-10 — Temporary Variant A execution mode: skip container UI checks, keep Variant B for later
+- Date: 2026-02-10
+- Title: Run with Variant A (core/CLI gates only) while container proxy blocks UI installs
+- Context: Current container networking enforces a proxy route that returns `Tunnel connection failed: 403 Forbidden` for Streamlit package fetches, so `.[ui]` cannot be installed in the agent runtime even when using `https://pypi.org/simple`.
+- Decision: Adopt Variant A as the default execution mode for now: run core/CLI quality gates and explicitly skip container-only UI checks; keep Variant B (full container UI checks) as a deferred path to re-enable once mirror/proxy or wheelhouse transfer is available.
+- Alternatives: (1) Block all work until container UI install is possible. (2) Keep retrying UI installs every chat despite known proxy failure.
+- Consequences: Delivery can continue without repeated setup loops; UI checks remain an environment-limited gate and must be re-enabled when connectivity artifacts become available.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.11, p.14
+- Owner: team
+
+
+## 2026-02-10 — Classify pipeline v1 uses deterministic keyword/mapping signals from local YAML
+- Date: 2026-02-10
+- Title: Implement deterministic Classify pipeline with keywords.yaml and mappings.yaml
+- Context: Classify requires reproducible text-to-taxonomy/cell outputs with explanations in offline mode. The dataset previously lacked dedicated keyword/mapping files for this flow.
+- Decision: Add `data/keywords.yaml` and `data/mappings.yaml` as baseline signal sources and implement pipeline stages: normalization, signal extraction, taxonomy scoring, cell scoring, explanation, and ambiguity mode. Keep tie-breaking deterministic (`score desc`, then `id asc`).
+- Alternatives: (1) Delay Classify until richer datasets are available. (2) Use non-deterministic LLM-only heuristics.
+- Consequences: Classify becomes reproducible and testable now; richer mappings can be expanded later without changing stage order.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.4, p.8, p.9-10, p.11, p.14
+- Owner: team

@@ -5,6 +5,8 @@ from __future__ import annotations
 NAV_ITEMS: list[tuple[str, str]] = [
     ("Data status", "data-status"),
     ("Profile", "profile"),
+    ("Explore", "explore"),
+    ("Classify", "classify"),
     ("Recommendations", "recommendations"),
     ("Plan", "plan"),
     ("Export", "export"),

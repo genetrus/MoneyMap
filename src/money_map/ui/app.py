@@ -11,6 +11,7 @@ import streamlit as st
 import yaml
 
 from money_map.app.api import export_bundle
+from money_map.core.classify import classify_idea_text
 from money_map.core.errors import InternalError, MoneyMapError
 from money_map.core.graph import build_plan
 from money_map.core.load import load_app_data
@@ -33,7 +34,98 @@ from money_map.ui.navigation import (
     resolve_page_from_query,
 )
 from money_map.ui.theme import inject_global_theme
+from money_map.ui.variant_card import build_explore_card_copy
 from money_map.ui.view_mode import get_view_mode, render_view_mode_control
+
+CELL_OPTIONS = ["A1", "A2", "B1", "B2"]
+TAXONOMY_OPTIONS = [
+    "service_fee",
+    "labor",
+    "asset_rental",
+    "resale_margin",
+    "commission",
+    "subscription",
+]
+BRIDGE_OPTIONS = ["A1->A2", "A2->B2", "A1->B1", "B1->B2"]
+
+
+def _stable_variant_sort_key(variant) -> tuple[int, str]:
+    ttfm = variant.economics.get("time_to_first_money_days_range") or []
+    ttfm_min = ttfm[0] if ttfm else 10**9
+    return (int(ttfm_min), variant.variant_id)
+
+
+def _variant_taxonomy(variant) -> str:
+    tags = set(variant.tags)
+    if "writing" in tags:
+        return "service_fee"
+    if "physical" in tags:
+        return "labor"
+    if "regulated" in tags:
+        return "commission"
+    if "remote" in tags:
+        return "subscription"
+    return "service_fee"
+
+
+def _variant_cell(variant) -> str:
+    tags = set(variant.tags)
+    if "remote" in tags and "regulated" in tags:
+        return "B2"
+    if "remote" in tags:
+        return "A2"
+    if "regulated" in tags:
+        return "B1"
+    return "A1"
+
+
+def _render_explore_variant_card(variant, *, taxonomy: str, cell: str, stale: bool) -> None:
+    card = build_explore_card_copy(variant, taxonomy=taxonomy, cell=cell, stale=stale)
+
+    st.markdown(f"### {card.title} · {card.variant_id}")
+    st.markdown(f"**Taxonomy:** {card.taxonomy} · **Cell:** {card.cell}")
+    st.markdown(
+        f"**Status:** {card.feasibility_status} · **Legal gate:** {card.legal_gate} "
+        f"· **Staleness:** {card.stale_badge}"
+    )
+    st.markdown(f"**Summary:** {card.one_liner}")
+
+    with st.expander("Подробнее", expanded=False):
+        st.markdown("#### 1) Feasibility")
+        st.markdown(f"- **Status:** {card.feasibility_status}")
+        st.markdown(f"- **Prep:** {card.prep_range}")
+        st.markdown("- **Blockers:**")
+        for item in card.blockers:
+            st.markdown(f"  - {item}")
+        st.markdown("- **Prep steps:**")
+        for item in card.prep_steps:
+            st.markdown(f"  - {item}")
+
+        st.markdown("#### 2) Economics *(estimate, not guarantee)*")
+        st.markdown(f"- **TTFM:** {card.ttfm_range}")
+        st.markdown(f"- **Net/month:** {card.net_range}")
+
+        st.markdown("#### 3) Legal / Compliance *(requires verification)*")
+        st.markdown(f"- **Gate:** {card.legal_gate}")
+        for item in card.legal_checks:
+            st.markdown(f"  - {item}")
+
+        st.markdown("#### 4) Why / Why not")
+        st.markdown("- **Pros (3):**")
+        for item in card.pros:
+            st.markdown(f"  - {item}")
+        st.markdown("- **Cons (1–2):**")
+        for item in card.cons:
+            st.markdown(f"  - {item}")
+
+        st.markdown("#### 5) Evidence & Staleness")
+        st.markdown(f"- Reviewed: {card.reviewed_at}")
+        st.markdown(f"- Staleness: {card.stale_badge}")
+
+        st.markdown("#### 6) Actions")
+        st.markdown("- [ ] Open in Explore")
+        st.markdown("- [ ] Use as Recommendations filter")
+
 
 DEFAULT_PROFILE = {
     "name": "Demo",
@@ -70,6 +162,17 @@ def _init_state() -> None:
     )
     st.session_state.setdefault("profile_hash", compute_profile_hash(st.session_state["profile"]))
     st.session_state.setdefault("page_initialized", False)
+    st.session_state.setdefault("explore_tab", "Matrix")
+    st.session_state.setdefault("explore_selected_cell", "A1")
+    st.session_state.setdefault("explore_selected_taxonomy", "service_fee")
+    st.session_state.setdefault("explore_selected_bridge", "A1->A2")
+    st.session_state.setdefault("explore_paths_enabled", False)
+    st.session_state.setdefault("explore_library_enabled", False)
+    st.session_state.setdefault("classify_idea_text", "")
+    st.session_state.setdefault("classify_result", None)
+    st.session_state.setdefault("classify_error", "")
+    st.session_state.setdefault("classify_selected_variant_id", "")
+    st.session_state.setdefault("classify_prefilter", {})
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -561,6 +664,14 @@ def run_app() -> None:
                         profile_loaded = True
             st.caption(f"Profile source: {st.session_state['profile_source']}")
             profile = st.session_state["profile"]
+            classify_prefilter = st.session_state.get("classify_prefilter") or {}
+            if classify_prefilter.get("from_classify"):
+                st.info(
+                    "Opened from Classify: "
+                    f"taxonomy={classify_prefilter.get('taxonomy_id')} | "
+                    f"cell={classify_prefilter.get('cell')}"
+                )
+
             profile.setdefault("name", "")
             profile.setdefault("country", "DE")
             profile.setdefault("location", "")
@@ -657,6 +768,283 @@ def run_app() -> None:
 
         _run_with_error_boundary(_render_profile)
 
+    elif page_slug == "explore":
+        _render_page_header("Explore", "Browse matrix/taxonomy/bridges (offline, deterministic).")
+
+        def _render_explore() -> None:
+            report = _get_validation()
+            if report["fatals"]:
+                _render_status(
+                    "invalid_data",
+                    "Explore is blocked by validation fatals.",
+                    reasons=[", ".join(_issue_codes(report["fatals"]))],
+                    level="error",
+                )
+                return
+
+            if report["status"] == "stale":
+                _render_status(
+                    "stale_warning",
+                    "Data is stale. Legal hints should be treated cautiously.",
+                    reasons=["Rulepack/variant freshness exceeded staleness policy."],
+                    level="warning",
+                )
+
+            tab_options = ["Matrix", "Taxonomy", "Bridges"]
+            if st.session_state.get("explore_paths_enabled"):
+                tab_options.append("Paths")
+            if st.session_state.get("explore_library_enabled"):
+                tab_options.append("Variants Library")
+            selected_tab = st.radio("Explore tabs", tab_options, key="explore_tab", horizontal=True)
+
+            with st.spinner("Building explore view..."):
+                app_data = _get_app_data()
+                variants = sorted(app_data.variants, key=_stable_variant_sort_key)
+
+            _render_status("ready", f"Explore tab ready: {selected_tab}.")
+
+            if selected_tab == "Matrix":
+                selected_cell = st.selectbox("Cell", CELL_OPTIONS, key="explore_selected_cell")
+                cell_variants = [v for v in variants if _variant_cell(v) == selected_cell]
+                st.subheader(f"Cell {selected_cell}")
+                if not cell_variants:
+                    _render_status(
+                        "empty_view",
+                        "No variants for selected cell.",
+                        reasons=["Try another cell or open Bridges tab."],
+                        level="warning",
+                    )
+                    return
+                st.write("Typical variants:")
+                for variant in cell_variants:
+                    _render_explore_variant_card(
+                        variant,
+                        taxonomy=_variant_taxonomy(variant),
+                        cell=selected_cell,
+                        stale=is_variant_stale(variant, app_data.meta.staleness_policy),
+                    )
+
+            elif selected_tab == "Taxonomy":
+                selected_taxonomy = st.selectbox(
+                    "Taxonomy",
+                    TAXONOMY_OPTIONS,
+                    key="explore_selected_taxonomy",
+                )
+                tax_variants = [v for v in variants if _variant_taxonomy(v) == selected_taxonomy]
+                st.subheader(f"Taxonomy: {selected_taxonomy}")
+                if not tax_variants:
+                    _render_status(
+                        "empty_view",
+                        "No variants for selected taxonomy.",
+                        reasons=["Try another taxonomy category."],
+                        level="warning",
+                    )
+                    return
+                st.write("Examples:")
+                for variant in tax_variants:
+                    _render_explore_variant_card(
+                        variant,
+                        taxonomy=selected_taxonomy,
+                        cell=_variant_cell(variant),
+                        stale=is_variant_stale(variant, app_data.meta.staleness_policy),
+                    )
+
+            elif selected_tab == "Bridges":
+                selected_bridge = st.selectbox(
+                    "Bridge",
+                    BRIDGE_OPTIONS,
+                    key="explore_selected_bridge",
+                )
+                frm, to = selected_bridge.split("->", 1)
+                st.subheader(f"Bridge {frm} → {to}")
+                bridge_variants = [v for v in variants if _variant_cell(v) in {frm, to}]
+                st.write("Preconditions:")
+                st.write("- Validate feasibility blockers")
+                st.write("- Check legal gate for regulated domains")
+                st.write("Steps:")
+                st.write("- Prepare minimal artifacts")
+                st.write("- Run recommendations with updated objective")
+                if not bridge_variants:
+                    _render_status(
+                        "empty_view",
+                        "No variants mapped to this bridge yet.",
+                        reasons=["Use neighboring bridge or relax filters in Recommendations."],
+                        level="warning",
+                    )
+                    return
+                st.write("Common variants for this bridge:")
+                for variant in bridge_variants:
+                    _render_explore_variant_card(
+                        variant,
+                        taxonomy=_variant_taxonomy(variant),
+                        cell=_variant_cell(variant),
+                        stale=is_variant_stale(variant, app_data.meta.staleness_policy),
+                    )
+
+            elif selected_tab == "Paths":
+                st.info("Paths hook is enabled but route templates are not implemented yet.")
+
+            elif selected_tab == "Variants Library":
+                st.info("Variants Library hook is enabled; advanced filters are pending.")
+
+        _run_with_error_boundary(_render_explore)
+
+    elif page_slug == "classify":
+        _render_page_header("Classify", "Classify idea text into taxonomy + matrix cell.")
+
+        def _render_classify() -> None:
+            report = _get_validation()
+            if report["fatals"]:
+                _render_status(
+                    "error",
+                    "Classify is blocked by validation fatals.",
+                    reasons=[", ".join(_issue_codes(report["fatals"]))],
+                    level="error",
+                )
+                return
+
+            if report["status"] == "stale":
+                _render_status(
+                    "stale_warning",
+                    "Data is stale. Classification legal hints are conservative.",
+                    reasons=["Rulepack/variant freshness exceeded staleness policy."],
+                    level="warning",
+                )
+
+            idea_text = st.text_area(
+                "Idea text",
+                key="classify_idea_text",
+                placeholder="Describe your idea in 1-5 sentences...",
+            )
+
+            if len(idea_text.strip()) < 8:
+                _render_status(
+                    "draft",
+                    "Add at least one short sentence to classify.",
+                    reasons=["Current input is too short for reliable signals."],
+                )
+                return
+
+            run_clicked = st.button("Classify")
+            if run_clicked:
+                st.session_state["classify_error"] = ""
+                with st.spinner("Classifying idea..."):
+                    _render_status("loading", "Running deterministic classification pipeline...")
+                    try:
+                        st.session_state["classify_result"] = classify_idea_text(
+                            idea_text,
+                            app_data=_get_app_data(),
+                            data_dir="data",
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        st.session_state["classify_error"] = str(exc)
+                        st.session_state["classify_result"] = None
+
+            if st.session_state.get("classify_error"):
+                _render_status(
+                    "error",
+                    "Classification failed.",
+                    reasons=[st.session_state["classify_error"]],
+                    level="error",
+                )
+                return
+
+            result = st.session_state.get("classify_result")
+            if result is None:
+                return
+
+            status = "ambiguous" if result.ambiguity == "ambiguous" else "results"
+            level = "warning" if status == "ambiguous" else "info"
+            _render_status(
+                status,
+                f"Top cell guess: {result.cell_guess} (confidence={result.confidence:.2f})",
+                reasons=result.reasons[:3],
+                level=level,
+            )
+
+            st.subheader("Top-3 taxonomy candidates")
+            for idx, candidate in enumerate(result.top3, start=1):
+                st.markdown(
+                    f"**{idx}. {candidate.taxonomy_label} ({candidate.taxonomy_id})** · "
+                    f"Cell: {candidate.cell_guess} · Score: {candidate.score:.2f}"
+                )
+                if candidate.reasons:
+                    st.caption("Why: " + "; ".join(candidate.reasons[:3]))
+
+                samples = candidate.sample_variants[:5]
+                if samples:
+                    st.markdown("Mini-Variant Cards")
+                for sample in samples:
+                    with st.container():
+                        st.markdown(f"**{sample.title}** · `{sample.variant_id}`")
+                        st.caption(
+                            f"taxonomy={sample.taxonomy_id} · cell={sample.cell} · "
+                            f"feasibility={sample.feasibility_status}"
+                        )
+                        st.write(
+                            "TTFM: "
+                            + (
+                                "-".join(map(str, sample.time_to_first_money_days_range))
+                                if sample.time_to_first_money_days_range
+                                else "unknown"
+                            )
+                        )
+                        st.write(
+                            "Net/month: €"
+                            + (
+                                "-".join(map(str, sample.typical_net_month_eur_range))
+                                if sample.typical_net_month_eur_range
+                                else "unknown"
+                            )
+                        )
+                        st.write(f"Legal gate: {sample.legal.gate}")
+
+                        c1, c2, c3 = st.columns(3)
+                        if c1.button(
+                            "Open in Explore",
+                            key=f"classify-explore-{idx}-{sample.variant_id}",
+                        ):
+                            st.session_state["explore_tab"] = "Taxonomy"
+                            st.session_state["explore_selected_taxonomy"] = candidate.taxonomy_id
+                            st.session_state["explore_selected_cell"] = candidate.cell_guess
+                            st.session_state["page"] = "explore"
+                            st.rerun()
+
+                        if c2.button(
+                            "Open in Recommendations",
+                            key=f"classify-reco-{idx}-{sample.variant_id}",
+                        ):
+                            st.session_state["classify_prefilter"] = {
+                                "taxonomy_id": candidate.taxonomy_id,
+                                "cell": candidate.cell_guess,
+                                "from_classify": True,
+                            }
+                            st.session_state["selected_variant_id"] = sample.variant_id
+                            st.session_state["page"] = "recommendations"
+                            st.rerun()
+
+                        if c3.button(
+                            "Select for Plan",
+                            key=f"classify-plan-select-{idx}-{sample.variant_id}",
+                        ):
+                            st.session_state["classify_selected_variant_id"] = sample.variant_id
+                            st.session_state["selected_variant_id"] = sample.variant_id
+
+            selected_for_plan = st.session_state.get("classify_selected_variant_id", "")
+            st.caption(
+                "Selected for Plan: "
+                + (f"`{selected_for_plan}`" if selected_for_plan else "none")
+            )
+            if st.button(
+                "Go to Plan",
+                disabled=not bool(selected_for_plan),
+                key="classify-go-plan",
+            ):
+                st.session_state["page"] = "plan"
+                st.rerun()
+
+        _run_with_error_boundary(_render_classify)
+
     elif page_slug == "recommendations":
         _render_page_header("Recommendations")
 
@@ -664,6 +1052,14 @@ def run_app() -> None:
             report = _get_validation()
             _guard_fatals(report)
             profile = st.session_state["profile"]
+            classify_prefilter = st.session_state.get("classify_prefilter") or {}
+            if classify_prefilter.get("from_classify"):
+                st.info(
+                    "Opened from Classify: "
+                    f"taxonomy={classify_prefilter.get('taxonomy_id')} | "
+                    f"cell={classify_prefilter.get('cell')}"
+                )
+
             profile_validation = validate_profile(profile)
             if not profile_validation["is_ready"]:
                 reasons = []
@@ -880,6 +1276,14 @@ def run_app() -> None:
                 )
             else:
                 profile = st.session_state["profile"]
+            classify_prefilter = st.session_state.get("classify_prefilter") or {}
+            if classify_prefilter.get("from_classify"):
+                st.info(
+                    "Opened from Classify: "
+                    f"taxonomy={classify_prefilter.get('taxonomy_id')} | "
+                    f"cell={classify_prefilter.get('cell')}"
+                )
+
                 st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
                 try:
                     plan = _ensure_plan(profile, variant_id)
@@ -934,6 +1338,14 @@ def run_app() -> None:
                 _render_status("not_ready", "Export is not ready.", reasons=reasons)
             else:
                 profile = st.session_state["profile"]
+            classify_prefilter = st.session_state.get("classify_prefilter") or {}
+            if classify_prefilter.get("from_classify"):
+                st.info(
+                    "Opened from Classify: "
+                    f"taxonomy={classify_prefilter.get('taxonomy_id')} | "
+                    f"cell={classify_prefilter.get('cell')}"
+                )
+
                 app_data = _get_app_data()
                 plan_text = render_plan_md(plan)
                 recommendations = recommend(

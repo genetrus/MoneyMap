@@ -1,0 +1,74 @@
+keywords:
+  freelance:
+    taxonomy:
+      service_fee: 2.0
+    cell:
+      A1: 1.0
+    tags:
+      sell: service
+      to_whom: business
+  writer:
+    taxonomy:
+      service_fee: 2.2
+    cell:
+      A2: 0.8
+    tags:
+      value_measure: fixed_fee
+  translation:
+    taxonomy:
+      service_fee: 2.0
+    cell:
+      A2: 1.0
+  commission:
+    taxonomy:
+      commission: 2.5
+    cell:
+      B1: 1.8
+    tags:
+      value_measure: percent
+  percent:
+    taxonomy:
+      commission: 1.5
+    cell:
+      B1: 1.0
+    tags:
+      value_measure: percent
+  subscription:
+    taxonomy:
+      subscription: 2.4
+    cell:
+      B2: 1.7
+    tags:
+      value_measure: recurring
+  remote:
+    taxonomy:
+      subscription: 0.7
+      service_fee: 0.6
+    cell:
+      A2: 1.0
+  regulated:
+    taxonomy:
+      commission: 1.2
+    cell:
+      B1: 1.5
+  local:
+    taxonomy:
+      labor: 1.7
+    cell:
+      A1: 0.9
+  errand:
+    taxonomy:
+      labor: 2.2
+    cell:
+      A1: 1.1
+  childcare:
+    taxonomy:
+      labor: 1.4
+      commission: 0.5
+    cell:
+      B1: 1.2
+  asset:
+    taxonomy:
+      asset_rental: 2.0
+    cell:
+      B2: 1.2

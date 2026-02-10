@@ -1,0 +1,39 @@
+taxonomy:
+  service_fee:
+    label: Service fee
+    typical_cells: [A1, A2]
+    keywords: [freelance, writer, writing, translation, service]
+  labor:
+    label: Labor
+    typical_cells: [A1, B1]
+    keywords: [local, errand, helper, childcare, physical]
+  commission:
+    label: Commission
+    typical_cells: [B1, B2]
+    keywords: [commission, percent, deal, regulated]
+  subscription:
+    label: Subscription
+    typical_cells: [A2, B2]
+    keywords: [subscription, recurring, remote, online]
+  asset_rental:
+    label: Asset rental
+    typical_cells: [B1, B2]
+    keywords: [asset, rent, rental, leasing]
+
+cell_keywords:
+  A1: [local, physical, errands, helper]
+  A2: [remote, online, digital, writing]
+  B1: [regulated, permit, license, compliance]
+  B2: [scale, scalable, subscription, automation, system]
+
+tag_keywords:
+  sell:
+    service: [service, freelance, helper, writing]
+    asset: [asset, rent, rental]
+  to_whom:
+    business: [business, company, client, ngo]
+    consumer: [family, local, household]
+  value_measure:
+    fixed_fee: [fixed, package, one_time]
+    percent: [percent, commission]
+    recurring: [subscription, recurring, monthly]
