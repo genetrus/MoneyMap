@@ -188,10 +188,7 @@ def _check_ui_import(mode: str) -> tuple[str, str]:
                 text=True,
             )
             if probe.returncode == 0:
-                detail = (
-                    "Streamlit found in .venv. Activate it first: "
-                    "source .venv/bin/activate"
-                )
+                detail = "Streamlit found in .venv. Activate it first: source .venv/bin/activate"
                 if mode == "optional":
                     return "SKIP", detail
                 return "FAIL", f"(required) {detail}"
