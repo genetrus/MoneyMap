@@ -20,6 +20,7 @@ def test_rules_force_legal_gate_when_rulepack_stale_and_regulated():
 
     assert legal.legal_gate == "require_check"
     assert any("DATA_STALE" in item for item in legal.checklist)
+    assert "tax_basics" in legal.compliance_kits
     assert any("require_check_if_stale" in rule.rule_id for rule in legal.applied_rules)
 
 
@@ -31,6 +32,7 @@ def test_rules_apply_blocked_rule():
     legal = evaluate_legal(app_data.rulepack, blocked_variant, app_data.meta.staleness_policy)
 
     assert legal.legal_gate == "blocked"
+    assert "insurance_basics" in legal.compliance_kits
     assert any(rule.rule_id.startswith("blocked.") for rule in legal.applied_rules)
 
 
@@ -66,3 +68,17 @@ def test_rules_apply_blocked_fallback_when_missing():
 
     assert legal.legal_gate == "blocked"
     assert any(rule.rule_id == "blocked.missing_rulepack_rule" for rule in legal.applied_rules)
+
+
+def test_rules_normalize_unknown_legal_gate_to_require_check() -> None:
+    app_data = load_app_data()
+    base_variant = app_data.variants[0]
+    unknown_gate_variant = replace(
+        base_variant, legal={"legal_gate": "auto-approved", "checklist": ["check docs"]}
+    )
+
+    legal = evaluate_legal(app_data.rulepack, unknown_gate_variant, app_data.meta.staleness_policy)
+
+    assert legal.legal_gate == "require_check"
+    assert "tax_basics" in legal.compliance_kits
+    assert any("Regulatory review required" in item for item in legal.checklist)

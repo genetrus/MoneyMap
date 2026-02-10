@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import os
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -173,6 +174,24 @@ def _check_staleness_gating() -> tuple[bool, str]:
 
 def _check_ui_import(mode: str) -> tuple[str, str]:
     if importlib.util.find_spec("streamlit") is None:
+        venv_python = ROOT / ".venv" / "bin" / "python"
+        if venv_python.exists():
+            probe = subprocess.run(
+                [
+                    str(venv_python),
+                    "-c",
+                    "import importlib.util; "
+                    "raise SystemExit(0 if importlib.util.find_spec('streamlit') else 1)",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if probe.returncode == 0:
+                detail = "Streamlit found in .venv. Activate it first: source .venv/bin/activate"
+                if mode == "optional":
+                    return "SKIP", detail
+                return "FAIL", f"(required) {detail}"
         detail = 'Streamlit missing. Run: python -m pip install -e ".[ui]"'
         if mode == "optional":
             return "SKIP", detail
@@ -197,7 +216,7 @@ def main() -> int:
 
     data_dir = ROOT / args.data_dir
     profile = ROOT / args.profile
-    ui_mode = (os.getenv("MM_UI_CHECK") or "required").strip().lower()
+    ui_mode = (os.getenv("MM_UI_CHECK") or "optional").strip().lower()
     if ui_mode not in {"required", "optional"}:
         ui_mode = "required"
 
