@@ -669,7 +669,9 @@ def run_app() -> None:
                 reasons = []
                 if profile_validation["missing"]:
                     reasons.append("Missing: " + ", ".join(profile_validation["missing"]))
-                reasons.extend([f"Warning: {warning}" for warning in profile_validation["warnings"]])
+                reasons.extend(
+                    [f"Warning: {warning}" for warning in profile_validation["warnings"]]
+                )
                 _render_status(
                     "not_ready",
                     "Profile is not ready for recommendations.",
@@ -882,7 +884,9 @@ def run_app() -> None:
                 try:
                     plan = _ensure_plan(profile, variant_id)
                 except ValueError as exc:
-                    _render_status("error", "Plan generation failed.", reasons=[str(exc)], level="error")
+                    _render_status(
+                        "error", "Plan generation failed.", reasons=[str(exc)], level="error"
+                    )
                 else:
                     app_data = _get_app_data()
                     variant = next(
