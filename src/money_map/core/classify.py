@@ -34,13 +34,19 @@ def _tokens_and_ngrams(normalized_text: str) -> list[str]:
 
 
 def _load_keywords(data_dir: str | Path) -> dict[str, dict]:
-    payload = read_mapping(Path(data_dir) / "keywords.yaml")
-    return payload.get("keywords", {})
+    try:
+        payload = read_mapping(Path(data_dir) / "keywords.yaml")
+    except (FileNotFoundError, ValueError):
+        return {}
+    return payload.get("keywords", {}) if isinstance(payload, dict) else {}
 
 
 def _load_mappings(data_dir: str | Path) -> dict[str, dict]:
-    payload = read_mapping(Path(data_dir) / "mappings.yaml")
-    return payload
+    try:
+        payload = read_mapping(Path(data_dir) / "mappings.yaml")
+    except (FileNotFoundError, ValueError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def _variant_taxonomy_from_tags(tags: list[str]) -> str:
@@ -250,6 +256,11 @@ def classify_idea_text(
     phrases = _tokens_and_ngrams(normalized)
     keywords = _load_keywords(data_dir)
     mappings = _load_mappings(data_dir)
+    loading_warnings: list[str] = []
+    if not keywords:
+        loading_warnings.append("keywords_missing_or_invalid")
+    if not mappings:
+        loading_warnings.append("mappings_missing_or_invalid")
 
     matched, taxonomy_signals, cell_signals, suggested_tags = _extract_signals(
         phrases,
@@ -296,6 +307,7 @@ def classify_idea_text(
     explanation.extend(cell_reasons[:3])
     if ambiguity == "ambiguous":
         explanation.append("Top-1 and Top-2 scores are close; clarification is recommended")
+    explanation.extend(loading_warnings)
 
     return ClassifyResultV1(
         idea_text=idea_text,

@@ -202,3 +202,14 @@
 - Consequences: plan.md export now has stable structure and guardrails by construction; invalid plans fail fast with explicit errors.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-7, p.11, p.14
 - Owner: team
+
+
+## 2026-02-10 — Classify pipeline degrades gracefully when keyword/mapping files are missing
+- Date: 2026-02-10
+- Title: Treat missing/invalid keywords.yaml or mappings.yaml as non-fatal classify input gaps
+- Context: In offline/restricted environments or intermediate dataset states, classification signal files can be absent or malformed. The UI/CLI classify flow should not crash if core data is valid.
+- Decision: If `data/keywords.yaml` or `data/mappings.yaml` is missing/invalid, classify falls back to deterministic defaults and appends explicit warning reasons (`*_missing_or_invalid`) to explanations instead of throwing exceptions.
+- Alternatives: (1) Fail classify on missing files. (2) Hide classify output without explanation.
+- Consequences: Classify remains reproducible and user-visible while transparently signaling degraded confidence/input quality.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.11, p.14
+- Owner: team
