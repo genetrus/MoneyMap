@@ -13,7 +13,6 @@ from money_map.ui.status_tokens import (
     get_staleness_token,
 )
 
-
 BADGE_CLASS_BY_STALENESS = {
     "ok": "badge-valid",
     "warn": "badge-stale",

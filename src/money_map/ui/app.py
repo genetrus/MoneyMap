@@ -27,6 +27,14 @@ from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
+from money_map.ui.components import (
+    render_badge_set,
+    render_context_bar,
+    render_graph_fallback,
+    render_header_bar,
+    render_kpi_grid,
+    selected_ids_from_state,
+)
 from money_map.ui.data_status import (
     build_validate_rows,
     data_status_visibility,
@@ -39,15 +47,6 @@ from money_map.ui.navigation import (
     NAV_ITEMS,
     NAV_LABEL_BY_SLUG,
     resolve_page_from_query,
-)
-from money_map.ui.components import (
-    render_badge_set,
-    render_context_bar,
-    render_detail_drawer,
-    render_graph_fallback,
-    render_header_bar,
-    render_kpi_grid,
-    selected_ids_from_state,
 )
 from money_map.ui.session_state import (
     DEFAULT_FILTERS,
@@ -754,7 +753,7 @@ def run_app() -> None:
                 with st.expander("Coverage & freshness"):
                     stale_top = oldest_stale_entities(report["staleness"]["variants"], limit=10)
                     st.write(
-                        f"regulated domains coverage: n/a (field not present in current schema)"
+                        "regulated domains coverage: n/a (field not present in current schema)"
                     )
                     if stale_top:
                         st.write("Oldest entities (top 10)")
@@ -1917,7 +1916,10 @@ def run_app() -> None:
             ]
             st.table(metadata_rows)
 
-            run_cmd = f"money-map run --profile profiles/demo.yaml --variant-id {variant_id} --out-dir exports"
+            run_cmd = (
+                "money-map run --profile profiles/demo.yaml "
+                f"--variant-id {variant_id} --out-dir exports"
+            )
             st.code(run_cmd, language="bash")
             if st.button("Copy run command", key="export-copy-run-cmd"):
                 st.info("Command shown above. Copy from code block.")
