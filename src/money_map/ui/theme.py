@@ -297,7 +297,7 @@ def build_theme_css(theme_name: str) -> str:
     }}
 
     .status-badge {
-      border-radius: 999px;
+        border - radius: 999px;
       padding: 0.2rem 0.6rem;
       font-size: 0.74rem;
       color: var(--mm-badge-text);
@@ -309,19 +309,19 @@ def build_theme_css(theme_name: str) -> str:
     }
 
     .badge-valid {
-      background: var(--mm-badge-valid);
+        background: var(--mm-badge-valid);
     }
 
     .badge-stale {
-      background: var(--mm-badge-stale);
+        background: var(--mm-badge-stale);
     }
 
     .badge-invalid {
-      background: var(--mm-badge-invalid);
+        background: var(--mm-badge-invalid);
     }
 
     .mm-badge-set {
-      display: flex;
+        display: flex;
       flex-wrap: wrap;
       gap: 0.35rem;
       margin: 0.3rem 0 0.6rem;

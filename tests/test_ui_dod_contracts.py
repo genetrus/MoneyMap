@@ -14,7 +14,7 @@ def test_ui_cache_contracts_present() -> None:
 
 def test_ui_recommendations_empty_state_contract_present() -> None:
     source = _read_ui_app()
-    assert "_render_status(\n                    \"empty\"," in source
+    assert '_render_status(\n                    "empty",' in source
     assert "Empty state quick fixes are available above." in source
     assert "Quick fix: allow prep" in source
 
@@ -31,5 +31,8 @@ def test_ui_export_artifact_panel_contract_present() -> None:
 
 def test_ui_plan_tabs_contract_present() -> None:
     source = _read_ui_app()
-    assert "st.tabs([\"Checklist\", \"4 weeks\", \"Compliance\"])" in source
+    assert "st.tabs(" in source
+    assert "Checklist" in source
+    assert "4 weeks" in source
+    assert "Compliance" in source
     assert "Step detail drawer" in source

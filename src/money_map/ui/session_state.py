@@ -114,7 +114,9 @@ def sync_filters_and_objective(
     state["filters_hash"] = new_filters_hash
     state["objective_preset"] = objective_preset
 
-    changed = (new_filters_hash != previous_filters_hash) or (objective_preset != previous_objective)
+    changed = (new_filters_hash != previous_filters_hash) or (
+        objective_preset != previous_objective
+    )
     if changed:
         state["recommendations"] = None
         state["recommend_diagnostics"] = None

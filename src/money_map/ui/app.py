@@ -440,7 +440,9 @@ def _profile_preview_snapshot(profile: dict) -> dict[str, object]:
     cell_counts: dict[str, int] = {cell: 0 for cell in CELL_OPTIONS}
     for rec in ranked:
         if rec.feasibility.status in {"feasible", "feasible_with_prep"}:
-            cell_counts[_variant_cell(rec.variant)] = cell_counts.get(_variant_cell(rec.variant), 0) + 1
+            cell_counts[_variant_cell(rec.variant)] = (
+                cell_counts.get(_variant_cell(rec.variant), 0) + 1
+            )
 
     heatmap_rows = [{"cell": cell, "count": count} for cell, count in cell_counts.items()]
     return {
@@ -490,8 +492,6 @@ def _render_profile_preview(preview: dict[str, object]) -> None:
         use_container_width=True,
     )
     st.caption(f"Evaluated variants: {preview['evaluated']}")
-
-
 
 
 def _score_contribution_rows(rec) -> list[dict[str, float | str]]:
@@ -606,9 +606,8 @@ def run_app() -> None:
         st.session_state["subview"] = ""
     render_context_bar(
         page=NAV_LABEL_BY_SLUG.get(page_slug, page_slug),
-        subview=st.session_state.get("subview") or (
-            st.session_state.get("explore_tab") if page_slug == "explore" else None
-        ),
+        subview=st.session_state.get("subview")
+        or (st.session_state.get("explore_tab") if page_slug == "explore" else None),
         selected_ids=selected_ids_from_state(st.session_state),
     )
 
@@ -722,9 +721,13 @@ def run_app() -> None:
                 entity_options = ["ALL"] + sorted({row["entity_type"] for row in validate_rows})
                 f1, f2 = st.columns(2)
                 with f1:
-                    severity_filter = st.selectbox("Severity filter", severity_options, key="ds-severity")
+                    severity_filter = st.selectbox(
+                        "Severity filter", severity_options, key="ds-severity"
+                    )
                 with f2:
-                    entity_filter = st.selectbox("Entity type filter", entity_options, key="ds-entity")
+                    entity_filter = st.selectbox(
+                        "Entity type filter", entity_options, key="ds-entity"
+                    )
 
                 filtered_rows = filter_validate_rows(
                     validate_rows,
@@ -750,7 +753,9 @@ def run_app() -> None:
 
                 with st.expander("Coverage & freshness"):
                     stale_top = oldest_stale_entities(report["staleness"]["variants"], limit=10)
-                    st.write(f"regulated domains coverage: n/a (field not present in current schema)")
+                    st.write(
+                        f"regulated domains coverage: n/a (field not present in current schema)"
+                    )
                     if stale_top:
                         st.write("Oldest entities (top 10)")
                         st.table(stale_top)
@@ -947,7 +952,9 @@ def run_app() -> None:
                     "Time per week",
                     min_value=0,
                     max_value=60,
-                    value=int(st.session_state.get("profile_time_per_week", profile["time_per_week"])),
+                    value=int(
+                        st.session_state.get("profile_time_per_week", profile["time_per_week"])
+                    ),
                     key="profile_time_per_week",
                 )
                 profile["capital_eur"] = st.number_input(
@@ -960,10 +967,18 @@ def run_app() -> None:
 
                 assets_text = st.text_input("Assets (comma separated)", key="profile_assets_text")
                 skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
-                constraints_text = st.text_area("Constraints (comma separated)", key="profile_constraints_text")
-                profile["assets"] = [item.strip() for item in assets_text.split(",") if item.strip()]
-                profile["skills"] = [item.strip() for item in skills_text.split(",") if item.strip()]
-                profile["constraints"] = [item.strip() for item in constraints_text.split(",") if item.strip()]
+                constraints_text = st.text_area(
+                    "Constraints (comma separated)", key="profile_constraints_text"
+                )
+                profile["assets"] = [
+                    item.strip() for item in assets_text.split(",") if item.strip()
+                ]
+                profile["skills"] = [
+                    item.strip() for item in skills_text.split(",") if item.strip()
+                ]
+                profile["constraints"] = [
+                    item.strip() for item in constraints_text.split(",") if item.strip()
+                ]
 
             st.session_state["profile"] = profile
             _sync_profile_session_state(profile)
@@ -1036,7 +1051,9 @@ def run_app() -> None:
                     feasible_count = sum(
                         1
                         for variant in variants_in_cell
-                        if not any("blocked" in str(item).lower() for item in variant.legal.values())
+                        if not any(
+                            "blocked" in str(item).lower() for item in variant.legal.values()
+                        )
                     )
                     matrix_rows.append(
                         {
@@ -1081,7 +1098,7 @@ def run_app() -> None:
 
                 dot_lines = [
                     "digraph taxonomy {",
-                    'rankdir=LR;',
+                    "rankdir=LR;",
                     f'"{selected_taxonomy}" [shape=box, style=filled, fillcolor="#dbeafe"];',
                 ]
                 nodes = [{"id": selected_taxonomy, "type": "taxonomy"}]
@@ -1089,7 +1106,13 @@ def run_app() -> None:
                 for cell in sorted({_variant_cell(v) for v in tax_variants}):
                     dot_lines.append(f'"{selected_taxonomy}" -> "{cell}";')
                     nodes.append({"id": cell, "type": "cell"})
-                    edges.append({"id": f"{selected_taxonomy}->{cell}", "from": selected_taxonomy, "to": cell})
+                    edges.append(
+                        {
+                            "id": f"{selected_taxonomy}->{cell}",
+                            "from": selected_taxonomy,
+                            "to": cell,
+                        }
+                    )
                 for variant in tax_variants[:8]:
                     vid = variant.variant_id
                     c = _variant_cell(variant)
@@ -1152,7 +1175,10 @@ def run_app() -> None:
                     ]
                 )
                 nodes = [{"id": c, "type": "cell"} for c in CELL_OPTIONS]
-                edges = [{"id": b, "from": b.split("->", 1)[0], "to": b.split("->", 1)[1]} for b in BRIDGE_OPTIONS]
+                edges = [
+                    {"id": b, "from": b.split("->", 1)[0], "to": b.split("->", 1)[1]}
+                    for b in BRIDGE_OPTIONS
+                ]
                 render_graph_fallback(
                     title="Bridges directed graph",
                     graphviz_dot=dot,
@@ -1208,7 +1234,9 @@ def run_app() -> None:
                     title="Route diagram",
                     graphviz_dot="\n".join(dot_lines),
                     nodes_rows=[{"id": c, "type": "cell"} for c in cells],
-                    edges_rows=[{"id": f"{a}->{b}", "from": a, "to": b} for a, b in zip(cells, cells[1:])],
+                    edges_rows=[
+                        {"id": f"{a}->{b}", "from": a, "to": b} for a, b in zip(cells, cells[1:])
+                    ],
                     key_prefix="paths",
                     interactive_available=False,
                 )
@@ -1218,8 +1246,16 @@ def run_app() -> None:
                     st.rerun()
 
             elif selected_tab == "Variants Library":
-                selected_cell_filter = st.multiselect("Cell", CELL_OPTIONS, default=st.session_state["filters"].get("include_cells", []))
-                selected_tax_filter = st.multiselect("Taxonomy", TAXONOMY_OPTIONS, default=st.session_state["filters"].get("include_taxonomy", []))
+                selected_cell_filter = st.multiselect(
+                    "Cell",
+                    CELL_OPTIONS,
+                    default=st.session_state["filters"].get("include_cells", []),
+                )
+                selected_tax_filter = st.multiselect(
+                    "Taxonomy",
+                    TAXONOMY_OPTIONS,
+                    default=st.session_state["filters"].get("include_taxonomy", []),
+                )
                 max_ttfm = st.slider("Max TTFM days", 1, 120, 60)
 
                 filtered = []
@@ -1239,7 +1275,9 @@ def run_app() -> None:
                 for variant, cell, taxonomy in filtered[:30]:
                     col_l, col_r = st.columns([0.78, 0.22])
                     with col_l:
-                        st.markdown(f"**{variant.title}** · `{variant.variant_id}` · {cell} / {taxonomy}")
+                        st.markdown(
+                            f"**{variant.title}** · `{variant.variant_id}` · {cell} / {taxonomy}"
+                        )
                     with col_r:
                         if st.button("Send to Rec", key=f"lib-send-{variant.variant_id}"):
                             st.session_state["selected_variant_id"] = variant.variant_id
@@ -1430,7 +1468,9 @@ def run_app() -> None:
                 reasons = []
                 if profile_validation["missing"]:
                     reasons.append("Missing: " + ", ".join(profile_validation["missing"]))
-                reasons.extend([f"Warning: {warning}" for warning in profile_validation["warnings"]])
+                reasons.extend(
+                    [f"Warning: {warning}" for warning in profile_validation["warnings"]]
+                )
                 _render_status(
                     "not_ready",
                     "Profile is not ready for recommendations.",
@@ -1447,11 +1487,19 @@ def run_app() -> None:
                 selected_objective = st.selectbox(
                     "Objective",
                     objective_options,
-                    index=objective_options.index(st.session_state.get("rec_objective", current_objective)),
+                    index=objective_options.index(
+                        st.session_state.get("rec_objective", current_objective)
+                    ),
                     key="rec_objective",
                 )
             with top_bar[1]:
-                top_n = st.slider("Top N", min_value=1, max_value=10, value=st.session_state.get("rec_top_n", 10), key="rec_top_n")
+                top_n = st.slider(
+                    "Top N",
+                    min_value=1,
+                    max_value=10,
+                    value=st.session_state.get("rec_top_n", 10),
+                    key="rec_top_n",
+                )
             with top_bar[2]:
                 start2w = st.checkbox("Startable ≤ 2 weeks", key="rec_qf_start2w")
             with top_bar[3]:
@@ -1463,21 +1511,34 @@ def run_app() -> None:
             st.session_state["profile"] = profile
             _sync_profile_session_state(profile)
 
-            max_time_default = 14 if start2w else int(st.session_state["filters"].get("max_time_to_money_days", 60))
+            max_time_default = (
+                14
+                if start2w
+                else int(st.session_state["filters"].get("max_time_to_money_days", 60))
+            )
             st.session_state["filters"]["max_time_to_money_days"] = int(
-                st.number_input("Max time to first money (days)", value=max_time_default, key="rec_max_time_to_money_days")
+                st.number_input(
+                    "Max time to first money (days)",
+                    value=max_time_default,
+                    key="rec_max_time_to_money_days",
+                )
             )
             st.session_state["filters"]["exclude_blocked"] = bool(
                 st.checkbox(
                     "Exclude blocked",
-                    value=bool(st.session_state["filters"].get("exclude_blocked", True) or low_legal),
+                    value=bool(
+                        st.session_state["filters"].get("exclude_blocked", True) or low_legal
+                    ),
                     key="rec_exclude_blocked",
                 )
             )
             st.session_state["filters"]["exclude_not_feasible"] = bool(
                 st.checkbox(
                     "Exclude not feasible",
-                    value=bool(st.session_state["filters"].get("exclude_not_feasible", False) or max_risk_low),
+                    value=bool(
+                        st.session_state["filters"].get("exclude_not_feasible", False)
+                        or max_risk_low
+                    ),
                     key="rec_exclude_not_feasible",
                 )
             )
@@ -1507,9 +1568,15 @@ def run_app() -> None:
             if st.button("Recompute", key="recompute-recommendations"):
                 _run_recommendations()
 
-            result = st.session_state.get("recommendations") or st.session_state.get("last_recommendations")
+            result = st.session_state.get("recommendations") or st.session_state.get(
+                "last_recommendations"
+            )
             if result is None:
-                _render_status("not_ready", "Run recommendations to see results.", reasons=["No recommendations have been generated yet."])
+                _render_status(
+                    "not_ready",
+                    "Run recommendations to see results.",
+                    reasons=["No recommendations have been generated yet."],
+                )
                 return
 
             st.markdown("### Reality Check")
@@ -1519,7 +1586,9 @@ def run_app() -> None:
             top_blockers = blocker_counts.most_common(3)
             if top_blockers:
                 for blocker, cnt in top_blockers:
-                    st.warning(f"Blocker: {blocker} · impact: {cnt} variants · quick fix: adjust filters")
+                    st.warning(
+                        f"Blocker: {blocker} · impact: {cnt} variants · quick fix: adjust filters"
+                    )
             else:
                 st.caption("No major blockers in current top results.")
 
@@ -1548,7 +1617,9 @@ def run_app() -> None:
                 st.info("Empty state quick fixes are available above.")
                 return
 
-            mode = st.radio("Results mode", ["Cards", "Table"], horizontal=True, key="rec-view-mode")
+            mode = st.radio(
+                "Results mode", ["Cards", "Table"], horizontal=True, key="rec-view-mode"
+            )
 
             if mode == "Table":
                 rows = []
@@ -1558,8 +1629,11 @@ def run_app() -> None:
                             "score": round(rec.score, 4),
                             "title": rec.variant.title,
                             "variant_id": rec.variant.variant_id,
-                            "time_to_first_money": "-".join(map(str, rec.economics.time_to_first_money_days_range)),
-                            "net_range": "€" + "-".join(map(str, rec.economics.typical_net_month_eur_range)),
+                            "time_to_first_money": "-".join(
+                                map(str, rec.economics.time_to_first_money_days_range)
+                            ),
+                            "net_range": "€"
+                            + "-".join(map(str, rec.economics.typical_net_month_eur_range)),
                             "feasibility": rec.feasibility.status,
                             "legal_gate": rec.legal.legal_gate,
                             "confidence": rec.economics.confidence,
@@ -1574,7 +1648,9 @@ def run_app() -> None:
                     key="rec-table-select",
                     format_func=lambda val: val or "none",
                 )
-                if selected_table_variant and st.button("Select & Build Plan", key="rec-table-build"):
+                if selected_table_variant and st.button(
+                    "Select & Build Plan", key="rec-table-build"
+                ):
                     st.session_state["selected_variant_id"] = selected_table_variant
                     st.session_state["page"] = "plan"
                     st.rerun()
@@ -1610,7 +1686,11 @@ def run_app() -> None:
                                 "mark": "bar",
                                 "encoding": {
                                     "x": {"field": "factor", "type": "nominal", "title": "Factor"},
-                                    "y": {"field": "value", "type": "quantitative", "title": "Contribution"},
+                                    "y": {
+                                        "field": "value",
+                                        "type": "quantitative",
+                                        "title": "Contribution",
+                                    },
                                     "tooltip": [
                                         {"field": "factor", "type": "nominal"},
                                         {"field": "value", "type": "quantitative"},
@@ -1622,18 +1702,27 @@ def run_app() -> None:
                         )
 
                     c1, c2, c3 = st.columns(3)
-                    if c1.button(f"Select & Build Plan · {rec.variant.variant_id}", key=f"rec-plan-{rec.variant.variant_id}"):
+                    if c1.button(
+                        f"Select & Build Plan · {rec.variant.variant_id}",
+                        key=f"rec-plan-{rec.variant.variant_id}",
+                    ):
                         st.session_state["selected_variant_id"] = rec.variant.variant_id
                         st.session_state["page"] = "plan"
                         st.rerun()
-                    if c2.button(f"Open in Explore · {rec.variant.variant_id}", key=f"rec-open-exp-{rec.variant.variant_id}"):
+                    if c2.button(
+                        f"Open in Explore · {rec.variant.variant_id}",
+                        key=f"rec-open-exp-{rec.variant.variant_id}",
+                    ):
                         st.session_state["selected_variant_id"] = rec.variant.variant_id
                         st.session_state["selected_cell_id"] = _variant_cell(rec.variant)
                         st.session_state["selected_taxonomy_id"] = _variant_taxonomy(rec.variant)
                         st.session_state["explore_tab"] = "Taxonomy"
                         st.session_state["page"] = "explore"
                         st.rerun()
-                    c3.button(f"Compare (SHOULD) · {rec.variant.variant_id}", key=f"rec-compare-{rec.variant.variant_id}")
+                    c3.button(
+                        f"Compare (SHOULD) · {rec.variant.variant_id}",
+                        key=f"rec-compare-{rec.variant.variant_id}",
+                    )
 
         _run_with_error_boundary(_render_recommendations)
 
@@ -1672,9 +1761,13 @@ def run_app() -> None:
                     return
 
             app_data = _get_app_data()
-            variant = next((item for item in app_data.variants if item.variant_id == variant_id), None)
+            variant = next(
+                (item for item in app_data.variants if item.variant_id == variant_id), None
+            )
             variant_stale = (
-                is_variant_stale(variant, app_data.meta.staleness_policy) if variant is not None else False
+                is_variant_stale(variant, app_data.meta.staleness_policy)
+                if variant is not None
+                else False
             )
 
             st.session_state["plan"] = plan
@@ -1694,7 +1787,9 @@ def run_app() -> None:
                     warns.append("Variant data is stale")
                 st.warning(" | ".join(warns))
 
-            tab_checklist, tab_weeks, tab_compliance = st.tabs(["Checklist", "4 weeks", "Compliance"])
+            tab_checklist, tab_weeks, tab_compliance = st.tabs(
+                ["Checklist", "4 weeks", "Compliance"]
+            )
 
             with tab_checklist:
                 st.markdown("#### Checklist")
@@ -1762,7 +1857,9 @@ def run_app() -> None:
                     reasons.append("Select a variant in Recommendations.")
                 if plan is None:
                     reasons.append("Generate a plan in the Plan screen.")
-                _render_status("not_ready", "Export is not ready.", reasons=reasons, level="warning")
+                _render_status(
+                    "not_ready", "Export is not ready.", reasons=reasons, level="warning"
+                )
                 return
 
             app_data = _get_app_data()

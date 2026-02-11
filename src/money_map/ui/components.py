@@ -69,8 +69,8 @@ def render_kpi_grid(items: list[dict[str, str]]) -> None:
             st.markdown(
                 f"""
                 <div class="kpi-card">
-                  <div class="kpi-label">{item.get('label', '')}</div>
-                  <div class="kpi-value">{item.get('value', '')}</div>
+                  <div class="kpi-label">{item.get("label", "")}</div>
+                  <div class="kpi-value">{item.get("value", "")}</div>
                   {status_html}
                   {subtext_html}
                 </div>
@@ -119,7 +119,7 @@ def render_context_bar(*, page: str, subview: str | None, selected_ids: dict[str
     st.markdown(
         f"""
         <div class="mm-context-bar">
-          <div><strong>Context:</strong> {' / '.join(crumbs)}</div>
+          <div><strong>Context:</strong> {" / ".join(crumbs)}</div>
           <div class="mm-context-focus">{focus_text}</div>
         </div>
         """,
@@ -131,7 +131,9 @@ def render_detail_drawer(selected_ids: dict[str, str], *, page_slug: str) -> Non
     with st.expander("Detail Drawer", expanded=False):
         has_selection = any(selected_ids.values())
         if not has_selection:
-            st.caption("No entity selected yet. Pick Cell/Taxonomy/Variant/Bridge/Path to pin context.")
+            st.caption(
+                "No entity selected yet. Pick Cell/Taxonomy/Variant/Bridge/Path to pin context."
+            )
             return
 
         st.write("Pinned selection")
@@ -155,7 +157,6 @@ def render_detail_drawer(selected_ids: dict[str, str], *, page_slug: str) -> Non
                 st.session_state["selected_variant_id"] = selected_ids.get("variant", "")
                 st.session_state["page"] = "plan"
                 st.rerun()
-
 
 
 def render_graph_fallback(
@@ -203,6 +204,7 @@ def render_graph_fallback(
         if selected_edge:
             st.caption(f"Selected edge: {selected_edge}")
 
+
 def selected_ids_from_state(state: dict[str, Any]) -> dict[str, str]:
     return {
         "cell": str(state.get("selected_cell_id") or state.get("explore_selected_cell") or ""),
@@ -210,6 +212,8 @@ def selected_ids_from_state(state: dict[str, Any]) -> dict[str, str]:
             state.get("selected_taxonomy_id") or state.get("explore_selected_taxonomy") or ""
         ),
         "variant": str(state.get("selected_variant_id") or ""),
-        "bridge": str(state.get("selected_bridge_id") or state.get("explore_selected_bridge") or ""),
+        "bridge": str(
+            state.get("selected_bridge_id") or state.get("explore_selected_bridge") or ""
+        ),
         "path": str(state.get("selected_path_id") or ""),
     }

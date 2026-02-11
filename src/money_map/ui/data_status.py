@@ -37,7 +37,10 @@ def user_alert_for_status(status: str) -> tuple[str, str] | None:
 
 def build_validate_rows(report: dict[str, Any]) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for severity, issues in (("FATAL", report.get("fatals", [])), ("WARN", report.get("warns", []))):
+    for severity, issues in (
+        ("FATAL", report.get("fatals", [])),
+        ("WARN", report.get("warns", [])),
+    ):
         for issue in issues:
             entity_type = str(issue.get("source") or "unknown")
             rows.append(
