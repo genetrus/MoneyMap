@@ -213,3 +213,13 @@
 - Consequences: Classify remains reproducible and user-visible while transparently signaling degraded confidence/input quality.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.11, p.14
 - Owner: team
+
+## 2026-02-11 — UI startup normalizes empty session profile/filters to defaults
+- Date: 2026-02-11
+- Title: Prevent Streamlit startup crash when session profile or filters are null
+- Context: Session defaults define `profile` as `None`; on startup `_init_state()` read `st.session_state["profile"].get(...)`, which crashes if persisted state contains null profile.
+- Decision: Normalize `profile` and `filters` in `_init_state()` so non-dict values are replaced with defaults and partial dicts are merged with default keys before any `.get(...)` access.
+- Alternatives: (1) Keep `setdefault()` only and require manual state reset by users. (2) Wrap `.get` call with a local `if profile is None` branch only.
+- Consequences: App startup becomes resilient to stale/corrupted session state and backward-compatible with older state payloads.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.11, p.14
+- Owner: team
