@@ -27,11 +27,35 @@ from money_map.core.validate import validate
 from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
-from money_map.ui.data_status import data_status_visibility
+from money_map.ui.data_status import (
+    build_validate_rows,
+    data_status_visibility,
+    filter_validate_rows,
+    oldest_stale_entities,
+    variants_by_cell,
+    variants_by_legal_gate,
+)
 from money_map.ui.navigation import (
     NAV_ITEMS,
     NAV_LABEL_BY_SLUG,
     resolve_page_from_query,
+)
+from money_map.ui.components import (
+    render_badge_set,
+    render_context_bar,
+    render_detail_drawer,
+    render_graph_fallback,
+    render_header_bar,
+    render_kpi_grid,
+    selected_ids_from_state,
+)
+from money_map.ui.session_state import (
+    DEFAULT_FILTERS,
+    compute_filters_hash,
+    initialize_defaults,
+    reset_downstream_for_profile_change,
+    sync_dataset_meta,
+    sync_filters_and_objective,
 )
 from money_map.ui.theme import inject_global_theme
 from money_map.ui.variant_card import build_explore_card_copy
@@ -88,6 +112,12 @@ def _render_explore_variant_card(variant, *, taxonomy: str, cell: str, stale: bo
         f"**Status:** {card.feasibility_status} · **Legal gate:** {card.legal_gate} "
         f"· **Staleness:** {card.stale_badge}"
     )
+    render_badge_set(
+        feasibility=card.feasibility_status,
+        legal_gate=card.legal_gate,
+        staleness=card.stale_badge,
+        confidence=variant.economics.get("confidence", "unknown"),
+    )
     st.markdown(f"**Summary:** {card.one_liner}")
 
     with st.expander("Подробнее", expanded=False):
@@ -142,20 +172,13 @@ DEFAULT_PROFILE = {
 
 
 def _init_state() -> None:
+    initialize_defaults(st.session_state)
     st.session_state.setdefault("profile", DEFAULT_PROFILE.copy())
-    st.session_state.setdefault(
-        "filters",
-        {"exclude_blocked": True, "exclude_not_feasible": False, "max_time_to_money_days": 60},
-    )
-    st.session_state.setdefault("selected_variant_id", "")
-    st.session_state.setdefault("plan", None)
+    st.session_state.setdefault("filters", DEFAULT_FILTERS.copy())
     st.session_state.setdefault("last_recommendations", None)
-    st.session_state.setdefault("export_paths", None)
     st.session_state.setdefault("profile_source", "Demo profile")
     st.session_state.setdefault("ui_run_id", str(uuid4()))
-    st.session_state.setdefault("page", "data-status")
     st.session_state.setdefault("theme_preset", "Light")
-    st.session_state.setdefault("view_mode", "User")
     st.session_state.setdefault("profile_quick_mode", True)
     st.session_state.setdefault(
         "objective_preset", st.session_state["profile"].get("objective", "fastest_money")
@@ -173,6 +196,7 @@ def _init_state() -> None:
     st.session_state.setdefault("classify_error", "")
     st.session_state.setdefault("classify_selected_variant_id", "")
     st.session_state.setdefault("classify_prefilter", {})
+    st.session_state["filters_hash"] = compute_filters_hash(st.session_state["filters"])
 
 
 def _render_error(err: MoneyMapError) -> None:
@@ -273,9 +297,7 @@ def _sync_profile_session_state(profile: dict) -> None:
     st.session_state["profile_hash"] = reproducibility["profile_hash"]
     st.session_state["objective_preset"] = reproducibility["objective_preset"]
     if reproducibility["changed"]:
-        st.session_state["selected_variant_id"] = ""
-        st.session_state["plan"] = None
-        st.session_state["last_recommendations"] = None
+        reset_downstream_for_profile_change(st.session_state)
 
 
 def _ensure_objective(profile: dict, objective_options: list[str]) -> str:
@@ -356,6 +378,156 @@ def _render_kpi_card(
     )
 
 
+def _render_distribution_chart(title: str, rows: list[dict[str, int | str]]) -> None:
+    st.markdown(f"**{title}**")
+    if not rows:
+        st.caption("No data for chart.")
+        return
+    st.vega_lite_chart(
+        {
+            "data": {"values": rows},
+            "mark": "bar",
+            "encoding": {
+                "x": {"field": "label", "type": "nominal", "sort": "-y", "title": ""},
+                "y": {"field": "count", "type": "quantitative", "title": "Count"},
+                "tooltip": [
+                    {"field": "label", "type": "nominal"},
+                    {"field": "count", "type": "quantitative"},
+                ],
+            },
+            "height": 240,
+        },
+        use_container_width=True,
+    )
+
+
+def _capital_band(capital_eur: int) -> str:
+    if capital_eur <= 300:
+        return "low"
+    if capital_eur <= 1200:
+        return "medium"
+    return "high"
+
+
+def _profile_preview_snapshot(profile: dict) -> dict[str, object]:
+    app_data = _get_app_data()
+    broad_filters = {
+        "exclude_blocked": False,
+        "exclude_not_feasible": False,
+        "max_time_to_money_days": 365,
+    }
+    recs = recommend(
+        profile,
+        app_data.variants,
+        app_data.rulepack,
+        app_data.meta.staleness_policy,
+        profile.get("objective", "fastest_money"),
+        broad_filters,
+        max(1, len(app_data.variants)),
+    )
+
+    ranked = recs.ranked_variants
+    feasible_now = sum(1 for rec in ranked if rec.feasibility.status == "feasible")
+    startable_2w = sum(
+        1
+        for rec in ranked
+        if rec.feasibility.status != "not_feasible"
+        and rec.economics.time_to_first_money_days_range
+        and rec.economics.time_to_first_money_days_range[0] <= 14
+    )
+    low_legal_friction = sum(1 for rec in ranked if rec.legal.legal_gate in {"ok", "require_check"})
+
+    cell_counts: dict[str, int] = {cell: 0 for cell in CELL_OPTIONS}
+    for rec in ranked:
+        if rec.feasibility.status in {"feasible", "feasible_with_prep"}:
+            cell_counts[_variant_cell(rec.variant)] = cell_counts.get(_variant_cell(rec.variant), 0) + 1
+
+    heatmap_rows = [{"cell": cell, "count": count} for cell, count in cell_counts.items()]
+    return {
+        "feasible_now": feasible_now,
+        "startable_2w": startable_2w,
+        "low_legal_friction": low_legal_friction,
+        "heatmap_rows": heatmap_rows,
+        "evaluated": len(ranked),
+    }
+
+
+def _render_profile_preview(preview: dict[str, object]) -> None:
+    st.markdown("### Live preview")
+    render_kpi_grid(
+        [
+            {"label": "Feasible now", "value": f"~{preview['feasible_now']} variants"},
+            {"label": "Startable ≤2 weeks", "value": f"~{preview['startable_2w']}"},
+            {"label": "Low legal friction", "value": f"~{preview['low_legal_friction']}"},
+        ]
+    )
+
+    st.markdown("**Mini matrix heatmap (feasible by cell)**")
+    rows = preview["heatmap_rows"]
+    st.vega_lite_chart(
+        {
+            "data": {"values": rows},
+            "mark": "rect",
+            "encoding": {
+                "x": {
+                    "field": "cell",
+                    "type": "ordinal",
+                    "sort": ["A1", "A2", "B1", "B2"],
+                    "title": "Cell",
+                },
+                "color": {
+                    "field": "count",
+                    "type": "quantitative",
+                    "title": "Feasible count",
+                },
+                "tooltip": [
+                    {"field": "cell", "type": "ordinal"},
+                    {"field": "count", "type": "quantitative"},
+                ],
+            },
+            "height": 140,
+        },
+        use_container_width=True,
+    )
+    st.caption(f"Evaluated variants: {preview['evaluated']}")
+
+
+
+
+def _score_contribution_rows(rec) -> list[dict[str, float | str]]:
+    feasibility_score = {
+        "feasible": 1.0,
+        "feasible_with_prep": 0.65,
+        "not_feasible": 0.1,
+    }.get(rec.feasibility.status, 0.35)
+    legal_score = {
+        "ok": 1.0,
+        "require_check": 0.6,
+        "registration": 0.5,
+        "license": 0.4,
+        "blocked": 0.0,
+    }.get(rec.legal.legal_gate, 0.3)
+
+    ttfm = rec.economics.time_to_first_money_days_range or [999, 999]
+    speed_score = max(0.0, min(1.0, 1 - (ttfm[0] / 60)))
+
+    net_range = rec.economics.typical_net_month_eur_range or [0, 0]
+    net_mid = (net_range[0] + net_range[1]) / 2
+    net_score = max(0.0, min(1.0, net_mid / 3000))
+
+    conf = rec.economics.confidence
+    conf_score = {"low": 0.35, "medium": 0.6, "high": 0.85}.get(str(conf).lower(), 0.5)
+
+    rows = [
+        {"factor": "feasibility", "value": round(feasibility_score * 100, 2)},
+        {"factor": "legal", "value": round(legal_score * 100, 2)},
+        {"factor": "speed", "value": round(speed_score * 100, 2)},
+        {"factor": "net", "value": round(net_score * 100, 2)},
+        {"factor": "confidence", "value": round(conf_score * 100, 2)},
+    ]
+    return rows
+
+
 def run_app() -> None:
     _init_state()
     page_slugs = [slug for _, slug in NAV_ITEMS]
@@ -413,6 +585,33 @@ def run_app() -> None:
             st.experimental_set_query_params(page=page_slug)
     render_view_mode_control("sidebar")
 
+    report = _get_validation()
+    st.session_state["validate_report"] = report
+    sync_dataset_meta(
+        st.session_state,
+        data_dir=st.session_state.get("data_dir", "data"),
+        dataset_version=report.get("dataset_version", ""),
+        reviewed_at=report.get("reviewed_at", ""),
+        staleness_level=report.get("status", "WARN"),
+        country="DE",
+    )
+    render_header_bar(
+        country=st.session_state.get("rulepack_country", "DE"),
+        dataset_version=st.session_state.get("dataset_version", "unknown"),
+        reviewed_at=st.session_state.get("rulepack_reviewed_at", "unknown"),
+        staleness_level=st.session_state.get("staleness_level", "WARN"),
+        view_mode=get_view_mode(),
+    )
+    if page_slug != "explore":
+        st.session_state["subview"] = ""
+    render_context_bar(
+        page=NAV_LABEL_BY_SLUG.get(page_slug, page_slug),
+        subview=st.session_state.get("subview") or (
+            st.session_state.get("explore_tab") if page_slug == "explore" else None
+        ),
+        selected_ids=selected_ids_from_state(st.session_state),
+    )
+
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
         header_left, header_right = st.columns([0.78, 0.22])
         with header_left:
@@ -447,8 +646,9 @@ def run_app() -> None:
         )
 
         def _render_status() -> None:
-            report = _get_validation()
-            app_data = _get_app_data()
+            with st.spinner("Loading validation snapshot..."):
+                report = _get_validation()
+                app_data = _get_app_data()
             warns_count = len(report["warns"])
             fatals_count = len(report["fatals"])
             warn_summary = _issue_summary(report["warns"])
@@ -456,33 +656,21 @@ def run_app() -> None:
             visibility = data_status_visibility(view_mode)
 
             status_label = report["status"].upper()
-            status_class = {
-                "valid": "valid",
-                "invalid": "invalid",
-                "stale": "stale",
-            }.get(report["status"], "valid")
 
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                _render_kpi_card("Dataset version", str(report["dataset_version"]))
-            with col2:
-                _render_kpi_card("Reviewed at", str(report["reviewed_at"]))
-            with col3:
-                _render_kpi_card(
-                    "Status", status_label, badge=status_label, badge_class=status_class
-                )
-
-            col4, col5, col6 = st.columns(3)
-            with col4:
-                _render_kpi_card("Warnings", str(warns_count), subtext=warn_summary or "")
-            with col5:
-                _render_kpi_card("Fatals", str(fatals_count))
-            with col6:
-                _render_kpi_card(
-                    "Stale",
-                    str(report["stale"]),
-                    chip=f"Staleness policy: {report['staleness_policy_days']} days",
-                )
+            render_kpi_grid(
+                [
+                    {"label": "Dataset version", "value": str(report["dataset_version"])},
+                    {"label": "Reviewed at", "value": str(report["reviewed_at"])},
+                    {"label": "Status", "value": status_label, "status": report["status"]},
+                    {"label": "Warnings", "value": str(warns_count), "subtext": warn_summary or ""},
+                    {"label": "Fatals", "value": str(fatals_count)},
+                    {
+                        "label": "Stale",
+                        "value": str(report["stale"]),
+                        "subtext": f"Staleness policy: {report['staleness_policy_days']} days",
+                    },
+                ]
+            )
 
             if report["status"] == "invalid":
                 st.error(
@@ -528,12 +716,46 @@ def run_app() -> None:
             if visibility["show_validation_summary"]:
                 st.markdown('<div class="section-card">', unsafe_allow_html=True)
                 st.subheader("Validation summary")
-                if fatals_count > 0:
-                    st.markdown("**FATAL issues (must fix)**")
-                    st.table(_issue_rows(report["fatals"]))
-                if warns_count > 0:
-                    st.markdown("**Warnings (non-blocking)**")
-                    st.table(_issue_rows(report["warns"]))
+
+                validate_rows = build_validate_rows(report)
+                severity_options = ["ALL", "FATAL", "WARN"]
+                entity_options = ["ALL"] + sorted({row["entity_type"] for row in validate_rows})
+                f1, f2 = st.columns(2)
+                with f1:
+                    severity_filter = st.selectbox("Severity filter", severity_options, key="ds-severity")
+                with f2:
+                    entity_filter = st.selectbox("Entity type filter", entity_options, key="ds-entity")
+
+                filtered_rows = filter_validate_rows(
+                    validate_rows,
+                    severity=severity_filter,
+                    entity_type=entity_filter,
+                )
+                if filtered_rows:
+                    st.dataframe(filtered_rows, use_container_width=True)
+                else:
+                    st.info("No validate rows for selected filters.")
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    _render_distribution_chart(
+                        "Variants by cell",
+                        variants_by_cell(app_data.variants, cell_resolver=_variant_cell),
+                    )
+                with c2:
+                    _render_distribution_chart(
+                        "Variants by legal gate",
+                        variants_by_legal_gate(app_data.variants),
+                    )
+
+                with st.expander("Coverage & freshness"):
+                    stale_top = oldest_stale_entities(report["staleness"]["variants"], limit=10)
+                    st.write(f"regulated domains coverage: n/a (field not present in current schema)")
+                    if stale_top:
+                        st.write("Oldest entities (top 10)")
+                        st.table(stale_top)
+                    else:
+                        st.caption("No staleness age rows available.")
 
                 if visibility["show_staleness_details"]:
                     with st.expander("Staleness details"):
@@ -662,16 +884,9 @@ def run_app() -> None:
                     else:
                         st.session_state["profile"] = DEFAULT_PROFILE.copy()
                         profile_loaded = True
+
             st.caption(f"Profile source: {st.session_state['profile_source']}")
             profile = st.session_state["profile"]
-            classify_prefilter = st.session_state.get("classify_prefilter") or {}
-            if classify_prefilter.get("from_classify"):
-                st.info(
-                    "Opened from Classify: "
-                    f"taxonomy={classify_prefilter.get('taxonomy_id')} | "
-                    f"cell={classify_prefilter.get('cell')}"
-                )
-
             profile.setdefault("name", "")
             profile.setdefault("country", "DE")
             profile.setdefault("location", "")
@@ -704,67 +919,77 @@ def run_app() -> None:
             if profile_loaded or "profile_constraints_text" not in st.session_state:
                 st.session_state["profile_constraints_text"] = ", ".join(profile["constraints"])
 
-            profile["name"] = st.text_input("Name", key="profile_name")
-            profile["country"] = st.selectbox(
-                "Country",
-                ["DE"],
-                index=0,
-                key="profile_country",
-            )
-            profile["location"] = st.text_input("Location", key="profile_location")
-            objective_options = ["fastest_money", "max_net"]
-            profile["objective"] = st.selectbox(
-                "Objective preset",
-                objective_options,
-                index=objective_options.index(
-                    st.session_state.get("profile_objective", profile["objective"])
-                ),
-                key="profile_objective",
-            )
-            profile["language_level"] = st.selectbox(
-                "Language level",
-                ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
-                index=["A1", "A2", "B1", "B2", "C1", "C2", "native"].index(
-                    st.session_state.get("profile_language_level", "B1")
-                ),
-                key="profile_language_level",
-            )
-            profile["capital_eur"] = st.number_input(
-                "Capital (EUR)",
-                min_value=0,
-                value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
-                key="profile_capital_eur",
-            )
-            profile["time_per_week"] = st.number_input(
-                "Time per week",
-                min_value=0,
-                value=st.session_state.get("profile_time_per_week", profile["time_per_week"]),
-                key="profile_time_per_week",
-            )
-            assets_text = st.text_input("Assets (comma separated)", key="profile_assets_text")
-            skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
-            constraints_text = st.text_area(
-                "Constraints (comma separated)", key="profile_constraints_text"
-            )
+            left_col, right_col = st.columns([0.58, 0.42])
 
-            profile["assets"] = [item.strip() for item in assets_text.split(",") if item.strip()]
-            profile["skills"] = [item.strip() for item in skills_text.split(",") if item.strip()]
-            profile["constraints"] = [
-                item.strip() for item in constraints_text.split(",") if item.strip()
-            ]
+            with left_col:
+                st.markdown("### Quick profile")
+                profile["name"] = st.text_input("Name", key="profile_name")
+                profile["country"] = st.selectbox("Country", ["DE"], index=0, key="profile_country")
+                profile["location"] = st.text_input("Location", key="profile_location")
+                objective_options = ["fastest_money", "max_net"]
+                profile["objective"] = st.selectbox(
+                    "Objective preset",
+                    objective_options,
+                    index=objective_options.index(
+                        st.session_state.get("profile_objective", profile["objective"])
+                    ),
+                    key="profile_objective",
+                )
+                profile["language_level"] = st.selectbox(
+                    "Language level",
+                    ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
+                    index=["A1", "A2", "B1", "B2", "C1", "C2", "native"].index(
+                        st.session_state.get("profile_language_level", "B1")
+                    ),
+                    key="profile_language_level",
+                )
+                profile["time_per_week"] = st.slider(
+                    "Time per week",
+                    min_value=0,
+                    max_value=60,
+                    value=int(st.session_state.get("profile_time_per_week", profile["time_per_week"])),
+                    key="profile_time_per_week",
+                )
+                profile["capital_eur"] = st.number_input(
+                    "Capital (EUR)",
+                    min_value=0,
+                    value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
+                    key="profile_capital_eur",
+                )
+                st.caption(f"Capital band: {_capital_band(int(profile['capital_eur']))}")
+
+                assets_text = st.text_input("Assets (comma separated)", key="profile_assets_text")
+                skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
+                constraints_text = st.text_area("Constraints (comma separated)", key="profile_constraints_text")
+                profile["assets"] = [item.strip() for item in assets_text.split(",") if item.strip()]
+                profile["skills"] = [item.strip() for item in skills_text.split(",") if item.strip()]
+                profile["constraints"] = [item.strip() for item in constraints_text.split(",") if item.strip()]
 
             st.session_state["profile"] = profile
             _sync_profile_session_state(profile)
             profile_validation = validate_profile(profile)
-            if profile_validation["missing"]:
-                st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
-            for warning in profile_validation["warnings"]:
-                st.warning(warning)
-            st.caption(f"Profile hash: {st.session_state.get('profile_hash', '')}")
-            if profile_validation["is_ready"]:
-                st.success("Profile ready")
-            else:
-                st.caption("Profile draft")
+
+            with right_col:
+                if profile_validation["is_ready"]:
+                    with st.spinner("Updating preview..."):
+                        preview = _profile_preview_snapshot(profile)
+                    _render_profile_preview(preview)
+                else:
+                    st.info("Complete required profile fields to unlock live preview.")
+
+                if profile_validation["missing"]:
+                    st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
+                for warning in profile_validation["warnings"]:
+                    st.warning(warning)
+
+                st.caption(f"Profile hash: {st.session_state.get('profile_hash', '')}")
+                if profile_validation["is_ready"]:
+                    st.success("Profile ready")
+                    if st.button("Go to Recommendations", key="profile-go-recommendations"):
+                        st.session_state["page"] = "recommendations"
+                        st.rerun()
+                else:
+                    st.caption("Profile draft")
 
         _run_with_error_boundary(_render_profile)
 
@@ -790,12 +1015,9 @@ def run_app() -> None:
                     level="warning",
                 )
 
-            tab_options = ["Matrix", "Taxonomy", "Bridges"]
-            if st.session_state.get("explore_paths_enabled"):
-                tab_options.append("Paths")
-            if st.session_state.get("explore_library_enabled"):
-                tab_options.append("Variants Library")
+            tab_options = ["Matrix", "Taxonomy", "Bridges", "Paths", "Variants Library"]
             selected_tab = st.radio("Explore tabs", tab_options, key="explore_tab", horizontal=True)
+            st.session_state["subview"] = selected_tab.lower()
 
             with st.spinner("Building explore view..."):
                 app_data = _get_app_data()
@@ -805,7 +1027,31 @@ def run_app() -> None:
 
             if selected_tab == "Matrix":
                 selected_cell = st.selectbox("Cell", CELL_OPTIONS, key="explore_selected_cell")
+                st.session_state["selected_cell_id"] = selected_cell
                 cell_variants = [v for v in variants if _variant_cell(v) == selected_cell]
+
+                matrix_rows = []
+                for cell in CELL_OPTIONS:
+                    variants_in_cell = [v for v in variants if _variant_cell(v) == cell]
+                    feasible_count = sum(
+                        1
+                        for variant in variants_in_cell
+                        if not any("blocked" in str(item).lower() for item in variant.legal.values())
+                    )
+                    matrix_rows.append(
+                        {
+                            "cell": cell,
+                            "variants": len(variants_in_cell),
+                            "feasible_now": feasible_count,
+                        }
+                    )
+                st.dataframe(matrix_rows, use_container_width=True)
+
+                if st.button("Filter Recommendations to this cell", key="explore-cell-to-rec"):
+                    st.session_state["filters"]["include_cells"] = [selected_cell]
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
+
                 st.subheader(f"Cell {selected_cell}")
                 if not cell_variants:
                     _render_status(
@@ -816,7 +1062,7 @@ def run_app() -> None:
                     )
                     return
                 st.write("Typical variants:")
-                for variant in cell_variants:
+                for variant in cell_variants[:12]:
                     _render_explore_variant_card(
                         variant,
                         taxonomy=_variant_taxonomy(variant),
@@ -830,7 +1076,42 @@ def run_app() -> None:
                     TAXONOMY_OPTIONS,
                     key="explore_selected_taxonomy",
                 )
+                st.session_state["selected_taxonomy_id"] = selected_taxonomy
                 tax_variants = [v for v in variants if _variant_taxonomy(v) == selected_taxonomy]
+
+                dot_lines = [
+                    "digraph taxonomy {",
+                    'rankdir=LR;',
+                    f'"{selected_taxonomy}" [shape=box, style=filled, fillcolor="#dbeafe"];',
+                ]
+                nodes = [{"id": selected_taxonomy, "type": "taxonomy"}]
+                edges = []
+                for cell in sorted({_variant_cell(v) for v in tax_variants}):
+                    dot_lines.append(f'"{selected_taxonomy}" -> "{cell}";')
+                    nodes.append({"id": cell, "type": "cell"})
+                    edges.append({"id": f"{selected_taxonomy}->{cell}", "from": selected_taxonomy, "to": cell})
+                for variant in tax_variants[:8]:
+                    vid = variant.variant_id
+                    c = _variant_cell(variant)
+                    dot_lines.append(f'"{c}" -> "{vid}";')
+                    nodes.append({"id": vid, "type": "variant"})
+                    edges.append({"id": f"{c}->{vid}", "from": c, "to": vid})
+                dot_lines.append("}")
+
+                render_graph_fallback(
+                    title="Taxonomy graph",
+                    graphviz_dot="\n".join(dot_lines),
+                    nodes_rows=nodes,
+                    edges_rows=edges,
+                    key_prefix="taxonomy",
+                    interactive_available=False,
+                )
+
+                if st.button("Filter Recommendations by this taxonomy", key="explore-tax-to-rec"):
+                    st.session_state["filters"]["include_taxonomy"] = [selected_taxonomy]
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
+
                 st.subheader(f"Taxonomy: {selected_taxonomy}")
                 if not tax_variants:
                     _render_status(
@@ -841,7 +1122,7 @@ def run_app() -> None:
                     )
                     return
                 st.write("Examples:")
-                for variant in tax_variants:
+                for variant in tax_variants[:10]:
                     _render_explore_variant_card(
                         variant,
                         taxonomy=selected_taxonomy,
@@ -855,15 +1136,43 @@ def run_app() -> None:
                     BRIDGE_OPTIONS,
                     key="explore_selected_bridge",
                 )
+                st.session_state["selected_bridge_id"] = selected_bridge
                 frm, to = selected_bridge.split("->", 1)
-                st.subheader(f"Bridge {frm} → {to}")
                 bridge_variants = [v for v in variants if _variant_cell(v) in {frm, to}]
+
+                dot = "\n".join(
+                    [
+                        "digraph bridges {",
+                        "rankdir=LR;",
+                        '"A1" -> "A2" [label="standardize"];',
+                        '"A2" -> "B2" [label="delegate"];',
+                        '"A1" -> "B1" [label="formalize"];',
+                        '"B1" -> "B2" [label="systemize"];',
+                        "}",
+                    ]
+                )
+                nodes = [{"id": c, "type": "cell"} for c in CELL_OPTIONS]
+                edges = [{"id": b, "from": b.split("->", 1)[0], "to": b.split("->", 1)[1]} for b in BRIDGE_OPTIONS]
+                render_graph_fallback(
+                    title="Bridges directed graph",
+                    graphviz_dot=dot,
+                    nodes_rows=nodes,
+                    edges_rows=edges,
+                    key_prefix="bridges",
+                    interactive_available=False,
+                )
+
+                st.subheader(f"Bridge {frm} → {to}")
                 st.write("Preconditions:")
                 st.write("- Validate feasibility blockers")
                 st.write("- Check legal gate for regulated domains")
                 st.write("Steps:")
                 st.write("- Prepare minimal artifacts")
                 st.write("- Run recommendations with updated objective")
+                if st.button("Use bridge as filter", key="explore-bridge-to-rec"):
+                    st.session_state["filters"]["include_cells"] = [frm, to]
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
                 if not bridge_variants:
                     _render_status(
                         "empty_view",
@@ -873,7 +1182,7 @@ def run_app() -> None:
                     )
                     return
                 st.write("Common variants for this bridge:")
-                for variant in bridge_variants:
+                for variant in bridge_variants[:10]:
                     _render_explore_variant_card(
                         variant,
                         taxonomy=_variant_taxonomy(variant),
@@ -882,10 +1191,67 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Paths":
-                st.info("Paths hook is enabled but route templates are not implemented yet.")
+                path_options = {
+                    "Route-1": ["A1", "A2", "B2"],
+                    "Route-2": ["A1", "B1", "B2"],
+                    "Route-3": ["A2", "B2"],
+                }
+                selected_path = st.selectbox("Route", list(path_options.keys()), key="explore-path")
+                st.session_state["selected_path_id"] = selected_path
+                cells = path_options[selected_path]
+                st.write("Path card:", " → ".join(cells))
+                dot_lines = ["digraph route {", "rankdir=LR;"]
+                for a, b in zip(cells, cells[1:]):
+                    dot_lines.append(f'"{a}" -> "{b}";')
+                dot_lines.append("}")
+                render_graph_fallback(
+                    title="Route diagram",
+                    graphviz_dot="\n".join(dot_lines),
+                    nodes_rows=[{"id": c, "type": "cell"} for c in cells],
+                    edges_rows=[{"id": f"{a}->{b}", "from": a, "to": b} for a, b in zip(cells, cells[1:])],
+                    key_prefix="paths",
+                    interactive_available=False,
+                )
+                if st.button("Use as plan backbone", key="explore-path-to-rec"):
+                    st.session_state["filters"]["include_cells"] = cells
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
 
             elif selected_tab == "Variants Library":
-                st.info("Variants Library hook is enabled; advanced filters are pending.")
+                selected_cell_filter = st.multiselect("Cell", CELL_OPTIONS, default=st.session_state["filters"].get("include_cells", []))
+                selected_tax_filter = st.multiselect("Taxonomy", TAXONOMY_OPTIONS, default=st.session_state["filters"].get("include_taxonomy", []))
+                max_ttfm = st.slider("Max TTFM days", 1, 120, 60)
+
+                filtered = []
+                for variant in variants:
+                    cell = _variant_cell(variant)
+                    taxonomy = _variant_taxonomy(variant)
+                    ttfm = variant.economics.get("time_to_first_money_days_range") or [999, 999]
+                    if selected_cell_filter and cell not in selected_cell_filter:
+                        continue
+                    if selected_tax_filter and taxonomy not in selected_tax_filter:
+                        continue
+                    if ttfm and ttfm[0] > max_ttfm:
+                        continue
+                    filtered.append((variant, cell, taxonomy))
+
+                st.caption(f"Results: {len(filtered)}")
+                for variant, cell, taxonomy in filtered[:30]:
+                    col_l, col_r = st.columns([0.78, 0.22])
+                    with col_l:
+                        st.markdown(f"**{variant.title}** · `{variant.variant_id}` · {cell} / {taxonomy}")
+                    with col_r:
+                        if st.button("Send to Rec", key=f"lib-send-{variant.variant_id}"):
+                            st.session_state["selected_variant_id"] = variant.variant_id
+                            st.session_state["selected_cell_id"] = cell
+                            st.session_state["selected_taxonomy_id"] = taxonomy
+                            st.session_state["filters"]["include_cells"] = [cell]
+                            st.session_state["filters"]["include_taxonomy"] = [taxonomy]
+                            st.session_state["page"] = "recommendations"
+                            st.rerun()
+
+                if not filtered:
+                    st.info("No variants for current library filters.")
 
         _run_with_error_boundary(_render_explore)
 
@@ -1064,9 +1430,7 @@ def run_app() -> None:
                 reasons = []
                 if profile_validation["missing"]:
                     reasons.append("Missing: " + ", ".join(profile_validation["missing"]))
-                reasons.extend(
-                    [f"Warning: {warning}" for warning in profile_validation["warnings"]]
-                )
+                reasons.extend([f"Warning: {warning}" for warning in profile_validation["warnings"]])
                 _render_status(
                     "not_ready",
                     "Profile is not ready for recommendations.",
@@ -1074,42 +1438,54 @@ def run_app() -> None:
                     level="warning",
                 )
                 return
+
+            st.markdown("### Top controls")
+            top_bar = st.columns([0.26, 0.20, 0.18, 0.18, 0.18])
             objective_options = ["fastest_money", "max_net"]
             current_objective = _ensure_objective(profile, objective_options)
-            selected_objective = st.selectbox(
-                "Objective preset",
-                objective_options,
-                index=objective_options.index(
-                    st.session_state.get("rec_objective", current_objective)
-                ),
-                key="rec_objective",
-            )
-            st.caption("Objective preset affects ranking and diagnostics.")
+            with top_bar[0]:
+                selected_objective = st.selectbox(
+                    "Objective",
+                    objective_options,
+                    index=objective_options.index(st.session_state.get("rec_objective", current_objective)),
+                    key="rec_objective",
+                )
+            with top_bar[1]:
+                top_n = st.slider("Top N", min_value=1, max_value=10, value=st.session_state.get("rec_top_n", 10), key="rec_top_n")
+            with top_bar[2]:
+                start2w = st.checkbox("Startable ≤ 2 weeks", key="rec_qf_start2w")
+            with top_bar[3]:
+                low_legal = st.checkbox("Low legal friction", key="rec_qf_low_legal")
+            with top_bar[4]:
+                max_risk_low = st.checkbox("Max risk: low", key="rec_qf_low_risk")
+
             profile["objective"] = selected_objective
             st.session_state["profile"] = profile
             _sync_profile_session_state(profile)
-            top_n = st.slider(
-                "Top N",
-                min_value=1,
-                max_value=10,
-                value=st.session_state.get("rec_top_n", 10),
-                key="rec_top_n",
+
+            max_time_default = 14 if start2w else int(st.session_state["filters"].get("max_time_to_money_days", 60))
+            st.session_state["filters"]["max_time_to_money_days"] = int(
+                st.number_input("Max time to first money (days)", value=max_time_default, key="rec_max_time_to_money_days")
             )
-            max_time = st.number_input(
-                "Max time to first money (days)",
-                value=int(st.session_state["filters"].get("max_time_to_money_days", 60)),
-                key="rec_max_time_to_money_days",
+            st.session_state["filters"]["exclude_blocked"] = bool(
+                st.checkbox(
+                    "Exclude blocked",
+                    value=bool(st.session_state["filters"].get("exclude_blocked", True) or low_legal),
+                    key="rec_exclude_blocked",
+                )
             )
-            st.session_state["filters"]["max_time_to_money_days"] = int(max_time)
-            st.session_state["filters"]["exclude_blocked"] = st.checkbox(
-                "Exclude blocked",
-                value=st.session_state["filters"].get("exclude_blocked", True),
-                key="rec_exclude_blocked",
+            st.session_state["filters"]["exclude_not_feasible"] = bool(
+                st.checkbox(
+                    "Exclude not feasible",
+                    value=bool(st.session_state["filters"].get("exclude_not_feasible", False) or max_risk_low),
+                    key="rec_exclude_not_feasible",
+                )
             )
-            st.session_state["filters"]["exclude_not_feasible"] = st.checkbox(
-                "Exclude not feasible",
-                value=st.session_state["filters"].get("exclude_not_feasible", False),
-                key="rec_exclude_not_feasible",
+            st.session_state["filters"]["top_n"] = int(top_n)
+            sync_filters_and_objective(
+                st.session_state,
+                filters=st.session_state["filters"],
+                objective_preset=selected_objective,
             )
 
             def _run_recommendations() -> None:
@@ -1120,143 +1496,144 @@ def run_app() -> None:
                     top_n,
                 )
                 st.session_state["last_recommendations"] = result
+                st.session_state["recommendations"] = result
+                st.session_state["recommend_diagnostics"] = result.diagnostics
                 ranked_ids = {item.variant.variant_id for item in result.ranked_variants}
                 selected = st.session_state.get("selected_variant_id")
                 if selected and selected not in ranked_ids:
                     st.session_state["selected_variant_id"] = ""
                     st.session_state["plan"] = None
 
-            if st.button("Run recommendations"):
+            if st.button("Recompute", key="recompute-recommendations"):
                 _run_recommendations()
 
-            result = st.session_state.get("last_recommendations")
+            result = st.session_state.get("recommendations") or st.session_state.get("last_recommendations")
             if result is None:
+                _render_status("not_ready", "Run recommendations to see results.", reasons=["No recommendations have been generated yet."])
+                return
+
+            st.markdown("### Reality Check")
+            blocker_counts = Counter()
+            for rec in result.ranked_variants:
+                blocker_counts.update(rec.feasibility.blockers)
+            top_blockers = blocker_counts.most_common(3)
+            if top_blockers:
+                for blocker, cnt in top_blockers:
+                    st.warning(f"Blocker: {blocker} · impact: {cnt} variants · quick fix: adjust filters")
+            else:
+                st.caption("No major blockers in current top results.")
+
+            qf1, qf2, qf3 = st.columns(3)
+            if qf1.button("Quick fix: allow prep", key="rc-allow-prep"):
+                st.session_state["filters"]["exclude_not_feasible"] = False
+                _run_recommendations()
+            if qf2.button("Quick fix: relax legal", key="rc-relax-legal"):
+                st.session_state["filters"]["exclude_blocked"] = False
+                _run_recommendations()
+            if qf3.button("Quick fix: extend time", key="rc-extend-time"):
+                st.session_state["filters"]["max_time_to_money_days"] = 60
+                _run_recommendations()
+
+            if not result.ranked_variants:
                 _render_status(
-                    "not_ready",
-                    "Run recommendations to see results.",
-                    reasons=["No recommendations have been generated yet."],
-                )
-            elif not result.ranked_variants:
-                _render_status(
-                    "not_ready",
+                    "empty",
                     "No results found.",
                     reasons=["All candidates were filtered out by current constraints."],
                     level="warning",
                 )
                 if result.diagnostics.get("reasons"):
-                    st.caption("Filtered out reasons:")
+                    st.caption("Diagnostics")
                     for reason, count in result.diagnostics["reasons"].items():
                         st.write(f"- {reason}: {count}")
-                st.info("Quick fixes: relax filters or adjust objective.")
-                if st.button("Allow not feasible"):
-                    st.session_state["filters"]["exclude_not_feasible"] = False
-                    _run_recommendations()
-                if st.button("Allow blocked"):
-                    st.session_state["filters"]["exclude_blocked"] = False
-                    _run_recommendations()
-                if st.button("Extend time window"):
-                    st.session_state["filters"]["max_time_to_money_days"] = 60
-                    _run_recommendations()
+                st.info("Empty state quick fixes are available above.")
                 return
-            else:
-                all_not_feasible = all(
-                    rec.feasibility.status == "not_feasible" for rec in result.ranked_variants
+
+            mode = st.radio("Results mode", ["Cards", "Table"], horizontal=True, key="rec-view-mode")
+
+            if mode == "Table":
+                rows = []
+                for rec in result.ranked_variants:
+                    rows.append(
+                        {
+                            "score": round(rec.score, 4),
+                            "title": rec.variant.title,
+                            "variant_id": rec.variant.variant_id,
+                            "time_to_first_money": "-".join(map(str, rec.economics.time_to_first_money_days_range)),
+                            "net_range": "€" + "-".join(map(str, rec.economics.typical_net_month_eur_range)),
+                            "feasibility": rec.feasibility.status,
+                            "legal_gate": rec.legal.legal_gate,
+                            "confidence": rec.economics.confidence,
+                            "cell": _variant_cell(rec.variant),
+                            "taxonomy": _variant_taxonomy(rec.variant),
+                        }
+                    )
+                st.dataframe(rows, use_container_width=True)
+                selected_table_variant = st.selectbox(
+                    "Select variant",
+                    [""] + [row["variant_id"] for row in rows],
+                    key="rec-table-select",
+                    format_func=lambda val: val or "none",
                 )
-                if all_not_feasible:
-                    st.warning("All results are currently not feasible.")
-                    st.info("Quick fixes: loosen constraints or allow prep time.")
-                    if st.button("Allow not feasible (show all)"):
-                        st.session_state["filters"]["exclude_not_feasible"] = False
-                        _run_recommendations()
-                    if st.button("Extend time window"):
-                        st.session_state["filters"]["max_time_to_money_days"] = 60
-                        _run_recommendations()
-                st.subheader("Reality Check")
-                blocker_counts = Counter()
-                for rec in result.ranked_variants:
-                    blocker_counts.update(rec.feasibility.blockers)
-                top_blockers = blocker_counts.most_common(3)
-                if top_blockers:
-                    formatted = ", ".join([f"{name} ({count})" for name, count in top_blockers])
-                    st.warning("Top blockers: " + formatted)
+                if selected_table_variant and st.button("Select & Build Plan", key="rec-table-build"):
+                    st.session_state["selected_variant_id"] = selected_table_variant
+                    st.session_state["page"] = "plan"
+                    st.rerun()
+                return
 
-                if result.diagnostics.get("reasons"):
-                    st.caption("Diagnostics (filtered out):")
-                    for reason, count in result.diagnostics["reasons"].items():
-                        st.write(f"- {reason}: {count}")
+            for rec in result.ranked_variants:
+                with st.container():
+                    stale_label = " (stale)" if rec.stale else ""
+                    st.subheader(rec.variant.title)
+                    st.caption(f"ID: {rec.variant.variant_id}{stale_label}")
+                    render_badge_set(
+                        feasibility=rec.feasibility.status,
+                        legal_gate=rec.legal.legal_gate,
+                        staleness="warn" if rec.stale else "ok",
+                        confidence=rec.economics.confidence,
+                    )
 
-                for rec in result.ranked_variants:
-                    with st.container():
-                        stale_label = " (stale)" if rec.stale else ""
-                        st.subheader(rec.variant.title)
-                        st.caption(f"ID: {rec.variant.variant_id}{stale_label}")
-                        if rec.stale or rec.legal.legal_gate != "ok":
-                            warnings = []
-                            if rec.stale:
-                                warnings.append("Variant data is stale")
-                            if rec.legal.legal_gate != "ok":
-                                warnings.append(f"Legal gate: {rec.legal.legal_gate}")
-                            st.warning(" | ".join(warnings))
+                    st.write(
+                        "Economics: TTFM "
+                        + "-".join(map(str, rec.economics.time_to_first_money_days_range))
+                        + " days; net/month €"
+                        + "-".join(map(str, rec.economics.typical_net_month_eur_range))
+                    )
+                    st.write("Pros: " + "; ".join(rec.pros[:3]))
+                    if rec.cons:
+                        st.write("Cons: " + "; ".join(rec.cons[:2]))
 
-                        st.markdown("**Feasibility**")
-                        st.write(f"Status: {rec.feasibility.status}")
-                        if rec.feasibility.blockers:
-                            st.write("Blockers: " + "; ".join(rec.feasibility.blockers))
-                        if rec.feasibility.prep_steps:
-                            st.write("Prep steps: " + "; ".join(rec.feasibility.prep_steps))
-                        st.write(
-                            "Prep estimate (weeks): "
-                            + "–".join(map(str, rec.feasibility.estimated_prep_weeks_range))
+                    with st.expander("Score contribution"):
+                        rows = _score_contribution_rows(rec)
+                        st.vega_lite_chart(
+                            {
+                                "data": {"values": rows},
+                                "mark": "bar",
+                                "encoding": {
+                                    "x": {"field": "factor", "type": "nominal", "title": "Factor"},
+                                    "y": {"field": "value", "type": "quantitative", "title": "Contribution"},
+                                    "tooltip": [
+                                        {"field": "factor", "type": "nominal"},
+                                        {"field": "value", "type": "quantitative"},
+                                    ],
+                                },
+                                "height": 180,
+                            },
+                            use_container_width=True,
                         )
 
-                        st.markdown("**Economics**")
-                        st.write(
-                            "Time to first money (days): "
-                            + "–".join(map(str, rec.economics.time_to_first_money_days_range))
-                        )
-                        st.write(
-                            "Typical net/month: €"
-                            + "–".join(map(str, rec.economics.typical_net_month_eur_range))
-                        )
-                        st.write(
-                            "Costs range: €" + "–".join(map(str, rec.economics.costs_eur_range))
-                        )
-                        st.write(
-                            f"Volatility/seasonality: {rec.economics.volatility_or_seasonality}"
-                        )
-                        st.write(f"Confidence: {rec.economics.confidence}")
-
-                        st.markdown("**Legal Gate + Compliance**")
-                        st.write(f"Gate: {rec.legal.legal_gate}")
-                        if rec.legal.checklist:
-                            st.write("Checklist: " + "; ".join(rec.legal.checklist))
-                        if rec.legal.compliance_kits:
-                            st.write("Kits: " + ", ".join(rec.legal.compliance_kits))
-
-                        st.markdown("**Why this is in Top-N**")
-                        st.write("; ".join(rec.pros))
-                        if rec.cons:
-                            st.markdown("**What can block you**")
-                            st.write("; ".join(rec.cons))
-
-                        if st.button(
-                            f"Select {rec.variant.variant_id}",
-                            key=f"select-{rec.variant.variant_id}",
-                        ):
-                            st.session_state["selected_variant_id"] = rec.variant.variant_id
-                if st.button("Startable in 2 weeks"):
-                    st.session_state["filters"]["max_time_to_money_days"] = 14
-                    st.session_state["filters"]["exclude_blocked"] = True
-                    _run_recommendations()
-                if st.button("Focus on fastest money"):
-                    profile["objective"] = "fastest_money"
-                    st.session_state["filters"]["max_time_to_money_days"] = 30
-                    st.session_state["profile"] = profile
-                    _sync_profile_session_state(profile)
-                    _run_recommendations()
-                if st.button("Reduce legal friction"):
-                    st.session_state["filters"]["exclude_blocked"] = True
-                    _run_recommendations()
+                    c1, c2, c3 = st.columns(3)
+                    if c1.button(f"Select & Build Plan · {rec.variant.variant_id}", key=f"rec-plan-{rec.variant.variant_id}"):
+                        st.session_state["selected_variant_id"] = rec.variant.variant_id
+                        st.session_state["page"] = "plan"
+                        st.rerun()
+                    if c2.button(f"Open in Explore · {rec.variant.variant_id}", key=f"rec-open-exp-{rec.variant.variant_id}"):
+                        st.session_state["selected_variant_id"] = rec.variant.variant_id
+                        st.session_state["selected_cell_id"] = _variant_cell(rec.variant)
+                        st.session_state["selected_taxonomy_id"] = _variant_taxonomy(rec.variant)
+                        st.session_state["explore_tab"] = "Taxonomy"
+                        st.session_state["page"] = "explore"
+                        st.rerun()
+                    c3.button(f"Compare (SHOULD) · {rec.variant.variant_id}", key=f"rec-compare-{rec.variant.variant_id}")
 
         _run_with_error_boundary(_render_recommendations)
 
@@ -1269,12 +1646,14 @@ def run_app() -> None:
             variant_id = st.session_state.get("selected_variant_id")
             if not variant_id:
                 _render_status(
-                    "not_ready",
+                    "no_selection",
                     "Plan is not ready.",
                     reasons=["Select a variant in Recommendations."],
+                    level="warning",
                 )
-            else:
-                profile = st.session_state["profile"]
+                return
+
+            profile = st.session_state["profile"]
             classify_prefilter = st.session_state.get("classify_prefilter") or {}
             if classify_prefilter.get("from_classify"):
                 st.info(
@@ -1283,40 +1662,87 @@ def run_app() -> None:
                     f"cell={classify_prefilter.get('cell')}"
                 )
 
-                st.caption(f"Objective preset: {profile.get('objective', 'fastest_money')}")
+            with st.spinner("Building plan..."):
                 try:
                     plan = _ensure_plan(profile, variant_id)
                 except ValueError as exc:
                     _render_status(
                         "error", "Plan generation failed.", reasons=[str(exc)], level="error"
                     )
+                    return
+
+            app_data = _get_app_data()
+            variant = next((item for item in app_data.variants if item.variant_id == variant_id), None)
+            variant_stale = (
+                is_variant_stale(variant, app_data.meta.staleness_policy) if variant is not None else False
+            )
+
+            st.session_state["plan"] = plan
+            st.markdown(f"### Variant: {variant_id}")
+            route = []
+            if plan.week_plan:
+                for week in sorted(plan.week_plan.keys()):
+                    for title in plan.week_plan[week]:
+                        if "Route:" in title:
+                            route.append(title)
+            st.caption("Route breadcrumb: " + (" / ".join(route[:2]) if route else "n/a"))
+            if plan.legal_gate != "ok" or variant_stale:
+                warns = []
+                if plan.legal_gate != "ok":
+                    warns.append(f"Legal gate: {plan.legal_gate}")
+                if variant_stale:
+                    warns.append("Variant data is stale")
+                st.warning(" | ".join(warns))
+
+            tab_checklist, tab_weeks, tab_compliance = st.tabs(["Checklist", "4 weeks", "Compliance"])
+
+            with tab_checklist:
+                st.markdown("#### Checklist")
+                for idx, step in enumerate(plan.steps):
+                    col_a, col_b = st.columns([0.8, 0.2])
+                    with col_a:
+                        done_key = f"plan-step-done-{step.id}"
+                        st.checkbox(f"{step.title}", key=done_key)
+                    with col_b:
+                        if st.button("Details", key=f"plan-step-open-{step.id}"):
+                            st.session_state["selected_plan_step_id"] = step.id
+                            st.session_state["selected_plan_step_title"] = step.title
+                            st.session_state["selected_plan_step_detail"] = step.detail
+
+            with tab_weeks:
+                st.markdown("#### 4-week outline")
+                week_rows = []
+                for week_name, items in plan.week_plan.items():
+                    week_rows.append({"week": week_name, "items": " | ".join(items)})
+                st.dataframe(week_rows, use_container_width=True)
+
+            with tab_compliance:
+                st.markdown("#### Compliance")
+                st.write("Legal gate:", plan.legal_gate)
+                for item in plan.compliance:
+                    st.write(f"- {item}")
+
+            with st.expander("Step detail drawer", expanded=False):
+                step_id = st.session_state.get("selected_plan_step_id", "")
+                if not step_id:
+                    st.caption("Click Details on a checklist step to inspect step context.")
                 else:
-                    app_data = _get_app_data()
-                    variant = next(
-                        (item for item in app_data.variants if item.variant_id == variant_id),
-                        None,
-                    )
-                    variant_stale = (
-                        is_variant_stale(variant, app_data.meta.staleness_policy)
-                        if variant is not None
-                        else False
-                    )
-                    if plan.legal_gate != "ok" or variant_stale:
-                        warnings = []
-                        if plan.legal_gate != "ok":
-                            warnings.append(f"Legal gate: {plan.legal_gate}")
-                        if variant_stale:
-                            warnings.append("Variant data is stale")
-                        st.warning(" | ".join(warnings))
-                    st.session_state["plan"] = plan
-                    st.write(f"Plan for {variant_id}")
-                    st.write("Steps")
-                    for step in plan.steps:
-                        st.write(f"- {step.title}: {step.detail}")
-                    st.write("4-week outline")
-                    st.json(plan.week_plan)
-                    st.write("Compliance")
-                    st.write("\n".join(plan.compliance))
+                    st.write(f"Step id: `{step_id}`")
+                    st.write(f"Title: {st.session_state.get('selected_plan_step_title', '')}")
+                    st.write(f"Detail: {st.session_state.get('selected_plan_step_detail', '')}")
+                    st.caption("Outputs/artifacts: follow plan.md required artifacts section.")
+
+            st.markdown("### Export preview")
+            plan_text = render_plan_md(plan)
+            st.download_button(
+                "Preview plan.md",
+                data=plan_text,
+                file_name="plan.md",
+                mime="text/markdown",
+            )
+            if st.button("Go to Export", key="plan-go-export"):
+                st.session_state["page"] = "export"
+                st.rerun()
 
         _run_with_error_boundary(_render_plan)
 
@@ -1328,102 +1754,113 @@ def run_app() -> None:
             _guard_fatals(report)
             variant_id = st.session_state.get("selected_variant_id")
             plan = st.session_state.get("plan")
+            profile = st.session_state.get("profile")
+
             if not variant_id or plan is None:
                 reasons = []
                 if not variant_id:
                     reasons.append("Select a variant in Recommendations.")
                 if plan is None:
                     reasons.append("Generate a plan in the Plan screen.")
-                _render_status("not_ready", "Export is not ready.", reasons=reasons)
-            else:
-                profile = st.session_state["profile"]
-            classify_prefilter = st.session_state.get("classify_prefilter") or {}
-            if classify_prefilter.get("from_classify"):
-                st.info(
-                    "Opened from Classify: "
-                    f"taxonomy={classify_prefilter.get('taxonomy_id')} | "
-                    f"cell={classify_prefilter.get('cell')}"
-                )
+                _render_status("not_ready", "Export is not ready.", reasons=reasons, level="warning")
+                return
 
-                app_data = _get_app_data()
-                plan_text = render_plan_md(plan)
-                recommendations = recommend(
+            app_data = _get_app_data()
+            recommendations = recommend(
+                profile,
+                app_data.variants,
+                app_data.rulepack,
+                app_data.meta.staleness_policy,
+                profile.get("objective", "fastest_money"),
+                {},
+                len(app_data.variants),
+            )
+            selected_rec = next(
+                (r for r in recommendations.ranked_variants if r.variant.variant_id == variant_id),
+                None,
+            )
+
+            plan_text = render_plan_md(plan)
+            result_payload = (
+                render_result_json(
                     profile,
-                    app_data.variants,
-                    app_data.rulepack,
-                    app_data.meta.staleness_policy,
-                    profile.get("objective", "fastest_money"),
-                    {},
-                    len(app_data.variants),
+                    selected_rec,
+                    plan,
+                    diagnostics=recommendations.diagnostics,
+                    profile_hash=recommendations.profile_hash,
+                    meta=app_data.meta,
+                    rulepack=app_data.rulepack,
                 )
-                selected_rec = next(
-                    (
-                        r
-                        for r in recommendations.ranked_variants
-                        if r.variant.variant_id == variant_id
-                    ),
-                    None,
-                )
-                result_payload = (
-                    render_result_json(
-                        profile,
-                        selected_rec,
-                        plan,
-                        diagnostics=recommendations.diagnostics,
-                        profile_hash=recommendations.profile_hash,
-                        meta=app_data.meta,
-                        rulepack=app_data.rulepack,
-                    )
-                    if selected_rec
-                    else None
-                )
-                profile_yaml = yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
-                if selected_rec is None:
-                    _render_status(
-                        "error",
-                        "Variant not found in recommendations.",
-                        reasons=[f"Variant '{variant_id}' was not returned."],
-                        level="error",
-                    )
+                if selected_rec
+                else None
+            )
+            profile_yaml = yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
 
-                if st.button("Generate export files"):
-                    try:
-                        paths = export_bundle(
-                            profile_path=None,
-                            variant_id=variant_id,
-                            out_dir="exports",
-                            data_dir="data",
-                            profile_data=profile,
-                        )
-                    except MoneyMapError as exc:
-                        _render_error(exc)
-                    else:
-                        st.session_state["export_paths"] = paths
-                        st.success("Export completed")
-                        st.write(paths)
+            st.markdown("### Artifacts")
+            card1, card2, card3 = st.columns(3)
+            with card1:
+                st.markdown("**plan.md**")
+                with st.expander("Preview plan.md"):
+                    st.code(plan_text[:6000], language="markdown")
+            with card2:
+                st.markdown("**result.json**")
+                with st.expander("Preview result.json"):
+                    st.json(result_payload or {})
+            with card3:
+                st.markdown("**profile.yaml**")
+                with st.expander("Preview profile.yaml"):
+                    st.code(profile_yaml, language="yaml")
 
-                st.subheader("Downloads")
-                st.download_button(
-                    "Download plan.md",
-                    data=plan_text,
-                    file_name="plan.md",
-                    mime="text/markdown",
-                    disabled=plan is None,
-                )
-                st.download_button(
-                    "Download result.json",
-                    data=json.dumps(result_payload or {}, ensure_ascii=False, indent=2),
-                    file_name="result.json",
-                    mime="application/json",
-                    disabled=result_payload is None,
-                )
-                st.download_button(
-                    "Download profile.yaml",
-                    data=profile_yaml,
-                    file_name="profile.yaml",
-                    mime="text/yaml",
-                    disabled=profile is None,
-                )
+            st.markdown("### Export metadata")
+            metadata_rows = [
+                {"key": "dataset_version", "value": app_data.meta.dataset_version},
+                {"key": "rulepack_reviewed_at", "value": app_data.rulepack.reviewed_at},
+                {"key": "objective_preset", "value": profile.get("objective", "fastest_money")},
+                {"key": "profile_hash", "value": st.session_state.get("profile_hash", "")},
+            ]
+            st.table(metadata_rows)
+
+            run_cmd = f"money-map run --profile profiles/demo.yaml --variant-id {variant_id} --out-dir exports"
+            st.code(run_cmd, language="bash")
+            if st.button("Copy run command", key="export-copy-run-cmd"):
+                st.info("Command shown above. Copy from code block.")
+
+            if st.button("Generate export files", key="export-generate"):
+                try:
+                    paths = export_bundle(
+                        profile_path=None,
+                        variant_id=variant_id,
+                        out_dir="exports",
+                        data_dir="data",
+                        profile_data=profile,
+                    )
+                except MoneyMapError as exc:
+                    _render_error(exc)
+                else:
+                    st.session_state["export_paths"] = paths
+                    st.success("Export completed")
+                    st.write(paths)
+
+            st.subheader("Downloads")
+            st.download_button(
+                "Download plan.md",
+                data=plan_text,
+                file_name="plan.md",
+                mime="text/markdown",
+            )
+            st.download_button(
+                "Download result.json",
+                data=json.dumps(result_payload or {}, ensure_ascii=False, indent=2),
+                file_name="result.json",
+                mime="application/json",
+                disabled=result_payload is None,
+            )
+            st.download_button(
+                "Download profile.yaml",
+                data=profile_yaml,
+                file_name="profile.yaml",
+                mime="text/yaml",
+            )
 
         _run_with_error_boundary(_render_export)
 

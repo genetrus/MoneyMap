@@ -269,6 +269,79 @@ def build_theme_css(theme_name: str) -> str:
       color: var(--mm-muted);
     }}
 
+    .mm-shell-header {{
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--mm-card-border);
+      border-radius: 14px;
+      background: var(--mm-card-bg);
+      box-shadow: var(--mm-shadow);
+      margin-bottom: 0.65rem;
+    }}
+
+    .mm-shell-title {{
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--mm-text);
+      white-space: nowrap;
+    }}
+
+    .mm-shell-badges {{
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }}
+
+    .status-badge {
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.74rem;
+      color: var(--mm-badge-text);
+      border: 1px solid transparent;
+      background: var(--mm-badge-stale);
+      display: inline-flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+
+    .badge-valid {
+      background: var(--mm-badge-valid);
+    }
+
+    .badge-stale {
+      background: var(--mm-badge-stale);
+    }
+
+    .badge-invalid {
+      background: var(--mm-badge-invalid);
+    }
+
+    .mm-badge-set {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0.3rem 0 0.6rem;
+    }
+
+    .mm-context-bar {{
+      border: 1px solid var(--mm-card-border);
+      border-radius: 12px;
+      background: var(--mm-section-bg);
+      padding: 0.55rem 0.75rem;
+      margin-bottom: 0.7rem;
+      color: var(--mm-text);
+    }}
+
+    .mm-context-focus {{
+      color: var(--mm-muted);
+      font-size: 0.86rem;
+      margin-top: 0.25rem;
+    }}
+
     .mm-sidebar-section-title {{
       font-size: 0.75rem;
       font-weight: 600;
