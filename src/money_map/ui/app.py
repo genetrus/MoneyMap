@@ -170,10 +170,28 @@ DEFAULT_PROFILE = {
 }
 
 
+def _normalize_profile(raw_profile: object) -> dict:
+    if not isinstance(raw_profile, dict):
+        return DEFAULT_PROFILE.copy()
+
+    normalized = DEFAULT_PROFILE.copy()
+    normalized.update(raw_profile)
+    return normalized
+
+
+def _normalize_filters(raw_filters: object) -> dict:
+    if not isinstance(raw_filters, dict):
+        return DEFAULT_FILTERS.copy()
+
+    normalized = DEFAULT_FILTERS.copy()
+    normalized.update(raw_filters)
+    return normalized
+
+
 def _init_state() -> None:
     initialize_defaults(st.session_state)
-    st.session_state.setdefault("profile", DEFAULT_PROFILE.copy())
-    st.session_state.setdefault("filters", DEFAULT_FILTERS.copy())
+    st.session_state["profile"] = _normalize_profile(st.session_state.get("profile"))
+    st.session_state["filters"] = _normalize_filters(st.session_state.get("filters"))
     st.session_state.setdefault("last_recommendations", None)
     st.session_state.setdefault("profile_source", "Demo profile")
     st.session_state.setdefault("ui_run_id", str(uuid4()))
