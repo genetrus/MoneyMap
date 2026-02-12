@@ -223,3 +223,13 @@
 - Consequences: App startup becomes resilient to stale/corrupted session state and backward-compatible with older state payloads.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.11, p.14
 - Owner: team
+
+## 2026-02-12 — Add DE/BY/MUC seed data-pack scaffold under data/packs/de_muc
+- Date: 2026-02-12
+- Title: Add `data/packs/de_muc` scaffold with regional metadata and seed files
+- Context: We need a region-scoped seed pack layout for Munich (`DE/BY/MUC`) while keeping compatibility with current core dataset artifacts (`data/meta.yaml`, `data/rulepacks/DE.yaml`, `data/variants.yaml`).
+- Decision: Create `data/packs/de_muc/` with `meta.yaml`, `rulepack.yaml`, `occupation_map.yaml`, `variants.seed.yaml`, `bridges.seed.yaml`, and `routes.seed.yaml`; keep seed collections empty (`[]`) and encode explicit dependencies on core files in pack metadata.
+- Alternatives: (1) Reuse top-level `data/*` files without a regional pack folder. (2) Populate non-empty placeholder seed entries not grounded in current verified sources.
+- Consequences: Regional pack structure exists for ingestion/expansion, and dependency links to core artifacts are explicit without inventing unverified content.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
+- Owner: team
