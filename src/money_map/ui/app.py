@@ -48,6 +48,7 @@ from money_map.ui.navigation import (
     NAV_LABEL_BY_SLUG,
     resolve_page_from_query,
 )
+from money_map.ui.jobs_live import create_variant_draft, resolve_jobs_source
 from money_map.ui.session_state import (
     DEFAULT_FILTERS,
     compute_filters_hash,
@@ -213,6 +214,8 @@ def _init_state() -> None:
     st.session_state.setdefault("classify_error", "")
     st.session_state.setdefault("classify_selected_variant_id", "")
     st.session_state.setdefault("classify_prefilter", {})
+    st.session_state.setdefault("jobs_variant_drafts", [])
+    st.session_state.setdefault("jobs_last_source", {})
     st.session_state["filters_hash"] = compute_filters_hash(st.session_state["filters"])
 
 
@@ -1024,6 +1027,81 @@ def run_app() -> None:
                     st.caption("Profile draft")
 
         _run_with_error_boundary(_render_profile)
+
+    elif page_slug == "jobs-live":
+        _render_page_header("Jobs (Live)", "Vacancies with automatic live/cache/seed fallback.")
+
+        def _render_jobs_live() -> None:
+            profile = st.session_state.get("profile", {})
+            default_city = str(profile.get("location", "Munich") or "Munich")
+            default_profile_query = ", ".join(profile.get("skills", [])) if isinstance(profile.get("skills"), list) else ""
+            default_profile_query = default_profile_query or str(profile.get("objective", ""))
+
+            c1, c2, c3, c4, c5 = st.columns(5)
+            with c1:
+                city = st.text_input("Город", value=default_city, key="jobs_city")
+            with c2:
+                radius_km = st.number_input("Радиус (км)", min_value=1, max_value=200, value=25, key="jobs_radius")
+            with c3:
+                days = st.number_input("Дни", min_value=1, max_value=30, value=7, key="jobs_days")
+            with c4:
+                size = st.number_input("Размер выдачи", min_value=1, max_value=100, value=20, key="jobs_size")
+            with c5:
+                profile_query = st.text_input("Профиль", value=default_profile_query, key="jobs_profile")
+
+            rows, source_meta = resolve_jobs_source(
+                city=city,
+                radius_km=int(radius_km),
+                days=int(days),
+                size=int(size),
+                profile=profile_query,
+            )
+            st.session_state["jobs_last_source"] = source_meta
+
+            source = source_meta.get("source", "unknown")
+            snapshot = source_meta.get("snapshot", "")
+            if source == "live":
+                st.success("Источник данных: live")
+            elif source == "cache":
+                st.warning(f"Источник данных: cache · snapshot: {snapshot}")
+            else:
+                st.info("Источник данных: seed (компактный fallback)")
+
+            table_rows = []
+            for row in rows:
+                table_rows.append(
+                    {
+                        "title": row.get("title", ""),
+                        "company": row.get("company", ""),
+                        "city": row.get("city", ""),
+                        "publishedAt": row.get("publishedAt", ""),
+                        "refnr": row.get("refnr", ""),
+                        "url": row.get("url", ""),
+                    }
+                )
+            st.dataframe(table_rows, use_container_width=True, hide_index=True)
+
+            st.markdown("### Create Variant Draft")
+            if rows:
+                options = {
+                    f"{row.get('title', '')} · {row.get('company', '')} · {row.get('city', '')}": idx
+                    for idx, row in enumerate(rows)
+                }
+                selected_label = st.selectbox("Vacancy", list(options.keys()), key="jobs_selected_row")
+                selected_row = rows[options[selected_label]]
+                if st.button("Create Variant Draft", key="jobs_create_variant_draft"):
+                    draft = create_variant_draft(selected_row)
+                    drafts = st.session_state.get("jobs_variant_drafts", [])
+                    drafts.insert(0, draft)
+                    st.session_state["jobs_variant_drafts"] = drafts[:20]
+                    st.success(f"Draft created: {draft['variant_id']}")
+
+            drafts = st.session_state.get("jobs_variant_drafts", [])
+            if drafts:
+                with st.expander("Drafts", expanded=False):
+                    st.json(drafts)
+
+        _run_with_error_boundary(_render_jobs_live)
 
     elif page_slug == "explore":
         _render_page_header("Explore", "Browse matrix/taxonomy/bridges (offline, deterministic).")
