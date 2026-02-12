@@ -1,1 +1,541 @@
-bridges: []
+bridges:
+- id: br.de_muc.salary_service.01
+  from:
+    cell_id: A1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: A2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Шифтовая занятость -> услуга по выходным
+  preconditions:
+  - Есть действующий трудовой договор или 2+ стабильных смены/неделю
+  - Есть 4+ часа в неделю на доп. заказы
+  expected_result: Первый оплаченный сервисный заказ получен без просадки по основной работе
+  typical_duration_weeks: 3
+- id: br.de_muc.salary_service.02
+  from:
+    cell_id: A1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: B1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Офлайн работа -> B2B микро-услуга
+  preconditions:
+  - Есть 1 кейс/пример результата с основной работы
+  - Определён один тип клиента (кафе, салон, мастерская)
+  expected_result: Сформирован один повторяемый сервисный оффер и проведён пилот
+  typical_duration_weeks: 4
+- id: br.de_muc.salary_service.03
+  from:
+    cell_id: A2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: B2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Квалифицированная занятость -> удалённый сервис
+  preconditions:
+  - Есть профиль в профессиональной сети/маркетплейсе
+  - Подготовлен прайс из 2-3 пакетов
+  expected_result: Получен первый удалённый клиент и подтверждён SLA по срокам
+  typical_duration_weeks: 4
+- id: br.de_muc.salary_service.04
+  from:
+    cell_id: B1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: C1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Смена + локальные клиенты -> пакетирование услуги
+  preconditions:
+  - Есть минимум 3 выполненных задачи вручную
+  - Зафиксированы частые запросы клиентов
+  expected_result: Услуга упакована в 2 пакета с понятной ценой и сроком
+  typical_duration_weeks: 3
+- id: br.de_muc.salary_service.05
+  from:
+    cell_id: B2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: C2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Оклад + экспертиза -> консультационный сервис
+  preconditions:
+  - Есть подтверждённая компетенция (портфолио/сертификат)
+  - Подготовлен короткий диагностический созвон-скрипт
+  expected_result: Запущена консультация с конверсией в платный follow-up
+  typical_duration_weeks: 5
+- id: br.de_muc.salary_service.06
+  from:
+    cell_id: C1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: D1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Стабильная зарплата -> агентская сервисная модель
+  preconditions:
+  - Есть бюджет на делегирование 1 рутинной задачи
+  - Есть описанный SOP процесса
+  expected_result: Часть выполнения услуги передана исполнителю без потери качества
+  typical_duration_weeks: 6
+- id: br.de_muc.salary_service.07
+  from:
+    cell_id: C2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: D2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Экспертная роль -> продуктовый сервис
+  preconditions:
+  - Есть база вопросов клиентов за 1-2 месяца
+  - Есть шаблон результата/deliverable
+  expected_result: Клиенты покупают стандартизированный сервисный пакет
+  typical_duration_weeks: 5
+- id: br.de_muc.salary_service.08
+  from:
+    cell_id: D1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: E1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Роль тимлида -> микростудия услуг
+  preconditions:
+  - Есть минимум 2 проверенных подрядчика
+  - Есть канал входящего спроса
+  expected_result: Запущена микростудия с 2 параллельными проектами
+  typical_duration_weeks: 6
+- id: br.de_muc.salary_service.09
+  from:
+    cell_id: D2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: E2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Высокая экспертиза -> нишевой сервис
+  preconditions:
+  - Выбрана узкая ниша и ICP
+  - Подготовлены кейс + соцдоказательства
+  expected_result: Получены заявки из выбранной ниши с чеком выше среднего
+  typical_duration_weeks: 4
+- id: br.de_muc.salary_service.10
+  from:
+    cell_id: E1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: F1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Операционный менеджмент -> сервис с подпиской
+  preconditions:
+  - Выделен recurring-сегмент задач
+  - Есть автонапоминания/CRM pipeline
+  expected_result: Подключены первые 3 клиента на ежемесячную подписку
+  typical_duration_weeks: 6
+- id: br.de_muc.salary_service.11
+  from:
+    cell_id: E2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: F2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Экспертная практика -> premium service
+  preconditions:
+  - Сформирован диагностический аудит как входной продукт
+  - Есть политика предоплаты
+  expected_result: Закрыта premium-сделка с предоплатой
+  typical_duration_weeks: 5
+- id: br.de_muc.salary_service.12
+  from:
+    cell_id: F1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: G1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Стабильная зарплата -> сервис-агентство
+  preconditions:
+  - Есть owner для продаж и owner для delivery
+  - Определены KPI по марже и срокам
+  expected_result: Сервис работает как мини-агентство с управляемой загрузкой
+  typical_duration_weeks: 8
+- id: br.de_muc.service_product.01
+  from:
+    cell_id: A2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: B2
+    taxonomy_id: product_sale
+    income_mode: product
+  title: Сервисные задачи -> шаблонный цифровой продукт
+  preconditions:
+  - Есть 5+ повторяющихся клиентских запросов
+  - Есть шаблон/чеклист, который можно стандартизировать
+  expected_result: Создан MVP цифрового продукта и совершена первая продажа
+  typical_duration_weeks: 4
+- id: br.de_muc.service_product.02
+  from:
+    cell_id: B1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: C1
+    taxonomy_id: product_sale
+    income_mode: product
+  title: Локальная услуга -> набор DIY материалов
+  preconditions:
+  - Есть фото/видео процесса выполнения услуги
+  - Понимание типовых ошибок клиента
+  expected_result: Собран DIY набор и протестирован минимум на 3 покупателях
+  typical_duration_weeks: 5
+- id: br.de_muc.service_product.03
+  from:
+    cell_id: B2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: C2
+    taxonomy_id: product_sale
+    income_mode: product
+  title: Удалённый сервис -> шаблоны + SOP
+  preconditions:
+  - Есть библиотека файлов/скриптов от проектов
+  - Есть права на повторное использование материалов
+  expected_result: Выпущен пакет шаблонов и достигнуты 10+ лидов на лендинге
+  typical_duration_weeks: 4
+- id: br.de_muc.service_product.04
+  from:
+    cell_id: C1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: D1
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Ручной сервис -> обучающий мини-курс
+  preconditions:
+  - Есть результаты клиентов до/после
+  - Есть структура программы 3-5 модулей
+  expected_result: Запущен мини-курс с первой когортой участников
+  typical_duration_weeks: 6
+- id: br.de_muc.service_product.05
+  from:
+    cell_id: C2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: D2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Консалтинг -> knowledge-base актив
+  preconditions:
+  - Есть FAQ не менее чем из 20 вопросов
+  - Есть система хранения знаний
+  expected_result: Собрана платная база знаний и оформлены лицензии доступа
+  typical_duration_weeks: 5
+- id: br.de_muc.service_product.06
+  from:
+    cell_id: D1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: E1
+    taxonomy_id: product_sale
+    income_mode: product
+  title: Сервис-команда -> продуктизированный пакет
+  preconditions:
+  - Сервис выполняется по повторяемому pipeline
+  - Считается юнит-экономика по проектам
+  expected_result: Пакет продаётся без кастомизации в 50%+ сделок
+  typical_duration_weeks: 6
+- id: br.de_muc.service_product.07
+  from:
+    cell_id: D2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: E2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Нишевой сервис -> медиа-актив
+  preconditions:
+  - Есть контент-план на 4 недели
+  - Есть канал дистрибуции (email/соцсеть)
+  expected_result: Медиа-актив генерирует входящие лиды и первые партнёрские выплаты
+  typical_duration_weeks: 6
+- id: br.de_muc.service_product.08
+  from:
+    cell_id: E1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: F1
+    taxonomy_id: product_sale
+    income_mode: product
+  title: Подписной сервис -> self-serve toolkit
+  preconditions:
+  - Клиенты используют одинаковые артефакты каждый месяц
+  - Подготовлен onboarding без участия исполнителя
+  expected_result: Toolkit продаётся в self-serve режиме с конверсией из подписки
+  typical_duration_weeks: 7
+- id: br.de_muc.service_product.09
+  from:
+    cell_id: E2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: F2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Premium сервис -> лицензируемый фреймворк
+  preconditions:
+  - Есть авторская методология с измеримыми KPI
+  - Подготовлены лицензионные условия
+  expected_result: Подписаны первые лицензионные соглашения
+  typical_duration_weeks: 8
+- id: br.de_muc.service_product.10
+  from:
+    cell_id: F1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: G1
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Агентство -> продуктовая витрина активов
+  preconditions:
+  - Есть продуктовая линейка минимум из 3 SKU
+  - Настроен раздельный P&L сервиса и продуктов
+  expected_result: Доля выручки от продуктов/активов превышает 25%
+  typical_duration_weeks: 8
+- id: br.de_muc.service_product.11
+  from:
+    cell_id: F2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: G2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Экспертный сервис -> IP-портфель
+  preconditions:
+  - Есть зарегистрируемые материалы/методики
+  - Определены каналы монетизации IP
+  expected_result: Сформирован IP-портфель с повторяемыми лицензионными доходами
+  typical_duration_weeks: 10
+- id: br.de_muc.service_product.12
+  from:
+    cell_id: G1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: H1
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Стабильный сервис -> продуктовая компания
+  preconditions:
+  - Есть owner продукта и roadmap релизов
+  - Собирается продуктовая аналитика usage
+  expected_result: Продукт работает как отдельное направление с собственной воронкой
+  typical_duration_weeks: 10
+- id: br.de_muc.salary_product.01
+  from:
+    cell_id: A1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: B1
+    taxonomy_id: product_sale
+    income_mode: product
+  title: Зарплата -> тест микро-продукта
+  preconditions:
+  - Есть базовый бюджет на тест до 150 EUR
+  - Подготовлена гипотеза ценности
+  expected_result: Проведён первый платный smoke-test продукта
+  typical_duration_weeks: 3
+- id: br.de_muc.salary_product.02
+  from:
+    cell_id: B2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: D2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Экспертная работа -> цифровой актив
+  preconditions:
+  - Есть наработанные материалы из проектов
+  - Проверены ограничения работодателя по IP
+  expected_result: Создан и опубликован цифровой актив для продажи
+  typical_duration_weeks: 6
+- id: br.de_muc.service_service.01
+  from:
+    cell_id: A2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: B2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Локальный сервис -> удалённый сервис
+  preconditions:
+  - Есть 2 успешных офлайн-кейса
+  - Есть инструмент онлайн-коммуникации
+  expected_result: Получен первый удалённый заказ из нового канала
+  typical_duration_weeks: 3
+- id: br.de_muc.service_service.02
+  from:
+    cell_id: B2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: D2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Фриланс -> консалтинг-пакет
+  preconditions:
+  - Есть сформированные deliverables по 3 проектам
+  - Есть критерии качества результата
+  expected_result: Консалтинг продаётся пакетами вместо почасовой оплаты
+  typical_duration_weeks: 4
+- id: br.de_muc.product_asset.01
+  from:
+    cell_id: C2
+    taxonomy_id: product_sale
+    income_mode: product
+  to:
+    cell_id: E2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Продукт -> asset-экосистема
+  preconditions:
+  - Есть стабильные продажи 2+ месяца
+  - Есть поддержка клиентов и база знаний
+  expected_result: Продукт дополнен активами с повторной монетизацией
+  typical_duration_weeks: 8
+- id: br.de_muc.service_asset.01
+  from:
+    cell_id: C1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: E1
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Сервис -> набор регламентов как актив
+  preconditions:
+  - Процесс сервиса документирован end-to-end
+  - Есть измеримые SLA
+  expected_result: Регламенты оформлены в продаваемый/лицензируемый актив
+  typical_duration_weeks: 7
+- id: br.de_muc.salary_service.13
+  from:
+    cell_id: G2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: H2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Старшая роль -> high-ticket сервис
+  preconditions:
+  - Есть экспертная репутация в нише
+  - Есть воронка квалификации лидов
+  expected_result: Запущен high-ticket сервис с предквалификацией
+  typical_duration_weeks: 6
+- id: br.de_muc.service_product.13
+  from:
+    cell_id: H1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: I1
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Сервис на масштабе -> платформенный актив
+  preconditions:
+  - Есть повторяемые запросы в нескольких сегментах
+  - Есть техническая возможность автоматизировать ядро
+  expected_result: Создан платформенный актив с onboarding без участия фаундера
+  typical_duration_weeks: 12
+- id: br.de_muc.salary_service.14
+  from:
+    cell_id: H2
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: I2
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Стабильный доход -> франшизируемый сервис
+  preconditions:
+  - Есть стандарт операционной модели
+  - Есть пакет обучения для исполнителей
+  expected_result: Сервис описан как франшизируемый формат
+  typical_duration_weeks: 10
+- id: br.de_muc.service_product.14
+  from:
+    cell_id: I2
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: J2
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Франшизируемый сервис -> бренд-актив
+  preconditions:
+  - Есть единый брендбук и стандарты качества
+  - Есть юридическая модель лицензирования
+  expected_result: Бренд-актив приносит отдельный лицензионный поток
+  typical_duration_weeks: 12
+- id: br.de_muc.salary_service.15
+  from:
+    cell_id: J1
+    taxonomy_id: labor
+    income_mode: salary
+  to:
+    cell_id: K1
+    taxonomy_id: service_fee
+    income_mode: service
+  title: Зарплатная экспертиза -> нишевая практика
+  preconditions:
+  - Есть подтверждённые результаты в узкой теме
+  - Есть партнёрский канал привлечения
+  expected_result: Нишевая практика генерирует предсказуемый pipeline
+  typical_duration_weeks: 7
+- id: br.de_muc.service_product.15
+  from:
+    cell_id: K1
+    taxonomy_id: service_fee
+    income_mode: service
+  to:
+    cell_id: L1
+    taxonomy_id: product_sale
+    income_mode: asset
+  title: Нишевый сервис -> библиотека активов
+  preconditions:
+  - Есть каталог шаблонов и методик
+  - Есть запрос на самостоятельное внедрение клиентов
+  expected_result: Библиотека активов продаётся отдельно от услуг
+  typical_duration_weeks: 9
