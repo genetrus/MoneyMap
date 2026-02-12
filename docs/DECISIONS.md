@@ -303,3 +303,63 @@
 - Consequences: Seed dataset now carries explicit economics provenance and disclaimer metadata for downstream UI/export checks; exact field names are currently a project-level assumption and may need future harmonization with formal DTO contracts.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-7, p.9-10, p.14; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
 - Owner: team
+
+## 2026-02-12 — Guided + Explorer dual-mode scope and per-screen DoD contract
+- Date: 2026-02-12
+- Title: Fix Stage 17 scope for Guided/Explorer UI modes and unified per-screen DoD
+- Context: We started Guided UX implementation and needed a stable contract that does not alter MVP boundaries or invent new product requirements.
+- Decision: Document a dual-mode UI model (Guided/Explorer) in one interface, define a mandatory five-block DoD template per core screen (goal, hints, CTA, empty state, next-step), and standardize minimal state entities (`data_valid`, `profile_status`, `selected_variant_id`, `plan_ready`, `exports_ready`) for workflow gating.
+- Alternatives: (1) Implement page-by-page UI changes without a shared contract. (2) Expand behavior scope before formalizing readiness gates.
+- Consequences: Subsequent stages can implement guidance components incrementally against one acceptance baseline; workflow gating remains testable and reproducible.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.5-8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
+
+## 2026-02-12 — Guidance state contract in Streamlit session and single next-step runtime
+- Date: 2026-02-12
+- Title: Introduce `guide_state` session contract with Guided/Explorer selector and deterministic next-step
+- Context: Stage 17 step 2 requires a unified guidance state layer and explicit mode selector while preserving current MVP flow.
+- Decision: Added `guide_state` in session defaults with keys `enabled`, `current_step_id`, `completed_steps`, `skipped_steps`, `dismissed_tooltips`; added sidebar mode selector (`Вести меня` / `Я сам`) that controls `guide_state.enabled`; implemented runtime evaluator that derives core entities (`data_valid`, `profile_status`, `selected_variant_id`, `plan_ready`, `exports_ready`) and guarantees exactly one current next-step in Guided mode.
+- Alternatives: (1) Keep ad-hoc page-local flags without a shared guidance object. (2) Compute next-step independently on each page. (3) Store mode in a separate key outside guide state.
+- Consequences: Guidance flow is deterministic and testable; Explorer mode can suppress guided CTA while preserving shared state; future guide panel work can reuse one canonical contract.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
+
+## 2026-02-12 — Centralized RU UI copy dictionary for guidance-related texts
+- Date: 2026-02-12
+- Title: Move guidance/page-status component strings to centralized RU copy layer
+- Context: Stage 17 step 3 requires removing scattered inline UI text and preparing RU keys with i18n-ready structure.
+- Decision: Added `data/ui_copy/ru.yaml` as centralized copy source and `src/money_map/ui/copy.py` loader (`copy_text`) with key-based access and formatting; replaced selected hardcoded strings in app shell and shared components (mode selector, guided next-step banner/CTA, profile/recommendations/plan/export not-ready messages, context/drawer/graph-fallback texts).
+- Alternatives: (1) Keep hardcoded strings in each component. (2) Centralize in Python constants only without external locale file. (3) Defer i18n keys until later stages.
+- Consequences: Text updates are decoupled from component logic, RU baseline is explicit, and future locale expansion can add new YAML files with same keys.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
+
+## 2026-02-12 — Next-Step Engine with onboarding YAML, blockers, and primary action contract
+- Date: 2026-02-12
+- Title: Implement YAML-driven Next-Step Engine for Guided mode
+- Context: Stage 17 step 4 requires loading onboarding steps from config and computing current step, blockers, and primary action with deterministic gating.
+- Decision: Added `data/ui_guides/onboarding_ru.yaml` as source for step contracts (`prerequisites`, `completion`, `primary_action`, `blockers_resolver`) and updated `ui/guidance.py` to evaluate predicates against runtime entities (`data_valid`, `profile_status`, `selected_variant_id`, `plan_ready`, `exports_ready`). Runtime now returns one `current_step`, `blockers`, `primary_action`, and `blockers_resolver`; app shell disables primary CTA when blockers exist and offers resolver navigation (`focus_page`, `highlight_fields`).
+- Alternatives: (1) Keep hardcoded Python steps only. (2) Evaluate only completion without prerequisite blockers. (3) Avoid resolver metadata and rely on generic error text.
+- Consequences: Guided progression is configurable and testable; blockers are explicit and actionable; future onboarding variants can be added via YAML without UI code rewrites.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
+
+## 2026-02-12 — Global shell components: interactive ContextBar + GuidePanel + linked DetailDrawer
+- Date: 2026-02-12
+- Title: Add global guidance shell components and context click-through behavior
+- Context: Stage 17 step 5 requires global frame components that keep user context visible, provide one guided next action, and connect context badges to actionable navigation.
+- Decision: Kept ContextBar always rendered near top, added clickable context badges (`Staleness`, `Profile`, `Selected`) with explicit effect tooltips, integrated `GuidePanel` in a side column when Guided mode is enabled, and always render `DetailDrawer` (auto-expanded when opened from ContextBar). Wired context actions to target pages/drawer via session state (`page`, `open_detail_drawer`). Added effect/help text for key actions (context badges, guide panel primary action, drawer cross-links).
+- Alternatives: (1) Keep passive non-clickable context bar. (2) Keep guided CTA inline in app without panel component. (3) Render drawer only on specific pages.
+- Consequences: Global navigation intent is explicit, guided next-step is visible in a dedicated shell area, and context selection is reachable from any page.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
+
+## 2026-02-12 — GuidePanel adaptive placement and global context actions contract
+- Date: 2026-02-12
+- Title: Make global guide shell adaptive (right/top) and explicit action-effects
+- Context: Stage 17 step 5 requires ContextBar always visible, GuidePanel right/top adaptive, context badge click-through, and clear "what happens next" hints.
+- Decision: Added GuidePanel layout selector (`Auto`, `Right panel`, `Top panel`) with `Auto` heuristic (top for `data-status`/`profile`, right otherwise), preserved always-on ContextBar, and linked context actions (`Staleness`, `Profile`, `Selected`) to page navigation/drawer opening via session state. Added effect/help texts for context actions and key guide/drawer actions.
+- Alternatives: (1) Fixed right-only guide layout. (2) Fixed top-only guide layout. (3) Keep context badges informational only.
+- Consequences: Guided shell remains usable across wide and constrained layouts while preserving deterministic next-step behavior and actionable context navigation.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team

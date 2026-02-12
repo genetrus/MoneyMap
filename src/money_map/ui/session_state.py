@@ -49,6 +49,20 @@ SESSION_DEFAULTS: dict[str, Any] = {
     "plan": None,
     "export_paths": None,
     "dataset_signature": "",
+    "guide_state": {
+        "enabled": True,
+        "current_step_id": "step_data_status",
+        "completed_steps": [],
+        "skipped_steps": [],
+        "dismissed_tooltips": [],
+    },
+    "guide_entities": {
+        "data_valid": False,
+        "profile_status": "missing",
+        "selected_variant_id": None,
+        "plan_ready": False,
+        "exports_ready": False,
+    },
 }
 
 RESET_ON_DATASET_CHANGE = [
@@ -70,6 +84,7 @@ RESET_ON_DATASET_CHANGE = [
     "recommend_diagnostics",
     "plan",
     "export_paths",
+    "guide_entities",
 ]
 
 

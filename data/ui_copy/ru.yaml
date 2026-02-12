@@ -1,0 +1,63 @@
+app:
+  mode_label: Режим работы
+  mode_guided: Вести меня
+  mode_explorer: Я сам
+  guide_layout_label: Guide layout
+  guide_layout_auto: Auto
+  guide_layout_right: Right panel
+  guide_layout_top: Top panel
+guided:
+  next_step_banner: 'Guided mode: следующий шаг — {title} ({page}).'
+  next_step_cta: Continue → {page}
+  blocked_title: 'Шаг заблокирован:'
+  resolve_cta: Показать где исправить
+pages:
+  profile:
+    preview_locked: Заполните обязательные поля профиля, чтобы открыть live preview.
+    missing_required_prefix: 'Не заполнены обязательные поля: '
+  recommendations:
+    not_ready: Профиль не готов для рекомендаций.
+  plan:
+    not_ready: План пока недоступен.
+    need_variant_reason: Сначала выберите вариант в Recommendations.
+  export:
+    not_ready: Экспорт пока недоступен.
+    need_variant_reason: Сначала выберите вариант в Recommendations.
+    need_plan_reason: Сначала соберите план на экране Plan.
+components:
+  context_bar:
+    no_pinned_selection: Нет закреплённого выбора
+    context_prefix: Контекст
+    staleness_badge: Staleness
+    profile_badge: Profile
+    selected_badge: Selected
+    staleness_effect: Откроет Data status и объяснит риск устаревания данных.
+    profile_effect: Откроет Profile и покажет, что нужно заполнить.
+    selected_effect: Откроет Detail Drawer с выбранной сущностью и быстрыми действиями.
+  detail_drawer:
+    title: Detail Drawer
+    no_entity_selected: Пока ничего не выбрано. Выберите Cell/Taxonomy/Variant/Bridge/Path,
+      чтобы закрепить контекст.
+    pinned_selection: Закреплённый выбор
+    cross_links: Переходы
+    open_explore: Открыть в Explore
+    filter_recommendations: Фильтр в Recommendations
+    build_plan: Собрать план
+    open_explore_effect: Откроет Explore для текущей сущности.
+    filter_recommendations_effect: Перейдёт в Recommendations и применит контекст
+      как фильтр.
+    build_plan_effect: Сохранит выбор и откроет Plan.
+  graph_fallback:
+    interactive_unavailable: Interactive режим недоступен, включён fallback.
+    render_failed: Graphviz не отрисовался, показан fallback в виде таблицы.
+    expander_title: 'Graph fallback: list/table'
+    nodes_title: Nodes
+    edges_title: Edges
+    select_node: Выбрать node
+    select_edge: Выбрать edge
+    none: none
+guide_panel:
+  title: Guide Panel
+  do_now: Сделай сейчас
+  primary_effect: Перейдёт к следующему шагу. Если есть блокеры — сначала устрани
+    их.

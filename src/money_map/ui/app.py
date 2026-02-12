@@ -30,11 +30,14 @@ from money_map.storage.fs import read_yaml
 from money_map.ui.components import (
     render_badge_set,
     render_context_bar,
+    render_detail_drawer,
     render_graph_fallback,
+    render_guide_panel,
     render_header_bar,
     render_kpi_grid,
     selected_ids_from_state,
 )
+from money_map.ui.copy import copy_text
 from money_map.ui.data_status import (
     aggregate_pack_metrics,
     build_validate_rows,
@@ -44,6 +47,7 @@ from money_map.ui.data_status import (
     variants_by_cell,
     variants_by_legal_gate,
 )
+from money_map.ui.guidance import compute_guidance_runtime, initialize_guide_state
 from money_map.ui.jobs_live import create_variant_draft, resolve_jobs_source
 from money_map.ui.navigation import (
     NAV_ITEMS,
@@ -217,6 +221,7 @@ def _init_state() -> None:
     st.session_state.setdefault("classify_prefilter", {})
     st.session_state.setdefault("jobs_variant_drafts", [])
     st.session_state.setdefault("jobs_last_source", {})
+    initialize_guide_state(st.session_state)
     st.session_state["filters_hash"] = compute_filters_hash(st.session_state["filters"])
 
 
@@ -606,6 +611,32 @@ def run_app() -> None:
             st.experimental_set_query_params(page=page_slug)
     render_view_mode_control("sidebar")
 
+    guide_state = initialize_guide_state(st.session_state)
+    mode_options = [
+        copy_text("app.mode_guided", "Вести меня"),
+        copy_text("app.mode_explorer", "Я сам"),
+    ]
+    default_mode = mode_options[0] if guide_state.get("enabled", True) else mode_options[1]
+    selected_mode = st.sidebar.radio(
+        copy_text("app.mode_label", "Режим работы"),
+        mode_options,
+        index=mode_options.index(default_mode),
+        key="guide_mode_selector",
+    )
+    guide_state["enabled"] = selected_mode == mode_options[0]
+
+    if guide_state["enabled"]:
+        guide_layout_options = [
+            copy_text("app.guide_layout_auto", "Auto"),
+            copy_text("app.guide_layout_right", "Right panel"),
+            copy_text("app.guide_layout_top", "Top panel"),
+        ]
+        st.sidebar.selectbox(
+            copy_text("app.guide_layout_label", "Guide layout"),
+            guide_layout_options,
+            key="guide_panel_layout",
+        )
+
     report = _get_validation()
     st.session_state["validate_report"] = report
     sync_dataset_meta(
@@ -615,6 +646,10 @@ def run_app() -> None:
         reviewed_at=report.get("reviewed_at", ""),
         staleness_level=report.get("status", "WARN"),
         country="DE",
+    )
+    guidance_runtime = compute_guidance_runtime(
+        st.session_state,
+        validate_report=report,
     )
     render_header_bar(
         country=st.session_state.get("rulepack_country", "DE"),
@@ -631,6 +666,51 @@ def run_app() -> None:
         or (st.session_state.get("explore_tab") if page_slug == "explore" else None),
         selected_ids=selected_ids_from_state(st.session_state),
     )
+
+    selected_ids = selected_ids_from_state(st.session_state)
+    if guidance_runtime["is_guided"]:
+        current_step = guidance_runtime["current_step"]
+        primary_action = guidance_runtime["primary_action"]
+        next_page = NAV_LABEL_BY_SLUG.get(primary_action["target_page"], primary_action["target_page"])
+        st.info(
+            copy_text(
+                "guided.next_step_banner",
+                "Guided mode: следующий шаг — {title} ({page}).",
+                title=str(current_step.get("title") or "Следующий шаг"),
+                page=next_page,
+            )
+        )
+
+        layout_label = st.session_state.get("guide_panel_layout", copy_text("app.guide_layout_auto", "Auto"))
+        use_top_layout = layout_label == copy_text("app.guide_layout_top", "Top panel")
+        use_right_layout = layout_label == copy_text("app.guide_layout_right", "Right panel")
+        if not use_top_layout and not use_right_layout:
+            use_top_layout = page_slug in {"data-status", "profile"}
+            use_right_layout = not use_top_layout
+
+        if use_right_layout:
+            guide_col, drawer_col = st.columns([0.68, 0.32])
+            with guide_col:
+                render_guide_panel(runtime=guidance_runtime, current_page_slug=page_slug)
+            with drawer_col:
+                render_detail_drawer(
+                    selected_ids,
+                    page_slug=page_slug,
+                    expanded=bool(st.session_state.pop("open_detail_drawer", False)),
+                )
+        else:
+            render_guide_panel(runtime=guidance_runtime, current_page_slug=page_slug)
+            render_detail_drawer(
+                selected_ids,
+                page_slug=page_slug,
+                expanded=bool(st.session_state.pop("open_detail_drawer", False)),
+            )
+    else:
+        render_detail_drawer(
+            selected_ids,
+            page_slug=page_slug,
+            expanded=bool(st.session_state.pop("open_detail_drawer", False)),
+        )
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
         header_left, header_right = st.columns([0.78, 0.22])
@@ -1041,10 +1121,13 @@ def run_app() -> None:
                         preview = _profile_preview_snapshot(profile)
                     _render_profile_preview(preview)
                 else:
-                    st.info("Complete required profile fields to unlock live preview.")
+                    st.info(copy_text("pages.profile.preview_locked", "Complete required profile fields to unlock live preview."))
 
                 if profile_validation["missing"]:
-                    st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
+                    st.info(
+                        copy_text("pages.profile.missing_required_prefix", "Missing required fields: ")
+                        + ", ".join(profile_validation["missing"])
+                    )
                 for warning in profile_validation["warnings"]:
                     st.warning(warning)
 
@@ -1617,7 +1700,10 @@ def run_app() -> None:
                 )
                 _render_status(
                     "not_ready",
-                    "Profile is not ready for recommendations.",
+                    copy_text(
+                        "pages.recommendations.not_ready",
+                        "Profile is not ready for recommendations.",
+                    ),
                     reasons=reasons,
                     level="warning",
                 )
@@ -1880,8 +1966,13 @@ def run_app() -> None:
             if not variant_id:
                 _render_status(
                     "no_selection",
-                    "Plan is not ready.",
-                    reasons=["Select a variant in Recommendations."],
+                    copy_text("pages.plan.not_ready", "Plan is not ready."),
+                    reasons=[
+                        copy_text(
+                            "pages.plan.need_variant_reason",
+                            "Select a variant in Recommendations.",
+                        )
+                    ],
                     level="warning",
                 )
                 return
@@ -1998,11 +2089,24 @@ def run_app() -> None:
             if not variant_id or plan is None:
                 reasons = []
                 if not variant_id:
-                    reasons.append("Select a variant in Recommendations.")
+                    reasons.append(
+                        copy_text(
+                            "pages.export.need_variant_reason",
+                            "Select a variant in Recommendations.",
+                        )
+                    )
                 if plan is None:
-                    reasons.append("Generate a plan in the Plan screen.")
+                    reasons.append(
+                        copy_text(
+                            "pages.export.need_plan_reason",
+                            "Generate a plan in the Plan screen.",
+                        )
+                    )
                 _render_status(
-                    "not_ready", "Export is not ready.", reasons=reasons, level="warning"
+                    "not_ready",
+                    copy_text("pages.export.not_ready", "Export is not ready."),
+                    reasons=reasons,
+                    level="warning",
                 )
                 return
 
