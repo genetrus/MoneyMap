@@ -765,7 +765,9 @@ def run_app() -> None:
                     st.info("No validate rows for selected filters.")
 
                 metric_cols = st.columns(4)
-                metric_cols[0].metric("Variants per cell", str(len(pack_metrics["variants_per_cell"])))
+                metric_cols[0].metric(
+                    "Variants per cell", str(len(pack_metrics["variants_per_cell"]))
+                )
                 metric_cols[1].metric("Bridges", str(pack_metrics["bridges_total"]))
                 metric_cols[2].metric("Routes", str(pack_metrics["routes_total"]))
                 metric_cols[3].metric("Rule checks", str(pack_metrics["rule_checks_total"]))
@@ -797,9 +799,7 @@ def run_app() -> None:
                     )
                 with c4:
                     st.markdown("**Freshness (pack files)**")
-                    st.caption(
-                        f"Oldest reviewed_at: {pack_metrics['oldest_reviewed_at'] or 'n/a'}"
-                    )
+                    st.caption(f"Oldest reviewed_at: {pack_metrics['oldest_reviewed_at'] or 'n/a'}")
                     st.table(pack_metrics["freshness"])
 
                 with st.expander("Coverage & freshness"):

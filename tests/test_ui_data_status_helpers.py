@@ -1,9 +1,8 @@
+from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 
 import yaml
-
-from dataclasses import dataclass
-from pathlib import Path
 
 from money_map.ui.data_status import (
     aggregate_pack_metrics,
@@ -108,7 +107,10 @@ def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
     assert metrics["bridges_total"] == 1
     assert metrics["routes_total"] == 2
     assert metrics["rule_checks_total"] == 2
-    assert metrics["variants_per_cell"] == [{"label": "A1", "count": 2}, {"label": "B2", "count": 1}]
+    assert metrics["variants_per_cell"] == [
+        {"label": "A1", "count": 2},
+        {"label": "B2", "count": 1},
+    ]
     assert metrics["oldest_reviewed_at"] == "2025-01-01"
     assert metrics["is_stale"] is True
     assert set(metrics["stale_sources"]) == {"meta.yaml", "rulepack.yaml"}

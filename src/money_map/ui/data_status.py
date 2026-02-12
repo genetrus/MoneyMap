@@ -156,7 +156,9 @@ def aggregate_pack_metrics(
             )
             continue
 
-        oldest_reviewed_at = reviewed if oldest_reviewed_at is None else min(oldest_reviewed_at, reviewed)
+        oldest_reviewed_at = (
+            reviewed if oldest_reviewed_at is None else min(oldest_reviewed_at, reviewed)
+        )
         age_days = max(0, (now_date - reviewed).days)
         freshness_rows.append(
             {
