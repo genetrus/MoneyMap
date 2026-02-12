@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Callable
+
+from money_map.storage.fs import read_mapping
 
 
 def data_status_visibility(view_mode: str) -> dict[str, bool]:
@@ -103,3 +107,77 @@ def oldest_stale_entities(
 
     rows.sort(key=lambda item: int(item["age_days"]), reverse=True)
     return rows[:limit]
+
+
+def _parse_iso_date(raw: str | None) -> date | None:
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(str(raw))
+    except ValueError:
+        return None
+
+
+def aggregate_pack_metrics(
+    *,
+    pack_dir: str | Path,
+    staleness_policy_days: int,
+    now: date | None = None,
+) -> dict[str, Any]:
+    pack_dir = Path(pack_dir)
+    now_date = now or datetime.utcnow().date()
+
+    variants_payload = read_mapping(pack_dir / "variants.seed.yaml")
+    bridges_payload = read_mapping(pack_dir / "bridges.seed.yaml")
+    routes_payload = read_mapping(pack_dir / "routes.seed.yaml")
+    rulepack_payload = read_mapping(pack_dir / "rulepack.yaml")
+    meta_payload = read_mapping(pack_dir / "meta.yaml")
+
+    variants = variants_payload.get("variants", [])
+    variants_per_cell = Counter(str(item.get("cell_id", "unknown")) for item in variants)
+
+    reviewed_sources = {
+        "meta.yaml": str(meta_payload.get("reviewed_at", "") or ""),
+        "rulepack.yaml": str(rulepack_payload.get("reviewed_at", "") or ""),
+    }
+
+    freshness_rows: list[dict[str, str | int | bool]] = []
+    oldest_reviewed_at: date | None = None
+    for source, raw_reviewed_at in reviewed_sources.items():
+        reviewed = _parse_iso_date(raw_reviewed_at)
+        if reviewed is None:
+            freshness_rows.append(
+                {
+                    "source": source,
+                    "reviewed_at": raw_reviewed_at,
+                    "age_days": -1,
+                    "is_stale": True,
+                }
+            )
+            continue
+
+        oldest_reviewed_at = reviewed if oldest_reviewed_at is None else min(oldest_reviewed_at, reviewed)
+        age_days = max(0, (now_date - reviewed).days)
+        freshness_rows.append(
+            {
+                "source": source,
+                "reviewed_at": reviewed.isoformat(),
+                "age_days": age_days,
+                "is_stale": age_days > staleness_policy_days,
+            }
+        )
+
+    stale_sources = [str(row["source"]) for row in freshness_rows if bool(row["is_stale"])]
+    return {
+        "variants_total": len(variants),
+        "variants_per_cell": [
+            {"label": label, "count": count} for label, count in sorted(variants_per_cell.items())
+        ],
+        "bridges_total": len(bridges_payload.get("bridges", [])),
+        "routes_total": len(routes_payload.get("routes", [])),
+        "rule_checks_total": len(rulepack_payload.get("rules", [])),
+        "oldest_reviewed_at": oldest_reviewed_at.isoformat() if oldest_reviewed_at else "",
+        "freshness": freshness_rows,
+        "is_stale": bool(stale_sources),
+        "stale_sources": stale_sources,
+    }

@@ -1,6 +1,12 @@
+from datetime import date
+
+import yaml
+
 from dataclasses import dataclass
+from pathlib import Path
 
 from money_map.ui.data_status import (
+    aggregate_pack_metrics,
     build_validate_rows,
     filter_validate_rows,
     oldest_stale_entities,
@@ -50,3 +56,59 @@ def test_oldest_stale_entities_returns_top_sorted() -> None:
 
     rows = oldest_stale_entities(variant_staleness, limit=2)
     assert [row["variant_id"] for row in rows] == ["v3", "v1"]
+
+
+def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
+    pack = tmp_path / "de_muc"
+    pack.mkdir(parents=True)
+
+    (pack / "meta.yaml").write_text(
+        yaml.safe_dump({"reviewed_at": "2025-01-01"}, sort_keys=False),
+        encoding="utf-8",
+    )
+    (pack / "rulepack.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "reviewed_at": "2025-02-01",
+                "rules": [{"rule_id": "r1"}, {"rule_id": "r2"}],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack / "variants.seed.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "variants": [
+                    {"id": "v1", "cell_id": "A1"},
+                    {"id": "v2", "cell_id": "A1"},
+                    {"id": "v3", "cell_id": "B2"},
+                ]
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack / "bridges.seed.yaml").write_text(
+        yaml.safe_dump({"bridges": [{"id": "b1"}]}, sort_keys=False),
+        encoding="utf-8",
+    )
+    (pack / "routes.seed.yaml").write_text(
+        yaml.safe_dump({"routes": [{"id": "rt1"}, {"id": "rt2"}]}, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    metrics = aggregate_pack_metrics(
+        pack_dir=pack,
+        staleness_policy_days=180,
+        now=date(2026, 2, 12),
+    )
+
+    assert metrics["variants_total"] == 3
+    assert metrics["bridges_total"] == 1
+    assert metrics["routes_total"] == 2
+    assert metrics["rule_checks_total"] == 2
+    assert metrics["variants_per_cell"] == [{"label": "A1", "count": 2}, {"label": "B2", "count": 1}]
+    assert metrics["oldest_reviewed_at"] == "2025-01-01"
+    assert metrics["is_stale"] is True
+    assert set(metrics["stale_sources"]) == {"meta.yaml", "rulepack.yaml"}

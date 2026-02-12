@@ -36,6 +36,7 @@ from money_map.ui.components import (
     selected_ids_from_state,
 )
 from money_map.ui.data_status import (
+    aggregate_pack_metrics,
     build_validate_rows,
     data_status_visibility,
     filter_validate_rows,
@@ -668,6 +669,10 @@ def run_app() -> None:
             with st.spinner("Loading validation snapshot..."):
                 report = _get_validation()
                 app_data = _get_app_data()
+                pack_metrics = aggregate_pack_metrics(
+                    pack_dir=Path("data/packs/de_muc"),
+                    staleness_policy_days=int(report["staleness_policy_days"]),
+                )
             warns_count = len(report["warns"])
             fatals_count = len(report["fatals"])
             warn_summary = _issue_summary(report["warns"])
@@ -759,17 +764,43 @@ def run_app() -> None:
                 else:
                     st.info("No validate rows for selected filters.")
 
+                metric_cols = st.columns(4)
+                metric_cols[0].metric("Variants per cell", str(len(pack_metrics["variants_per_cell"])))
+                metric_cols[1].metric("Bridges", str(pack_metrics["bridges_total"]))
+                metric_cols[2].metric("Routes", str(pack_metrics["routes_total"]))
+                metric_cols[3].metric("Rule checks", str(pack_metrics["rule_checks_total"]))
+
+                if pack_metrics["is_stale"]:
+                    st.warning(
+                        "Pack freshness warning: stale sources detected ("
+                        + ", ".join(pack_metrics["stale_sources"])
+                        + "). Interface remains available with cautious mode."
+                    )
+
                 c1, c2 = st.columns(2)
                 with c1:
                     _render_distribution_chart(
-                        "Variants by cell",
+                        "Variants by cell (core)",
                         variants_by_cell(app_data.variants, cell_resolver=_variant_cell),
                     )
                 with c2:
                     _render_distribution_chart(
+                        "Variants by cell (pack)",
+                        pack_metrics["variants_per_cell"],
+                    )
+
+                c3, c4 = st.columns(2)
+                with c3:
+                    _render_distribution_chart(
                         "Variants by legal gate",
                         variants_by_legal_gate(app_data.variants),
                     )
+                with c4:
+                    st.markdown("**Freshness (pack files)**")
+                    st.caption(
+                        f"Oldest reviewed_at: {pack_metrics['oldest_reviewed_at'] or 'n/a'}"
+                    )
+                    st.table(pack_metrics["freshness"])
 
                 with st.expander("Coverage & freshness"):
                     stale_top = oldest_stale_entities(report["staleness"]["variants"], limit=10)
