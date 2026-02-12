@@ -8,7 +8,6 @@ import datetime as dt
 import json
 from pathlib import Path
 from typing import Any
-
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -194,7 +193,9 @@ def main() -> None:
         merged = _dedupe_jobs([*existing, *incoming])
         _write_jsonl(target_path, merged)
         print(
-            f"Updated {target_path}: existing={len(existing)}, incoming={len(incoming)}, total={len(merged)}"
+            "Updated "
+            f"{target_path}: existing={len(existing)}, "
+            f"incoming={len(incoming)}, total={len(merged)}"
         )
         return
 
