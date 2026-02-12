@@ -58,7 +58,9 @@ def _extract_jobs(payload: Any) -> list[dict[str, Any]]:
     return []
 
 
-def fetch_live_jobs(*, city: str, radius_km: int, days: int, size: int, profile: str) -> list[dict[str, Any]]:
+def fetch_live_jobs(
+    *, city: str, radius_km: int, days: int, size: int, profile: str
+) -> list[dict[str, Any]]:
     params = {
         "was": profile,
         "wo": city,
@@ -107,7 +109,9 @@ def seed_slice(size: int) -> list[dict[str, Any]]:
     return compact
 
 
-def resolve_jobs_source(*, city: str, radius_km: int, days: int, size: int, profile: str) -> tuple[list[dict[str, Any]], dict[str, str]]:
+def resolve_jobs_source(
+    *, city: str, radius_km: int, days: int, size: int, profile: str
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
     try:
         live_rows = fetch_live_jobs(
             city=city,
@@ -117,7 +121,11 @@ def resolve_jobs_source(*, city: str, radius_km: int, days: int, size: int, prof
             profile=profile,
         )
         if live_rows:
-            return live_rows, {"source": "live", "snapshot": "", "fetched_at": datetime.now(timezone.utc).isoformat()}
+            return live_rows, {
+                "source": "live",
+                "snapshot": "",
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+            }
     except Exception:
         pass
 
@@ -143,7 +151,9 @@ def _contains_any(value: str, needles: list[str]) -> bool:
 
 def map_job_to_occupation(job: dict[str, Any]) -> dict[str, Any]:
     occupation_map = read_yaml(OCCUPATION_MAP_PATH)
-    maps = sorted(occupation_map.get("maps", []), key=lambda x: int(x.get("priority", 0)), reverse=True)
+    maps = sorted(
+        occupation_map.get("maps", []), key=lambda x: int(x.get("priority", 0)), reverse=True
+    )
 
     title = str(job.get("title", ""))
     for item in maps:
@@ -157,7 +167,10 @@ def map_job_to_occupation(job: dict[str, Any]) -> dict[str, Any]:
             assign = item.get("assign", {})
             return {"map_id": item.get("id", ""), "assign": assign}
 
-    return {"map_id": "", "assign": {"cell_id": "A1", "taxonomy_id": "service_fee", "tags": ["needs_manual_review"]}}
+    return {
+        "map_id": "",
+        "assign": {"cell_id": "A1", "taxonomy_id": "service_fee", "tags": ["needs_manual_review"]},
+    }
 
 
 def create_variant_draft(job: dict[str, Any]) -> dict[str, Any]:

@@ -1034,20 +1034,30 @@ def run_app() -> None:
         def _render_jobs_live() -> None:
             profile = st.session_state.get("profile", {})
             default_city = str(profile.get("location", "Munich") or "Munich")
-            default_profile_query = ", ".join(profile.get("skills", [])) if isinstance(profile.get("skills"), list) else ""
+            default_profile_query = (
+                ", ".join(profile.get("skills", []))
+                if isinstance(profile.get("skills"), list)
+                else ""
+            )
             default_profile_query = default_profile_query or str(profile.get("objective", ""))
 
             c1, c2, c3, c4, c5 = st.columns(5)
             with c1:
                 city = st.text_input("Город", value=default_city, key="jobs_city")
             with c2:
-                radius_km = st.number_input("Радиус (км)", min_value=1, max_value=200, value=25, key="jobs_radius")
+                radius_km = st.number_input(
+                    "Радиус (км)", min_value=1, max_value=200, value=25, key="jobs_radius"
+                )
             with c3:
                 days = st.number_input("Дни", min_value=1, max_value=30, value=7, key="jobs_days")
             with c4:
-                size = st.number_input("Размер выдачи", min_value=1, max_value=100, value=20, key="jobs_size")
+                size = st.number_input(
+                    "Размер выдачи", min_value=1, max_value=100, value=20, key="jobs_size"
+                )
             with c5:
-                profile_query = st.text_input("Профиль", value=default_profile_query, key="jobs_profile")
+                profile_query = st.text_input(
+                    "Профиль", value=default_profile_query, key="jobs_profile"
+                )
 
             rows, source_meta = resolve_jobs_source(
                 city=city,
@@ -1087,7 +1097,9 @@ def run_app() -> None:
                     f"{row.get('title', '')} · {row.get('company', '')} · {row.get('city', '')}": idx
                     for idx, row in enumerate(rows)
                 }
-                selected_label = st.selectbox("Vacancy", list(options.keys()), key="jobs_selected_row")
+                selected_label = st.selectbox(
+                    "Vacancy", list(options.keys()), key="jobs_selected_row"
+                )
                 selected_row = rows[options[selected_label]]
                 if st.button("Create Variant Draft", key="jobs_create_variant_draft"):
                     draft = create_variant_draft(selected_row)
