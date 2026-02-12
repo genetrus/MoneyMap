@@ -43,12 +43,12 @@ from money_map.ui.data_status import (
     variants_by_cell,
     variants_by_legal_gate,
 )
+from money_map.ui.jobs_live import create_variant_draft, resolve_jobs_source
 from money_map.ui.navigation import (
     NAV_ITEMS,
     NAV_LABEL_BY_SLUG,
     resolve_page_from_query,
 )
-from money_map.ui.jobs_live import create_variant_draft, resolve_jobs_source
 from money_map.ui.session_state import (
     DEFAULT_FILTERS,
     compute_filters_hash,
@@ -1094,7 +1094,13 @@ def run_app() -> None:
             st.markdown("### Create Variant Draft")
             if rows:
                 options = {
-                    f"{row.get('title', '')} · {row.get('company', '')} · {row.get('city', '')}": idx
+                    " · ".join(
+                        [
+                            str(row.get("title", "")),
+                            str(row.get("company", "")),
+                            str(row.get("city", "")),
+                        ]
+                    ): idx
                     for idx, row in enumerate(rows)
                 }
                 selected_label = st.selectbox(
