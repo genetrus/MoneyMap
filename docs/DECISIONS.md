@@ -253,3 +253,13 @@
 - Consequences: Regional data pack now has actionable compliance scaffolding with explicit provenance fields and gate severities aligned to startup decision flow; downstream systems can expand/validate these rules incrementally.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.1-2
 - Owner: team
+
+## 2026-02-12 — Populate de_muc occupation_map with field-based matching and fallback routing
+- Date: 2026-02-12
+- Title: Add deterministic `beruf`/`branche`/`branchengruppe` mapping rules plus safe fallbacks
+- Context: `data/packs/de_muc/occupation_map.yaml` was empty (`maps: []`), so vacancy records could not be mapped to matrix/taxonomy classes and unknown profiles had no explicit neutral route for manual enrichment.
+- Decision: Add a prioritized set of occupation rules that match common Munich vacancy signals (`beruf`, `branche`, `branchengruppe`, and keywords) and assign `cell_id`, `taxonomy_id`, and tags. Add explicit fallback rules (`branche_present`, `branchengruppe_present`, `always`) to keep unmatched vacancies in a neutral bucket tagged for manual review.
+- Alternatives: (1) Keep the map empty and rely on ad-hoc manual triage. (2) Add only strict profession rules without a catch-all fallback.
+- Consequences: Vacancy intake remains deterministic and complete (no dropped unknowns), with low-confidence records explicitly labeled for curator follow-up.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.1-2
+- Owner: team
