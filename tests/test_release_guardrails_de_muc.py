@@ -11,7 +11,6 @@ from money_map.storage.fs import read_yaml
 from money_map.ui.jobs_live import fetch_live_jobs, resolve_jobs_source
 from money_map.ui.variant_card import has_income_promise
 
-
 DEFAULT_PROFILE = {
     "name": "Demo",
     "country": "DE",
