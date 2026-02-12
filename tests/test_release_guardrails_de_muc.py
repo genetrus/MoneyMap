@@ -51,7 +51,6 @@ def test_ui_seed_flows_have_non_empty_defaults(monkeypatch) -> None:
     assert meta["source"] in {"cache", "seed"}
 
 
-
 def test_each_matrix_cell_has_10_to_12_variants() -> None:
     payload = read_yaml("data/packs/de_muc/variants.seed.yaml")
     variants = payload.get("variants", [])
@@ -59,7 +58,6 @@ def test_each_matrix_cell_has_10_to_12_variants() -> None:
 
     assert counts, "variants.seed should contain matrix cells"
     assert all(10 <= count <= 12 for count in counts.values())
-
 
 
 def test_rulepack_contains_core_munich_de_by_checks() -> None:
@@ -81,7 +79,6 @@ def test_rulepack_contains_core_munich_de_by_checks() -> None:
     assert munich_rules
 
 
-
 def test_jobs_live_returns_munich_results_when_api_available() -> None:
     try:
         rows = fetch_live_jobs(city="München", radius_km=15, days=7, size=5, profile="service")
@@ -93,7 +90,6 @@ def test_jobs_live_returns_munich_results_when_api_available() -> None:
 
     assert len(rows) >= 1
     assert all("title" in row for row in rows)
-
 
 
 def test_economics_blocks_use_ranges_and_safe_disclaimer_only() -> None:
