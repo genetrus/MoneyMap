@@ -115,8 +115,10 @@ def render_context_bar(*, page: str, subview: str | None, selected_ids: dict[str
         crumbs.append(subview)
 
     focus = [f"{k}: {v}" for k, v in selected_ids.items() if v]
-    focus_text = " · ".join(focus) if focus else copy_text(
-        "components.context_bar.no_pinned_selection", "No pinned selection"
+    focus_text = (
+        " · ".join(focus)
+        if focus
+        else copy_text("components.context_bar.no_pinned_selection", "No pinned selection")
     )
     context_prefix = copy_text("components.context_bar.context_prefix", "Context")
     st.markdown(
@@ -225,7 +227,9 @@ def render_detail_drawer(
     ):
         has_selection = any(selected_ids.values())
         if not has_selection:
-            st.caption(copy_text("components.detail_drawer.no_entity_selected", "No entity selected yet."))
+            st.caption(
+                copy_text("components.detail_drawer.no_entity_selected", "No entity selected yet.")
+            )
             return
 
         st.write(copy_text("components.detail_drawer.pinned_selection", "Pinned selection"))
@@ -248,7 +252,9 @@ def render_detail_drawer(
                 st.rerun()
         with col2:
             if st.button(
-                copy_text("components.detail_drawer.filter_recommendations", "Filter Recommendations"),
+                copy_text(
+                    "components.detail_drawer.filter_recommendations", "Filter Recommendations"
+                ),
                 key=f"drawer-open-rec-{page_slug}",
                 help=copy_text(
                     "components.detail_drawer.filter_recommendations_effect",
@@ -284,14 +290,27 @@ def render_graph_fallback(
 ) -> None:
     st.markdown(f"**{title}**")
     if not interactive_available:
-        st.info(copy_text("components.graph_fallback.interactive_unavailable", "Interactive view unavailable, fallback applied."))
+        st.info(
+            copy_text(
+                "components.graph_fallback.interactive_unavailable",
+                "Interactive view unavailable, fallback applied.",
+            )
+        )
 
     try:
         st.graphviz_chart(graphviz_dot, use_container_width=True)
     except Exception:
-        st.warning(copy_text("components.graph_fallback.render_failed", "Graphviz render failed, table fallback applied."))
+        st.warning(
+            copy_text(
+                "components.graph_fallback.render_failed",
+                "Graphviz render failed, table fallback applied.",
+            )
+        )
 
-    with st.expander(copy_text("components.graph_fallback.expander_title", "Graph fallback: list/table"), expanded=False):
+    with st.expander(
+        copy_text("components.graph_fallback.expander_title", "Graph fallback: list/table"),
+        expanded=False,
+    ):
         if nodes_rows:
             st.write(copy_text("components.graph_fallback.nodes_title", "Nodes"))
             st.dataframe(nodes_rows, use_container_width=True)
@@ -305,15 +324,13 @@ def render_graph_fallback(
             copy_text("components.graph_fallback.select_node", "Select node"),
             [""] + node_ids,
             key=f"{key_prefix}-fallback-node",
-            format_func=lambda value: value
-            or copy_text("components.graph_fallback.none", "none"),
+            format_func=lambda value: value or copy_text("components.graph_fallback.none", "none"),
         )
         selected_edge = st.selectbox(
             copy_text("components.graph_fallback.select_edge", "Select edge"),
             [""] + edge_ids,
             key=f"{key_prefix}-fallback-edge",
-            format_func=lambda value: value
-            or copy_text("components.graph_fallback.none", "none"),
+            format_func=lambda value: value or copy_text("components.graph_fallback.none", "none"),
         )
         if selected_node:
             st.caption(f"Selected node: {selected_node}")

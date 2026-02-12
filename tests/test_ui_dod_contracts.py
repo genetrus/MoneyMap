@@ -42,6 +42,12 @@ def test_ui_global_shell_guidance_contract_present() -> None:
     source = _read_ui_app()
     assert "guide_panel_layout" in source
     assert "render_guide_panel(runtime=guidance_runtime" in source
-    assert "context-open-data-status" in Path("src/money_map/ui/components.py").read_text(encoding="utf-8")
-    assert "context-open-profile" in Path("src/money_map/ui/components.py").read_text(encoding="utf-8")
-    assert "context-open-drawer" in Path("src/money_map/ui/components.py").read_text(encoding="utf-8")
+    assert "context-open-data-status" in Path("src/money_map/ui/components.py").read_text(
+        encoding="utf-8"
+    )
+    assert "context-open-profile" in Path("src/money_map/ui/components.py").read_text(
+        encoding="utf-8"
+    )
+    assert "context-open-drawer" in Path("src/money_map/ui/components.py").read_text(
+        encoding="utf-8"
+    )

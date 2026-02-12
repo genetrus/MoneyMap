@@ -671,7 +671,9 @@ def run_app() -> None:
     if guidance_runtime["is_guided"]:
         current_step = guidance_runtime["current_step"]
         primary_action = guidance_runtime["primary_action"]
-        next_page = NAV_LABEL_BY_SLUG.get(primary_action["target_page"], primary_action["target_page"])
+        next_page = NAV_LABEL_BY_SLUG.get(
+            primary_action["target_page"], primary_action["target_page"]
+        )
         st.info(
             copy_text(
                 "guided.next_step_banner",
@@ -681,7 +683,9 @@ def run_app() -> None:
             )
         )
 
-        layout_label = st.session_state.get("guide_panel_layout", copy_text("app.guide_layout_auto", "Auto"))
+        layout_label = st.session_state.get(
+            "guide_panel_layout", copy_text("app.guide_layout_auto", "Auto")
+        )
         use_top_layout = layout_label == copy_text("app.guide_layout_top", "Top panel")
         use_right_layout = layout_label == copy_text("app.guide_layout_right", "Right panel")
         if not use_top_layout and not use_right_layout:
@@ -1121,11 +1125,18 @@ def run_app() -> None:
                         preview = _profile_preview_snapshot(profile)
                     _render_profile_preview(preview)
                 else:
-                    st.info(copy_text("pages.profile.preview_locked", "Complete required profile fields to unlock live preview."))
+                    st.info(
+                        copy_text(
+                            "pages.profile.preview_locked",
+                            "Complete required profile fields to unlock live preview.",
+                        )
+                    )
 
                 if profile_validation["missing"]:
                     st.info(
-                        copy_text("pages.profile.missing_required_prefix", "Missing required fields: ")
+                        copy_text(
+                            "pages.profile.missing_required_prefix", "Missing required fields: "
+                        )
                         + ", ".join(profile_validation["missing"])
                     )
                 for warning in profile_validation["warnings"]:

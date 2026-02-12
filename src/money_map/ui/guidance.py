@@ -95,7 +95,9 @@ def compute_guidance_runtime(
     ]
 
     pending_steps = [
-        step for step in steps if step["id"] not in completed_steps and step["id"] not in skipped_steps
+        step
+        for step in steps
+        if step["id"] not in completed_steps and step["id"] not in skipped_steps
     ]
     current_step = pending_steps[0] if pending_steps else (steps[-1] if steps else {})
 
@@ -129,7 +131,9 @@ def compute_guidance_runtime(
     }
 
     guide_state["completed_steps"] = completed_steps
-    guide_state["current_step_id"] = str(current_step.get("id") or GUIDE_STATE_DEFAULTS["current_step_id"])
+    guide_state["current_step_id"] = str(
+        current_step.get("id") or GUIDE_STATE_DEFAULTS["current_step_id"]
+    )
 
     runtime = {
         "entities": entities,
