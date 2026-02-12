@@ -233,3 +233,13 @@
 - Consequences: Regional pack structure exists for ingestion/expansion, and dependency links to core artifacts are explicit without inventing unverified content.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
 - Owner: team
+
+## 2026-02-12 — Populate de_muc variants.seed with A1..P4 recommendation-ready synthetic coverage
+- Date: 2026-02-12
+- Title: Fill `data/packs/de_muc/variants.seed.yaml` with balanced multi-cell seed variants
+- Context: The Munich pack scaffold had an empty variants seed, which prevented matrix-wide recommendation/prototyping scenarios for expanded cells A1..P4.
+- Decision: Generate 768 deterministic seed variants (`12` per cell across `A1..P4`) with filled `tags`, `feasibility`, `legal.gate`, `time_to_first_money_days`, `confidence`, and `sources`; rotate work modes across employment, services, hybrid, and micro-product to keep recommendation candidates diverse.
+- Alternatives: (1) Fill only a subset of cells and leave sparse coverage. (2) Add free-form records without consistent required fields.
+- Consequences: The pack now supports broad plan/recommendation sampling over the full matrix while preserving consistent minimum data fields per variant.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
+- Owner: team
