@@ -243,3 +243,13 @@
 - Consequences: The pack now supports broad plan/recommendation sampling over the full matrix while preserving consistent minimum data fields per variant.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
 - Owner: team
+
+## 2026-02-12 — Populate DE/BY/MUC rulepack with startup compliance checks (Gewerbe/ELSTER/IHK/tax-permits)
+- Date: 2026-02-12
+- Title: Add structured Munich/Germany compliance rules with severities `info|warning|hard_gate`
+- Context: `data/packs/de_muc/rulepack.yaml` was an empty scaffold (`rules: []`) and could not drive compliance-oriented guidance for local startup flows.
+- Decision: Add six RuleCheck-style entries covering (1) Gewerbeanmeldung in München/KVR with BayernID/docs/fee/result, (2) ELSTER Fragebogen submission and mandatory timing, (3) IHK membership obligation for Gewerbe (with exclusions), and (4) baseline taxes/permits/restrictions by activity type. Each rule now includes `triggers`, `applies_to`, `steps`, `required_docs`, `links`, `reviewed_at`, and `sources`.
+- Alternatives: (1) Keep rulepack empty and defer legal guidance to free-text UI notes. (2) Add only generic rules without source links and applicability filters.
+- Consequences: Regional data pack now has actionable compliance scaffolding with explicit provenance fields and gate severities aligned to startup decision flow; downstream systems can expand/validate these rules incrementally.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.1-2
+- Owner: team
