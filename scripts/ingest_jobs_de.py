@@ -54,7 +54,9 @@ def _normalize_job(job: dict[str, Any], endpoint: str) -> dict[str, Any]:
         "city": city,
         "region": region,
         "employmentType": _pick(job, "arbeitszeitmodell", "arbeitszeit", "employmentType"),
-        "publishedAt": _pick(job, "aktuelleVeroeffentlichungsdatum", "eintrittsdatum", "publishedAt"),
+        "publishedAt": _pick(
+            job, "aktuelleVeroeffentlichungsdatum", "eintrittsdatum", "publishedAt"
+        ),
         "updatedAt": _pick(job, "modifikationsTimestamp", "updatedAt"),
         "url": _pick(job, "externeUrl", "jobcenterUrl", "url"),
         "salaryMin": salary_min,
