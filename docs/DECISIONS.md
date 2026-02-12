@@ -273,3 +273,13 @@
 - Consequences: Data collection becomes reproducible and automatable for DE job market snapshots while preserving an update path for intraday refreshes.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-7, p.9-10, p.11; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
 - Owner: team
+
+## 2026-02-12 — Add Jobs (Live) UI with offline fallback and occupation_map drafting
+- Date: 2026-02-12
+- Title: Implement `Jobs (Live)` page with filters, source indicator, vacancy table, and `Create Variant Draft`
+- Context: UI required a vacancy intake screen that prefers live responses but must remain usable offline with deterministic fallback.
+- Decision: Add a dedicated `Jobs (Live)` navigation page with filters (`city`, `radius`, `days`, `size`, `profile`), automatic source resolution (`live` → latest `snapshot` → compact `seed`), and a source indicator that surfaces cache snapshot filename when used. Add `Create Variant Draft` action that builds draft payloads from vacancy rows via `data/packs/de_muc/occupation_map.yaml` mapping.
+- Alternatives: (1) Block the page on network errors. (2) Use snapshot only without attempting live retrieval. (3) Create drafts without occupation mapping.
+- Consequences: Jobs flow is resilient in no-network environments, keeps traceable source provenance in UI, and produces occupation-aligned draft variants for downstream enrichment.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.11, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
+- Owner: team
