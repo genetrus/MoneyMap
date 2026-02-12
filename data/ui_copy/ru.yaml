@@ -39,6 +39,17 @@ pages:
     reality_hint: Проверь ключевые блокеры и quick fixes.
     empty_title: Ничего не найдено
     empty_reason: Все варианты были отфильтрованы текущими ограничениями.
+    objective_hint: Меняет веса ранжирования. Данные не изменяются.
+    filters_hint: Фильтры отсекают варианты. Если пусто — ослабь ограничения.
+    select_intent: Сохранить вариант и перейти к плану
+    select_effect: Обновит Selected в контексте и откроет Plan.
+    select_next: Проверь Checklist / 4 weeks / Compliance
+    select_undo: Выбери другой вариант в Recommendations
+    selected_notice: 'Selected обновлён. Следующий шаг: Plan.'
+    open_intent: Посмотреть вариант на карте
+    open_effect: Откроет Explore с выбранной taxonomy/cell.
+    open_next: Изучи связи и вернись к выбору
+    open_undo: Вернись на Recommendations через навигацию
   plan:
     not_ready: План пока недоступен.
     need_variant_reason: Сначала выберите вариант в Recommendations.
@@ -63,6 +74,14 @@ pages:
     continue_effect: Откроет экран Profile для задания ограничений.
     continue_next: Заполни обязательные поля
     continue_undo: Вернись в Data status через навигацию
+  explore:
+    goal_hint: 'Explore показывает карту связей: ячейки, механизмы, мосты и примеры.'
+    matrix_hint: Нажми ячейку, чтобы увидеть варианты и быстро отправить фильтр в
+      Recommendations.
+    taxonomy_hint: Выбери механизм и изучи связи taxonomy → cell → variant.
+    bridges_hint: Мост показывает переход между ячейками и связанные варианты.
+    paths_hint: Маршрут — это цепочка переходов. Можно использовать как плановый backbone.
+    library_hint: Каталог примеров без ранжирования. Фильтруй и отправляй в Recommendations.
 components:
   context_bar:
     no_pinned_selection: Нет закреплённого выбора

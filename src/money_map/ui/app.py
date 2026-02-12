@@ -1442,8 +1442,20 @@ def run_app() -> None:
                 variants = sorted(app_data.variants, key=_stable_variant_sort_key)
 
             _render_status("ready", f"Explore tab ready: {selected_tab}.")
+            render_inline_hint(
+                copy_text(
+                    "pages.explore.goal_hint",
+                    "Explore показывает карту связей: ячейки, механизмы, мосты и примеры.",
+                )
+            )
 
             if selected_tab == "Matrix":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.matrix_hint",
+                        "Нажми ячейку, чтобы увидеть варианты и быстро отправить фильтр в Recommendations.",
+                    )
+                )
                 selected_cell = st.selectbox("Cell", CELL_OPTIONS, key="explore_selected_cell")
                 st.session_state["selected_cell_id"] = selected_cell
                 cell_variants = [v for v in variants if _variant_cell(v) == selected_cell]
@@ -1491,6 +1503,12 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Taxonomy":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.taxonomy_hint",
+                        "Выбери механизм и изучи связи taxonomy → cell → variant.",
+                    )
+                )
                 selected_taxonomy = st.selectbox(
                     "Taxonomy",
                     TAXONOMY_OPTIONS,
@@ -1557,6 +1575,12 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Bridges":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.bridges_hint",
+                        "Мост показывает переход между ячейками и связанные варианты.",
+                    )
+                )
                 selected_bridge = st.selectbox(
                     "Bridge",
                     BRIDGE_OPTIONS,
@@ -1620,6 +1644,12 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Paths":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.paths_hint",
+                        "Маршрут — это цепочка переходов. Можно использовать как плановый backbone.",
+                    )
+                )
                 path_options = {
                     "Route-1": ["A1", "A2", "B2"],
                     "Route-2": ["A1", "B1", "B2"],
@@ -1649,6 +1679,12 @@ def run_app() -> None:
                     st.rerun()
 
             elif selected_tab == "Variants Library":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.library_hint",
+                        "Каталог примеров без ранжирования. Фильтруй и отправляй в Recommendations.",
+                    )
+                )
                 selected_cell_filter = st.multiselect(
                     "Cell",
                     CELL_OPTIONS,
@@ -1890,6 +1926,20 @@ def run_app() -> None:
                 copy_text(
                     "pages.recommendations.top_hint", "Настрой фильтры и пересчитай рекомендации."
                 )
+            )
+            render_tooltip(
+                "Objective",
+                copy_text(
+                    "pages.recommendations.objective_hint",
+                    "Меняет веса ранжирования. Данные не изменяются.",
+                ),
+            )
+            render_tooltip(
+                "Filters",
+                copy_text(
+                    "pages.recommendations.filters_hint",
+                    "Фильтры отсекают варианты. Если пусто — ослабь ограничения.",
+                ),
             )
             top_bar = st.columns([0.26, 0.20, 0.18, 0.18, 0.18])
             objective_options = ["fastest_money", "max_net"]
@@ -2157,17 +2207,41 @@ def run_app() -> None:
                         confidence=rec.economics.confidence,
                     )
 
+                    st.write("**Summary:** " + rec.variant.title)
                     st.write(
-                        "Economics: TTFM "
-                        + "-".join(map(str, rec.economics.time_to_first_money_days_range))
-                        + " days; net/month €"
-                        + "-".join(map(str, rec.economics.typical_net_month_eur_range))
+                        f"**Cell/Taxonomy:** `{_variant_cell(rec.variant)}` / `{_variant_taxonomy(rec.variant)}`"
                     )
-                    st.write("Pros: " + "; ".join(rec.pros[:3]))
-                    if rec.cons:
-                        st.write("Cons: " + "; ".join(rec.cons[:2]))
 
-                    with st.expander("Score contribution"):
+                    st.markdown("**Feasibility**")
+                    st.write(f"Status: {rec.feasibility.status}")
+                    if rec.feasibility.blockers:
+                        st.write("Blockers: " + "; ".join(rec.feasibility.blockers[:3]))
+                    if rec.feasibility.prep_steps:
+                        st.write("Prep steps: " + "; ".join(rec.feasibility.prep_steps[:3]))
+
+                    st.markdown("**Economics**")
+                    st.write(
+                        "TTFM: "
+                        + "-".join(map(str, rec.economics.time_to_first_money_days_range))
+                        + " days; net/month: €"
+                        + "-".join(map(str, rec.economics.typical_net_month_eur_range))
+                        + f"; confidence: {rec.economics.confidence}"
+                    )
+
+                    st.markdown("**Legal / Compliance**")
+                    st.write(f"Legal gate: {rec.legal.legal_gate}")
+                    if rec.legal.checklist:
+                        st.write("Checklist: " + "; ".join(rec.legal.checklist[:3]))
+
+                    st.markdown("**Почему в топе**")
+                    for item in rec.pros[:3]:
+                        st.write(f"- {item}")
+
+                    st.markdown("**Что мешает**")
+                    for item in rec.cons[:2]:
+                        st.write(f"- {item}")
+
+                    with st.expander("Explain score"):
                         rows = _score_contribution_rows(rec)
                         st.vega_lite_chart(
                             {
@@ -2194,13 +2268,62 @@ def run_app() -> None:
                     if c1.button(
                         f"Select & Build Plan · {rec.variant.variant_id}",
                         key=f"rec-plan-{rec.variant.variant_id}",
+                        help=action_contract_help(
+                            build_action_contract(
+                                label="Select & Build Plan",
+                                intent=copy_text(
+                                    "pages.recommendations.select_intent",
+                                    "Сохранить вариант и перейти к плану",
+                                ),
+                                effect=copy_text(
+                                    "pages.recommendations.select_effect",
+                                    "Обновит Selected в контексте и откроет Plan.",
+                                ),
+                                next_step=copy_text(
+                                    "pages.recommendations.select_next",
+                                    "Проверь Checklist / 4 weeks / Compliance",
+                                ),
+                                undo=copy_text(
+                                    "pages.recommendations.select_undo",
+                                    "Выбери другой вариант в Recommendations",
+                                ),
+                            )
+                        ),
                     ):
                         st.session_state["selected_variant_id"] = rec.variant.variant_id
+                        st.session_state["guide_state"]["current_step_id"] = "step_plan"
+                        st.success(
+                            copy_text(
+                                "pages.recommendations.selected_notice",
+                                "Selected обновлён. Следующий шаг: Plan.",
+                            )
+                        )
                         st.session_state["page"] = "plan"
                         st.rerun()
                     if c2.button(
                         f"Open in Explore · {rec.variant.variant_id}",
                         key=f"rec-open-exp-{rec.variant.variant_id}",
+                        help=action_contract_help(
+                            build_action_contract(
+                                label="Open in Explore",
+                                intent=copy_text(
+                                    "pages.recommendations.open_intent",
+                                    "Посмотреть вариант на карте",
+                                ),
+                                effect=copy_text(
+                                    "pages.recommendations.open_effect",
+                                    "Откроет Explore с выбранной taxonomy/cell.",
+                                ),
+                                next_step=copy_text(
+                                    "pages.recommendations.open_next",
+                                    "Изучи связи и вернись к выбору",
+                                ),
+                                undo=copy_text(
+                                    "pages.recommendations.open_undo",
+                                    "Вернись на Recommendations через навигацию",
+                                ),
+                            )
+                        ),
                     ):
                         st.session_state["selected_variant_id"] = rec.variant.variant_id
                         st.session_state["selected_cell_id"] = _variant_cell(rec.variant)

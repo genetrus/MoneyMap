@@ -57,3 +57,16 @@ def test_ui_data_status_profile_guidance_contract_present() -> None:
     assert "pages.profile.goal_hint" in source
     assert "profile-go-recommendations" in source
     assert "pages.profile.blocked_reason" in source
+
+
+def test_ui_explore_recommendations_guidance_contract_present() -> None:
+    source = _read_ui_app()
+    assert "pages.explore.goal_hint" in source
+    assert "pages.explore.matrix_hint" in source
+    assert "pages.explore.taxonomy_hint" in source
+    assert "pages.explore.bridges_hint" in source
+    assert "pages.recommendations.objective_hint" in source
+    assert "pages.recommendations.filters_hint" in source
+    assert "**Почему в топе**" in source
+    assert "**Что мешает**" in source
+    assert "Explain score" in source

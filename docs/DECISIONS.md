@@ -383,3 +383,13 @@
 - Consequences: Users get deterministic readiness gates and remediation guidance on both entry screens; transitions to recommendations are stricter and more transparent.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
+
+## 2026-02-12 — Guidance integration for Explore and Recommendations flows
+- Date: 2026-02-12
+- Title: Add tab micro-instructions in Explore and full-structure recommendation cards
+- Context: Stage 17 step 8 requires guidance in Explore/Recommendations and explicit selected-state progression toward Plan.
+- Decision: Added Explore tab-level inline hints (Matrix/Taxonomy/Bridges/Paths/Library) and preserved global DetailDrawer availability. In Recommendations, added objective/filter hints, strengthened Reality Check callout, and expanded card layout to include summary, cell/taxonomy, feasibility block, economics+confidence, legal checklist, and explicit "Почему в топе"/"Что мешает" sections with "Explain score". On `Select & Build Plan`, we now explicitly refresh selected variant state and set guidance progression toward Plan before navigation.
+- Alternatives: (1) Keep existing terse card copy without structured sections. (2) Keep Explore tabs without micro-instructions. (3) Update selected state implicitly without user-visible guidance cue.
+- Consequences: Explore navigation is self-explanatory for newcomers, recommendations become auditable and action-oriented, and selected-state progression is explicit in guided flow.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team
