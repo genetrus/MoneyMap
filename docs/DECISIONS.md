@@ -373,3 +373,13 @@
 - Consequences: UX guidance blocks are reusable across pages, empty/filter states are consistent, and clickable actions now expose structured “what happens next” semantics.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
+
+## 2026-02-12 — Guidance integration for Data status and Profile flow gates
+- Date: 2026-02-12
+- Title: Add actionable guidance, block reasons, and strict continue gates to Data status/Profile
+- Context: Stage 17 step 7 requires explicit guidance on Data status and Profile screens, including blocking reasons and clear remediation steps.
+- Decision: Added Data status page goal/meaning hints, explicit `Re-run validate` action, and gated `Continue → Profile` when FATAL issues exist (with clear reason). Added Profile field-level tooltips, preserved live preview behavior, and made `Go to Recommendations` strictly disabled until profile readiness with explicit “why blocked / what to do” messaging.
+- Alternatives: (1) Keep current passive status text without explicit continue gates. (2) Gate transitions without explaining remediation steps. (3) Keep Profile continue visible only when ready.
+- Consequences: Users get deterministic readiness gates and remediation guidance on both entry screens; transitions to recommendations are stricter and more transparent.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team

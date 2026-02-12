@@ -15,6 +15,19 @@ pages:
   profile:
     preview_locked: Заполните обязательные поля профиля, чтобы открыть live preview.
     missing_required_prefix: 'Не заполнены обязательные поля: '
+    goal_hint: 'Профиль превращает желание в ограничения: без обязательных полей рекомендации
+      будут заблокированы.'
+    objective_tooltip: Меняет приоритет ранжирования, не меняет данные.
+    language_tooltip: Влияет на доступные варианты и скорость входа.
+    time_tooltip: Реально доступные часы в неделю для старта.
+    capital_tooltip: Сумма, которую можно вложить без критичного риска.
+    constraints_tooltip: Ограничения применяются как фильтры и их можно ослабить позже.
+    blocked_reason: 'Почему заблокировано: не заполнены обязательные поля.'
+    todo_prefix: 'Что сделать: заполнить поле'
+    continue_intent: Перейти к выбору варианта
+    continue_effect: Откроет Recommendations с текущим профилем.
+    continue_next: Проверь Reality Check и выбери вариант
+    continue_undo: Вернись в Profile и отредактируй поля
   recommendations:
     not_ready: Профиль не готов для рекомендаций.
     top_hint: Настрой фильтры и пересчитай рекомендации.
@@ -33,6 +46,23 @@ pages:
     not_ready: Экспорт пока недоступен.
     need_variant_reason: Сначала выберите вариант в Recommendations.
     need_plan_reason: Сначала соберите план на экране Plan.
+  data_status:
+    goal_hint: 'Проверь целостность и актуальность данных: при FATAL рекомендации
+      и план блокируются.'
+    what_means: 'What this means: статус данных определяет надежность рекомендаций
+      и доступность следующих шагов.'
+    rerun_validate: Re-run validate
+    rerun_intent: Обновить validate отчет
+    rerun_effect: Пересчитает отчет validation на текущих данных.
+    rerun_next: Проверь изменившиеся WARN/FATAL
+    rerun_undo: Исправь данные и запусти заново
+    continue_profile: Continue → Profile
+    continue_blocked_reason: 'Continue заблокирован: есть FATAL ошибки в validate
+      report.'
+    continue_intent: Перейти к заполнению профиля
+    continue_effect: Откроет экран Profile для задания ограничений.
+    continue_next: Заполни обязательные поля
+    continue_undo: Вернись в Data status через навигацию
 components:
   context_bar:
     no_pinned_selection: Нет закреплённого выбора

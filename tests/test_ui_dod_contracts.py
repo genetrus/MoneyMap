@@ -47,3 +47,13 @@ def test_ui_global_shell_guidance_contract_present() -> None:
     assert "context-open-data-status" in components_source
     assert "context-open-profile" in components_source
     assert "context-open-drawer" in components_source
+
+
+def test_ui_data_status_profile_guidance_contract_present() -> None:
+    source = _read_ui_app()
+    assert "pages.data_status.goal_hint" in source
+    assert "data-status-go-profile" in source
+    assert "data-status-rerun-validate" in source
+    assert "pages.profile.goal_hint" in source
+    assert "profile-go-recommendations" in source
+    assert "pages.profile.blocked_reason" in source

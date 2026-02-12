@@ -755,6 +755,12 @@ def run_app() -> None:
             "Data status",
             "Validation, staleness, and dataset metadata (offline-first).",
         )
+        render_inline_hint(
+            copy_text(
+                "pages.data_status.goal_hint",
+                "Проверь целостность и актуальность данных: при FATAL рекомендации и план блокируются.",
+            )
+        )
 
         def _render_status() -> None:
             with st.spinner("Loading validation snapshot..."):
@@ -803,6 +809,81 @@ def run_app() -> None:
                 )
             else:
                 st.caption("Data is valid.")
+
+            render_info_callout(
+                copy_text(
+                    "pages.data_status.what_means",
+                    "What this means: статус данных определяет надежность рекомендаций и доступность следующих шагов.",
+                ),
+                level="info",
+            )
+
+            status_controls = st.columns(2)
+            with status_controls[0]:
+                if st.button(
+                    copy_text("pages.data_status.rerun_validate", "Re-run validate"),
+                    key="data-status-rerun-validate",
+                    help=action_contract_help(
+                        build_action_contract(
+                            label=copy_text("pages.data_status.rerun_validate", "Re-run validate"),
+                            intent=copy_text(
+                                "pages.data_status.rerun_intent", "Обновить validate отчет"
+                            ),
+                            effect=copy_text(
+                                "pages.data_status.rerun_effect",
+                                "Пересчитает отчет validation на текущих данных.",
+                            ),
+                            next_step=copy_text(
+                                "pages.data_status.rerun_next", "Проверь изменившиеся WARN/FATAL"
+                            ),
+                            undo=copy_text(
+                                "pages.data_status.rerun_undo", "Исправь данные и запусти заново"
+                            ),
+                        )
+                    ),
+                    use_container_width=True,
+                ):
+                    _get_validation.clear()
+                    st.rerun()
+            with status_controls[1]:
+                blocked = fatals_count > 0
+                if blocked:
+                    render_info_callout(
+                        copy_text(
+                            "pages.data_status.continue_blocked_reason",
+                            "Continue заблокирован: есть FATAL ошибки в validate report.",
+                        ),
+                        level="warning",
+                    )
+                if st.button(
+                    copy_text("pages.data_status.continue_profile", "Continue → Profile"),
+                    key="data-status-go-profile",
+                    disabled=blocked,
+                    help=action_contract_help(
+                        build_action_contract(
+                            label=copy_text(
+                                "pages.data_status.continue_profile", "Continue → Profile"
+                            ),
+                            intent=copy_text(
+                                "pages.data_status.continue_intent", "Перейти к заполнению профиля"
+                            ),
+                            effect=copy_text(
+                                "pages.data_status.continue_effect",
+                                "Откроет экран Profile для задания ограничений.",
+                            ),
+                            next_step=copy_text(
+                                "pages.data_status.continue_next", "Заполни обязательные поля"
+                            ),
+                            undo=copy_text(
+                                "pages.data_status.continue_undo",
+                                "Вернись в Data status через навигацию",
+                            ),
+                        )
+                    ),
+                    use_container_width=True,
+                ):
+                    st.session_state["page"] = "profile"
+                    st.rerun()
 
             if visibility["show_validate_report"]:
                 st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -1003,6 +1084,12 @@ def run_app() -> None:
 
     elif page_slug == "profile":
         _render_page_header("Profile")
+        render_inline_hint(
+            copy_text(
+                "pages.profile.goal_hint",
+                "Профиль превращает желание в ограничения: без обязательных полей рекомендации будут заблокированы.",
+            )
+        )
 
         def _render_profile() -> None:
             repo_root = Path(__file__).resolve().parents[3]
@@ -1082,6 +1169,13 @@ def run_app() -> None:
                     ),
                     key="profile_objective",
                 )
+                render_tooltip(
+                    "Objective",
+                    copy_text(
+                        "pages.profile.objective_tooltip",
+                        "Меняет приоритет ранжирования, не меняет данные.",
+                    ),
+                )
                 profile["language_level"] = st.selectbox(
                     "Language level",
                     ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
@@ -1089,6 +1183,13 @@ def run_app() -> None:
                         st.session_state.get("profile_language_level", "B1")
                     ),
                     key="profile_language_level",
+                )
+                render_tooltip(
+                    "Language level",
+                    copy_text(
+                        "pages.profile.language_tooltip",
+                        "Влияет на доступные варианты и скорость входа.",
+                    ),
                 )
                 profile["time_per_week"] = st.slider(
                     "Time per week",
@@ -1099,11 +1200,24 @@ def run_app() -> None:
                     ),
                     key="profile_time_per_week",
                 )
+                render_tooltip(
+                    "Time per week",
+                    copy_text(
+                        "pages.profile.time_tooltip", "Реально доступные часы в неделю для старта."
+                    ),
+                )
                 profile["capital_eur"] = st.number_input(
                     "Capital (EUR)",
                     min_value=0,
                     value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
                     key="profile_capital_eur",
+                )
+                render_tooltip(
+                    "Capital",
+                    copy_text(
+                        "pages.profile.capital_tooltip",
+                        "Сумма, которую можно вложить без критичного риска.",
+                    ),
                 )
                 st.caption(f"Capital band: {_capital_band(int(profile['capital_eur']))}")
 
@@ -1111,6 +1225,13 @@ def run_app() -> None:
                 skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
                 constraints_text = st.text_area(
                     "Constraints (comma separated)", key="profile_constraints_text"
+                )
+                render_tooltip(
+                    "Constraints",
+                    copy_text(
+                        "pages.profile.constraints_tooltip",
+                        "Ограничения применяются как фильтры и их можно ослабить позже.",
+                    ),
                 )
                 profile["assets"] = [
                     item.strip() for item in assets_text.split(",") if item.strip()
@@ -1152,11 +1273,48 @@ def run_app() -> None:
                 st.caption(f"Profile hash: {st.session_state.get('profile_hash', '')}")
                 if profile_validation["is_ready"]:
                     st.success("Profile ready")
-                    if st.button("Go to Recommendations", key="profile-go-recommendations"):
-                        st.session_state["page"] = "recommendations"
-                        st.rerun()
                 else:
                     st.caption("Profile draft")
+                    if profile_validation["missing"]:
+                        render_info_callout(
+                            copy_text(
+                                "pages.profile.blocked_reason",
+                                "Почему заблокировано: не заполнены обязательные поля.",
+                            ),
+                            level="warning",
+                        )
+                        for field_name in profile_validation["missing"]:
+                            st.caption(
+                                f"• {copy_text('pages.profile.todo_prefix', 'Что сделать: заполнить поле')} `{field_name}`"
+                            )
+
+                if st.button(
+                    "Go to Recommendations",
+                    key="profile-go-recommendations",
+                    disabled=not profile_validation["is_ready"],
+                    help=action_contract_help(
+                        build_action_contract(
+                            label="Go to Recommendations",
+                            intent=copy_text(
+                                "pages.profile.continue_intent", "Перейти к выбору варианта"
+                            ),
+                            effect=copy_text(
+                                "pages.profile.continue_effect",
+                                "Откроет Recommendations с текущим профилем.",
+                            ),
+                            next_step=copy_text(
+                                "pages.profile.continue_next",
+                                "Проверь Reality Check и выбери вариант",
+                            ),
+                            undo=copy_text(
+                                "pages.profile.continue_undo",
+                                "Вернись в Profile и отредактируй поля",
+                            ),
+                        )
+                    ),
+                ):
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
 
         _run_with_error_boundary(_render_profile)
 
