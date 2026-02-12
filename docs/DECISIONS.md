@@ -263,3 +263,13 @@
 - Consequences: Vacancy intake remains deterministic and complete (no dropped unknowns), with low-confidence records explicitly labeled for curator follow-up.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.1-2
 - Owner: team
+
+## 2026-02-12 — Add Jobsuche DE ingestion snapshot script with append/update modes
+- Date: 2026-02-12
+- Title: Implement `scripts/ingest_jobs_de.py` for Jobsuche API collection and JSONL snapshots
+- Context: We need a repeatable DE vacancies ingestion entrypoint that can collect paged Jobsuche data, normalize vacancy fields, deduplicate records by stable IDs, and persist daily snapshots for downstream processing.
+- Decision: Add `scripts/ingest_jobs_de.py` with CLI args (`was/wo/umkreis/size/veroeffentlichtseit/page`) and `X-API-Key: jobboerse-jobsuche` header, normalize common vacancy fields into a stable JSON schema, dedupe by `hashId` fallback `refnr`, and write to `data/snapshots/jobs_de/YYYY-MM-DD_*.jsonl`. Support `--mode append|update` where update merges into latest same-day snapshot.
+- Alternatives: (1) Keep ad-hoc manual one-off requests without a script. (2) Store raw payloads only and postpone normalization/deduplication.
+- Consequences: Data collection becomes reproducible and automatable for DE job market snapshots while preserving an update path for intraday refreshes.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-7, p.9-10, p.11; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
+- Owner: team
