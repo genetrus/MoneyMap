@@ -17,6 +17,15 @@ pages:
     missing_required_prefix: 'Не заполнены обязательные поля: '
   recommendations:
     not_ready: Профиль не готов для рекомендаций.
+    top_hint: Настрой фильтры и пересчитай рекомендации.
+    recompute_tooltip: Пересчитает Top-N по текущим фильтрам.
+    recompute_intent: Обновить ранжирование
+    recompute_effect: Пересчитает результаты с текущими фильтрами.
+    recompute_next: Проверь обновлённые карточки
+    recompute_undo: Измени фильтры или objective
+    reality_hint: Проверь ключевые блокеры и quick fixes.
+    empty_title: Ничего не найдено
+    empty_reason: Все варианты были отфильтрованы текущими ограничениями.
   plan:
     not_ready: План пока недоступен.
     need_variant_reason: Сначала выберите вариант в Recommendations.
@@ -34,6 +43,15 @@ components:
     staleness_effect: Откроет Data status и объяснит риск устаревания данных.
     profile_effect: Откроет Profile и покажет, что нужно заполнить.
     selected_effect: Откроет Detail Drawer с выбранной сущностью и быстрыми действиями.
+    staleness_intent: Проверить актуальность данных
+    staleness_next: Data status
+    staleness_undo: Вернуться через навигацию на предыдущий экран
+    profile_intent: Проверить и дополнить профиль
+    profile_next: Profile
+    profile_undo: Вернуться через навигацию
+    selected_intent: Открыть детали выбранной сущности
+    selected_next: Detail Drawer
+    selected_undo: Свернуть Detail Drawer
   detail_drawer:
     title: Detail Drawer
     no_entity_selected: Пока ничего не выбрано. Выберите Cell/Taxonomy/Variant/Bridge/Path,
@@ -56,6 +74,10 @@ components:
     select_node: Выбрать node
     select_edge: Выбрать edge
     none: none
+  filter_chips:
+    title: Активные фильтры
+    none: Нет активных фильтров
+    reset: Сбросить фильтры
 guide_panel:
   title: Guide Panel
   do_now: Сделай сейчас

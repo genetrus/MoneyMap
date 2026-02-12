@@ -14,9 +14,10 @@ def test_ui_cache_contracts_present() -> None:
 
 def test_ui_recommendations_empty_state_contract_present() -> None:
     source = _read_ui_app()
-    assert '_render_status(\n                    "empty",' in source
-    assert "Empty state quick fixes are available above." in source
+    assert "render_empty_state(" in source
     assert "Quick fix: allow prep" in source
+    assert "Quick fix: relax legal" in source
+    assert "Quick fix: extend time" in source
 
 
 def test_ui_export_artifact_panel_contract_present() -> None:
@@ -42,12 +43,7 @@ def test_ui_global_shell_guidance_contract_present() -> None:
     source = _read_ui_app()
     assert "guide_panel_layout" in source
     assert "render_guide_panel(runtime=guidance_runtime" in source
-    assert "context-open-data-status" in Path("src/money_map/ui/components.py").read_text(
-        encoding="utf-8"
-    )
-    assert "context-open-profile" in Path("src/money_map/ui/components.py").read_text(
-        encoding="utf-8"
-    )
-    assert "context-open-drawer" in Path("src/money_map/ui/components.py").read_text(
-        encoding="utf-8"
-    )
+    components_source = Path("src/money_map/ui/components.py").read_text(encoding="utf-8")
+    assert "context-open-data-status" in components_source
+    assert "context-open-profile" in components_source
+    assert "context-open-drawer" in components_source

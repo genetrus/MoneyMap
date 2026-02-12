@@ -25,6 +25,99 @@ def _badge(label: str, value: str, *, css_class: str = "badge-stale") -> str:
     return f'<span class="status-badge {css_class}"><strong>{label}:</strong> {value}</span>'
 
 
+def build_action_contract(
+    *,
+    label: str,
+    intent: str,
+    effect: str,
+    next_step: str,
+    undo: str,
+) -> dict[str, str]:
+    return {
+        "Label": label,
+        "Intent": intent,
+        "Effect": effect,
+        "Next": next_step,
+        "Undo": undo,
+    }
+
+
+def action_contract_help(contract: dict[str, str]) -> str:
+    return " | ".join(
+        [f"{key}: {contract.get(key, '')}" for key in ["Label", "Intent", "Effect", "Next", "Undo"]]
+    )
+
+
+def render_tooltip(label: str, text: str) -> None:
+    st.caption(f"{label}: {text}")
+
+
+def render_inline_hint(text: str) -> None:
+    st.info(text)
+
+
+def render_info_callout(text: str, *, level: str = "info") -> None:
+    if level == "warning":
+        st.warning(text)
+    elif level == "error":
+        st.error(text)
+    else:
+        st.info(text)
+
+
+def render_empty_state(
+    *,
+    title: str,
+    reason: str,
+    actions: list[dict[str, str]] | None = None,
+    diagnostics: list[str] | None = None,
+    key_prefix: str = "empty",
+) -> str | None:
+    st.warning(f"{title}\n\n{reason}")
+    chosen: str | None = None
+    if actions:
+        cols = st.columns(len(actions))
+        for col, action in zip(cols, actions):
+            with col:
+                if st.button(
+                    action.get("label", "Action"),
+                    key=f"{key_prefix}-{action.get('key', 'action')}",
+                ):
+                    chosen = action.get("key")
+    if diagnostics:
+        st.caption("Diagnostics")
+        for item in diagnostics:
+            st.write(f"- {item}")
+    return chosen
+
+
+def render_filter_chips_bar(
+    *,
+    active_filters: dict[str, str],
+    key_prefix: str = "filters",
+) -> str | None:
+    if not active_filters:
+        st.caption(copy_text("components.filter_chips.none", "No active filters"))
+        return None
+
+    st.markdown(f"**{copy_text('components.filter_chips.title', 'Active filters')}**")
+    chosen_remove: str | None = None
+    cols = st.columns(min(4, len(active_filters) + 1))
+    idx = 0
+    for filter_key, filter_value in active_filters.items():
+        with cols[idx % len(cols)]:
+            label = f"{filter_key}: {filter_value} ✕"
+            if st.button(label, key=f"{key_prefix}-remove-{filter_key}"):
+                chosen_remove = filter_key
+        idx += 1
+    with cols[-1]:
+        if st.button(
+            copy_text("components.filter_chips.reset", "Reset filters"), key=f"{key_prefix}-reset"
+        ):
+            return "__reset__"
+    return chosen_remove
+
+
 def render_badge_set(
     *,
     feasibility: str | None = None,
@@ -136,9 +229,22 @@ def render_context_bar(*, page: str, subview: str | None, selected_ids: dict[str
         if st.button(
             copy_text("components.context_bar.staleness_badge", "Staleness"),
             key="context-open-data-status",
-            help=copy_text(
-                "components.context_bar.staleness_effect",
-                "Откроет Data status и покажет риски устаревания данных.",
+            help=action_contract_help(
+                build_action_contract(
+                    label=copy_text("components.context_bar.staleness_badge", "Staleness"),
+                    intent=copy_text(
+                        "components.context_bar.staleness_intent", "Проверить актуальность данных"
+                    ),
+                    effect=copy_text(
+                        "components.context_bar.staleness_effect",
+                        "Откроет Data status и покажет риски устаревания данных.",
+                    ),
+                    next_step=copy_text("components.context_bar.staleness_next", "Data status"),
+                    undo=copy_text(
+                        "components.context_bar.staleness_undo",
+                        "Вернись на предыдущую страницу через навигацию",
+                    ),
+                )
             ),
             use_container_width=True,
         ):
@@ -148,9 +254,19 @@ def render_context_bar(*, page: str, subview: str | None, selected_ids: dict[str
         if st.button(
             copy_text("components.context_bar.profile_badge", "Profile"),
             key="context-open-profile",
-            help=copy_text(
-                "components.context_bar.profile_effect",
-                "Откроет Profile для исправления ограничений/обязательных полей.",
+            help=action_contract_help(
+                build_action_contract(
+                    label=copy_text("components.context_bar.profile_badge", "Profile"),
+                    intent=copy_text("components.context_bar.profile_intent", "Исправить профиль"),
+                    effect=copy_text(
+                        "components.context_bar.profile_effect",
+                        "Откроет Profile для исправления ограничений/обязательных полей.",
+                    ),
+                    next_step=copy_text("components.context_bar.profile_next", "Profile"),
+                    undo=copy_text(
+                        "components.context_bar.profile_undo", "Вернись через навигацию"
+                    ),
+                )
             ),
             use_container_width=True,
         ):
@@ -160,9 +276,19 @@ def render_context_bar(*, page: str, subview: str | None, selected_ids: dict[str
         if st.button(
             copy_text("components.context_bar.selected_badge", "Selected"),
             key="context-open-drawer",
-            help=copy_text(
-                "components.context_bar.selected_effect",
-                "Откроет Detail Drawer для выбранной сущности и быстрых действий.",
+            help=action_contract_help(
+                build_action_contract(
+                    label=copy_text("components.context_bar.selected_badge", "Selected"),
+                    intent=copy_text(
+                        "components.context_bar.selected_intent", "Посмотреть детали выбора"
+                    ),
+                    effect=copy_text(
+                        "components.context_bar.selected_effect",
+                        "Откроет Detail Drawer для выбранной сущности и быстрых действий.",
+                    ),
+                    next_step=copy_text("components.context_bar.selected_next", "Detail Drawer"),
+                    undo=copy_text("components.context_bar.selected_undo", "Сверни Detail Drawer"),
+                )
             ),
             use_container_width=True,
         ):

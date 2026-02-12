@@ -363,3 +363,13 @@
 - Consequences: Guided shell remains usable across wide and constrained layouts while preserving deterministic next-step behavior and actionable context navigation.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
+
+## 2026-02-12 — Universal UX primitives and click-action contract
+- Date: 2026-02-12
+- Title: Introduce reusable UX primitives and formal action-contract metadata
+- Context: Stage 17 step 6 requires unified primitives (Tooltip/InlineHint/InfoCallout, EmptyState, FilterChipsBar, KPIGrid) and a standard contract for clickable elements.
+- Decision: Added reusable primitives in `ui/components.py`: `render_tooltip`, `render_inline_hint`, `render_info_callout`, `render_empty_state`, `render_filter_chips_bar` (KPIGrid was already centralized and retained). Added action-contract helpers `build_action_contract` and `action_contract_help` with mandatory fields `Label`, `Intent`, `Effect`, `Next`, `Undo`, and wired this contract into context-bar actions and recommendations `Recompute` help text. Replaced recommendations empty-result block with `render_empty_state` and added filter chip controls for active recommendation filters.
+- Alternatives: (1) Keep page-specific ad-hoc status blocks. (2) Keep help text as unstructured strings without a formal contract. (3) Add primitives but do not integrate into recommendations/context flows.
+- Consequences: UX guidance blocks are reusable across pages, empty/filter states are consistent, and clickable actions now expose structured “what happens next” semantics.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
+- Owner: team

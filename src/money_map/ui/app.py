@@ -31,10 +31,17 @@ from money_map.ui.components import (
     render_badge_set,
     render_context_bar,
     render_detail_drawer,
+    action_contract_help,
+    build_action_contract,
+    render_empty_state,
+    render_filter_chips_bar,
     render_graph_fallback,
     render_guide_panel,
     render_header_bar,
+    render_info_callout,
+    render_inline_hint,
     render_kpi_grid,
+    render_tooltip,
     selected_ids_from_state,
 )
 from money_map.ui.copy import copy_text
@@ -1721,6 +1728,11 @@ def run_app() -> None:
                 return
 
             st.markdown("### Top controls")
+            render_inline_hint(
+                copy_text(
+                    "pages.recommendations.top_hint", "Настрой фильтры и пересчитай рекомендации."
+                )
+            )
             top_bar = st.columns([0.26, 0.20, 0.18, 0.18, 0.18])
             objective_options = ["fastest_money", "max_net"]
             current_objective = _ensure_objective(profile, objective_options)
@@ -1790,6 +1802,31 @@ def run_app() -> None:
                 objective_preset=selected_objective,
             )
 
+            active_filter_chips = {
+                "objective": selected_objective,
+                "top_n": str(top_n),
+                "max_time_days": str(st.session_state["filters"].get("max_time_to_money_days", 60)),
+                "exclude_blocked": str(st.session_state["filters"].get("exclude_blocked", True)),
+                "exclude_not_feasible": str(
+                    st.session_state["filters"].get("exclude_not_feasible", False)
+                ),
+            }
+            chip_action = render_filter_chips_bar(
+                active_filters=active_filter_chips, key_prefix="rec-filters"
+            )
+            if chip_action == "__reset__":
+                st.session_state["filters"] = DEFAULT_FILTERS.copy()
+                st.rerun()
+            if chip_action == "exclude_blocked":
+                st.session_state["filters"]["exclude_blocked"] = False
+                st.rerun()
+            if chip_action == "exclude_not_feasible":
+                st.session_state["filters"]["exclude_not_feasible"] = False
+                st.rerun()
+            if chip_action == "max_time_days":
+                st.session_state["filters"]["max_time_to_money_days"] = 60
+                st.rerun()
+
             def _run_recommendations() -> None:
                 result = _get_recommendations(
                     json.dumps(profile, ensure_ascii=False),
@@ -1806,7 +1843,36 @@ def run_app() -> None:
                     st.session_state["selected_variant_id"] = ""
                     st.session_state["plan"] = None
 
-            if st.button("Recompute", key="recompute-recommendations"):
+            render_tooltip(
+                "Recompute",
+                copy_text(
+                    "pages.recommendations.recompute_tooltip",
+                    "Пересчитает Top-N по текущим фильтрам.",
+                ),
+            )
+            if st.button(
+                "Recompute",
+                key="recompute-recommendations",
+                help=action_contract_help(
+                    build_action_contract(
+                        label="Recompute",
+                        intent=copy_text(
+                            "pages.recommendations.recompute_intent", "Обновить ранжирование"
+                        ),
+                        effect=copy_text(
+                            "pages.recommendations.recompute_effect",
+                            "Пересчитает результаты с текущими фильтрами.",
+                        ),
+                        next_step=copy_text(
+                            "pages.recommendations.recompute_next", "Проверь обновлённые карточки"
+                        ),
+                        undo=copy_text(
+                            "pages.recommendations.recompute_undo",
+                            "Сними фильтры или измени objective",
+                        ),
+                    )
+                ),
+            ):
                 _run_recommendations()
 
             result = st.session_state.get("recommendations") or st.session_state.get(
@@ -1821,6 +1887,12 @@ def run_app() -> None:
                 return
 
             st.markdown("### Reality Check")
+            render_info_callout(
+                copy_text(
+                    "pages.recommendations.reality_hint", "Проверь ключевые блокеры и quick fixes."
+                ),
+                level="info",
+            )
             blocker_counts = Counter()
             for rec in result.ranked_variants:
                 blocker_counts.update(rec.feasibility.blockers)
@@ -1845,17 +1917,35 @@ def run_app() -> None:
                 _run_recommendations()
 
             if not result.ranked_variants:
-                _render_status(
-                    "empty",
-                    "No results found.",
-                    reasons=["All candidates were filtered out by current constraints."],
-                    level="warning",
-                )
+                diagnostics = []
                 if result.diagnostics.get("reasons"):
-                    st.caption("Diagnostics")
-                    for reason, count in result.diagnostics["reasons"].items():
-                        st.write(f"- {reason}: {count}")
-                st.info("Empty state quick fixes are available above.")
+                    diagnostics = [
+                        f"{reason}: {count}"
+                        for reason, count in result.diagnostics["reasons"].items()
+                    ]
+                empty_action = render_empty_state(
+                    title=copy_text("pages.recommendations.empty_title", "Ничего не найдено"),
+                    reason=copy_text(
+                        "pages.recommendations.empty_reason",
+                        "Все варианты были отфильтрованы текущими ограничениями.",
+                    ),
+                    actions=[
+                        {"key": "allow_prep", "label": "Quick fix: allow prep"},
+                        {"key": "relax_legal", "label": "Quick fix: relax legal"},
+                        {"key": "extend_time", "label": "Quick fix: extend time"},
+                    ],
+                    diagnostics=diagnostics,
+                    key_prefix="rec-empty",
+                )
+                if empty_action == "allow_prep":
+                    st.session_state["filters"]["exclude_not_feasible"] = False
+                    _run_recommendations()
+                elif empty_action == "relax_legal":
+                    st.session_state["filters"]["exclude_blocked"] = False
+                    _run_recommendations()
+                elif empty_action == "extend_time":
+                    st.session_state["filters"]["max_time_to_money_days"] = 60
+                    _run_recommendations()
                 return
 
             mode = st.radio(
