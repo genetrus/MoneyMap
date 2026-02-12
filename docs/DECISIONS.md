@@ -283,3 +283,23 @@
 - Consequences: Jobs flow is resilient in no-network environments, keeps traceable source provenance in UI, and produces occupation-aligned draft variants for downstream enrichment.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.11, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
 - Owner: team
+
+## 2026-02-12 — Release guardrail checks for de_muc pack and economics safety metadata
+- Date: 2026-02-12
+- Title: Add automated guardrails for non-empty UI defaults, cell coverage, Munich rulepack checks, Jobs Live reachability, and economics safety metadata
+- Context: We needed CI-verifiable checks to prevent regressions in default UI usability, matrix coverage, and legal/economics data quality for the Munich (DE/BY) pack.
+- Decision: Added `tests/test_release_guardrails_de_muc.py` with five checks: (1) default profile + recommendations + jobs fallback are non-empty without manual input, (2) each matrix cell in `variants.seed.yaml` has 10–12 variants, (3) `rulepack.yaml` includes key Munich/DE/BY checks (Gewerbe/ELSTER/IHK and DE applicability), (4) Jobs Live validates a real München query when API is reachable (otherwise test skips), (5) economics entries in `data/variants.yaml` require ranges + confidence + source + retrieved_at + disclaimer + hint and reject promise wording.
+- Alternatives: (1) Keep only manual QA checklist. (2) Validate only schema-level fields without semantic checks (Munich keywords, income-promise guard, default non-empty behavior).
+- Consequences: CI now catches empty-default flows and missing de_muc/regional compliance anchors early; Jobs API check remains environment-dependent and explicitly skip-based when unavailable.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.9-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.1-2
+- Owner: team
+
+## 2026-02-12 — Economics metadata assumptions for seed variants
+- Date: 2026-02-12
+- Title: Normalize economics messaging to ranges/hints with explicit provenance fields in seed variants
+- Context: Existing seed variants used ranges/confidence but did not include explicit `hint`, `source`, `retrieved_at`, `disclaimer` fields requested by release checks.
+- Decision: Added these fields into each `economics` block in `data/variants.yaml`; wording is constrained to estimate/range language and explicitly denies guarantees.
+- Alternatives: (1) Implement these fields only in UI rendering, leaving source data unchanged. (2) Add stricter schema validation in core before extending seed data.
+- Consequences: Seed dataset now carries explicit economics provenance and disclaimer metadata for downstream UI/export checks; exact field names are currently a project-level assumption and may need future harmonization with formal DTO contracts.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.6-7, p.9-10, p.14; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
+- Owner: team
