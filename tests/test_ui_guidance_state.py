@@ -42,7 +42,13 @@ def test_compute_guidance_runtime_returns_single_current_step_and_primary_action
             "constraints": [],
         },
         "selected_variant_id": "v-1",
-        "plan": {"steps": ["a"]},
+        "plan": {
+            "steps": ["a"],
+            "artifacts": ["artifacts/checklist.md"],
+            "week_plan": {"Week1": ["a"], "Week2": ["b"], "Week3": ["c"], "Week4": ["d"]},
+            "compliance": ["register"],
+            "legal_gate": "require_check",
+        },
         "export_paths": None,
     }
     initialize_guide_state(state)
@@ -54,6 +60,38 @@ def test_compute_guidance_runtime_returns_single_current_step_and_primary_action
     assert runtime["next_step"]["id"] == "step_export"
     assert runtime["primary_action"]["target_page"] == "export"
     assert runtime["primary_action"]["disabled"] is True
+
+
+def test_compute_guidance_runtime_plan_not_ready_without_4_weeks() -> None:
+    state = {
+        "profile": {
+            "name": "Demo",
+            "country": "DE",
+            "location": "Berlin",
+            "objective": "fastest_money",
+            "language_level": "B1",
+            "capital_eur": 300,
+            "time_per_week": 10,
+            "assets": ["laptop"],
+            "skills": ["customer_service"],
+            "constraints": [],
+        },
+        "selected_variant_id": "v-1",
+        "plan": {
+            "steps": ["a"],
+            "artifacts": ["artifacts/checklist.md"],
+            "week_plan": {"Week1": ["a"], "Week2": ["b"], "Week3": ["c"]},
+            "compliance": [],
+            "legal_gate": "ok",
+        },
+        "export_paths": None,
+    }
+    initialize_guide_state(state)
+
+    runtime = compute_guidance_runtime(state, validate_report={"status": "valid"})
+
+    assert runtime["current_step"]["id"] == "step_plan"
+    assert runtime["entities"]["plan_ready"] is False
 
 
 def test_compute_guidance_runtime_blockers_and_resolver_for_profile_step() -> None:

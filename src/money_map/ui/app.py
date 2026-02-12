@@ -1320,6 +1320,7 @@ def run_app() -> None:
 
     elif page_slug == "jobs-live":
         _render_page_header("Jobs (Live)", "Vacancies with automatic live/cache/seed fallback.")
+        render_inline_hint(copy_text("pages.jobs.goal_hint", "Live вакансии с fallback на snapshot/seed и датой источника."))
 
         def _render_jobs_live() -> None:
             profile = st.session_state.get("profile", {})
@@ -1360,12 +1361,14 @@ def run_app() -> None:
 
             source = source_meta.get("source", "unknown")
             snapshot = source_meta.get("snapshot", "")
+            fetched_at = source_meta.get("fetched_at", "")
+            confidence = "high" if source == "live" else ("medium" if source == "cache" else "low")
             if source == "live":
-                st.success("Источник данных: live")
+                st.success(f"Источник данных: live · snapshot_at: {fetched_at} · confidence: {confidence}")
             elif source == "cache":
-                st.warning(f"Источник данных: cache · snapshot: {snapshot}")
+                st.warning(f"Источник данных: cache · snapshot: {snapshot} · snapshot_at: {fetched_at} · confidence: {confidence}")
             else:
-                st.info("Источник данных: seed (компактный fallback)")
+                st.info(f"Источник данных: seed (компактный fallback) · snapshot_at: {fetched_at} · confidence: {confidence}")
 
             table_rows = []
             for row in rows:
@@ -1379,7 +1382,15 @@ def run_app() -> None:
                         "url": row.get("url", ""),
                     }
                 )
-            st.dataframe(table_rows, use_container_width=True, hide_index=True)
+            if table_rows:
+                st.dataframe(table_rows, use_container_width=True, hide_index=True)
+            else:
+                render_empty_state(
+                    title=copy_text("pages.jobs.empty_title", "Вакансии не найдены"),
+                    reason=copy_text("pages.jobs.empty_reason", "Проверь фильтры, город или период публикации."),
+                    actions=[{"key": "retry", "label": "Retry"}],
+                    key_prefix="jobs-empty",
+                )
 
             st.markdown("### Create Variant Draft")
             if rows:
@@ -2340,23 +2351,25 @@ def run_app() -> None:
 
     elif page_slug == "plan":
         _render_page_header("Plan")
+        render_inline_hint(copy_text("pages.plan.goal_hint", "План превращает выбранный вариант в конкретные шаги и артефакты."))
 
         def _render_plan() -> None:
             report = _get_validation()
             _guard_fatals(report)
             variant_id = st.session_state.get("selected_variant_id")
             if not variant_id:
-                _render_status(
-                    "no_selection",
-                    copy_text("pages.plan.not_ready", "Plan is not ready."),
-                    reasons=[
-                        copy_text(
-                            "pages.plan.need_variant_reason",
-                            "Select a variant in Recommendations.",
-                        )
-                    ],
-                    level="warning",
+                action = render_empty_state(
+                    title=copy_text("pages.plan.not_ready", "Plan is not ready."),
+                    reason=copy_text(
+                        "pages.plan.need_variant_reason",
+                        "Select a variant in Recommendations.",
+                    ),
+                    actions=[{"key": "go_recommendations", "label": "Go to Recommendations"}],
+                    key_prefix="plan-empty",
                 )
+                if action == "go_recommendations":
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
                 return
 
             profile = st.session_state["profile"]
@@ -2389,6 +2402,7 @@ def run_app() -> None:
 
             st.session_state["plan"] = plan
             st.markdown(f"### Variant: {variant_id}")
+            render_info_callout(copy_text("pages.plan.readiness_hint", "Plan ready, когда есть шаги, артефакты, 4 недели и compliance-проверки."), level="info")
             route = []
             if plan.week_plan:
                 for week in sorted(plan.week_plan.keys()):
@@ -2410,6 +2424,7 @@ def run_app() -> None:
 
             with tab_checklist:
                 st.markdown("#### Checklist")
+                render_inline_hint(copy_text("pages.plan.checklist_hint", "Отмечай выполненные шаги: это влияет на прогресс сессии, но не меняет данные."))
                 for idx, step in enumerate(plan.steps):
                     col_a, col_b = st.columns([0.8, 0.2])
                     with col_a:
@@ -2430,6 +2445,7 @@ def run_app() -> None:
 
             with tab_compliance:
                 st.markdown("#### Compliance")
+                render_info_callout(copy_text("pages.plan.compliance_hint", "Это не юридическое заключение, а чеклист снижения риска."), level="warning")
                 st.write("Legal gate:", plan.legal_gate)
                 for item in plan.compliance:
                     st.write(f"- {item}")
@@ -2442,7 +2458,10 @@ def run_app() -> None:
                     st.write(f"Step id: `{step_id}`")
                     st.write(f"Title: {st.session_state.get('selected_plan_step_title', '')}")
                     st.write(f"Detail: {st.session_state.get('selected_plan_step_detail', '')}")
-                    st.caption("Outputs/artifacts: follow plan.md required artifacts section.")
+                    st.write("Purpose:", copy_text("pages.plan.drawer_purpose", "Зачем: приблизить запуск варианта."))
+                    st.write("Output artifact:", copy_text("pages.plan.drawer_output", "Что на выходе: артефакт из раздела artifacts/plan.md."))
+                    st.write("Dependencies:", copy_text("pages.plan.drawer_dependencies", "Зависимости: предыдущие шаги и доступные ресурсы."))
+                    st.write("Risks:", copy_text("pages.plan.drawer_risks", "Риски: юридические и операционные блокеры до завершения шага."))
 
             st.markdown("### Export preview")
             plan_text = render_plan_md(plan)
@@ -2460,6 +2479,7 @@ def run_app() -> None:
 
     elif page_slug == "export":
         _render_page_header("Export")
+        render_inline_hint(copy_text("pages.export.goal_hint", "Экспорт фиксирует решение и версии данных для воспроизводимости."))
 
         def _render_export() -> None:
             report = _get_validation()
@@ -2484,12 +2504,21 @@ def run_app() -> None:
                             "Generate a plan in the Plan screen.",
                         )
                     )
-                _render_status(
-                    "not_ready",
-                    copy_text("pages.export.not_ready", "Export is not ready."),
-                    reasons=reasons,
-                    level="warning",
+                action = render_empty_state(
+                    title=copy_text("pages.export.not_ready", "Export is not ready."),
+                    reason="; ".join(reasons),
+                    actions=[
+                        {"key": "go_plan", "label": "Go to Plan"},
+                        {"key": "go_recommendations", "label": "Go to Recommendations"},
+                    ],
+                    key_prefix="export-empty",
                 )
+                if action == "go_plan":
+                    st.session_state["page"] = "plan"
+                    st.rerun()
+                if action == "go_recommendations":
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
                 return
 
             app_data = _get_app_data()
@@ -2539,6 +2568,7 @@ def run_app() -> None:
                     st.code(profile_yaml, language="yaml")
 
             st.markdown("### Export metadata")
+            render_info_callout(copy_text("pages.export.repro_hint", "Экспорт сохраняет dataset/rulepack/objective/profile_hash для честного сравнения запусков."), level="info")
             metadata_rows = [
                 {"key": "dataset_version", "value": app_data.meta.dataset_version},
                 {"key": "rulepack_reviewed_at", "value": app_data.rulepack.reviewed_at},

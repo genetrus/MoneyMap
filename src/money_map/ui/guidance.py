@@ -166,8 +166,8 @@ def _collect_entities(
         profile_status = "draft"
 
     selected_variant_id = str(state.get("selected_variant_id") or "")
-    plan_ready = bool(state.get("plan"))
-    exports_ready = bool(state.get("export_paths"))
+    plan_ready = _is_plan_ready(state.get("plan"))
+    exports_ready = _is_exports_ready(state.get("export_paths"))
 
     entities = {
         "data_valid": data_valid,
@@ -234,3 +234,68 @@ def _normalize_str_list(value: Any) -> list[str]:
         if text and text not in normalized:
             normalized.append(text)
     return normalized
+
+
+def _is_plan_ready(plan: Any) -> bool:
+    if plan is None:
+        return False
+
+    steps = _value_from(plan, "steps")
+    artifacts = _value_from(plan, "artifacts")
+    week_plan = _value_from(plan, "week_plan")
+    compliance = _value_from(plan, "compliance")
+    legal_gate = str(_value_from(plan, "legal_gate") or "").strip().lower()
+
+    has_steps = bool(steps)
+    has_artifacts = bool(artifacts)
+    has_compliance = bool(compliance)
+    has_4_week_coverage = _has_4_week_coverage(week_plan)
+    requires_compliance = legal_gate != "ok"
+
+    if not (has_steps and has_artifacts and has_4_week_coverage):
+        return False
+    if requires_compliance and not has_compliance:
+        return False
+    return True
+
+
+def _has_4_week_coverage(week_plan: Any) -> bool:
+    if not isinstance(week_plan, dict):
+        return False
+    if len(week_plan) < 4:
+        return False
+
+    covered_weeks: set[int] = set()
+    for key in week_plan:
+        week_num = _parse_week_number(str(key))
+        if week_num is not None and 1 <= week_num <= 4:
+            covered_weeks.add(week_num)
+    return covered_weeks == {1, 2, 3, 4}
+
+
+def _parse_week_number(raw_key: str) -> int | None:
+    digits = "".join(ch for ch in raw_key if ch.isdigit())
+    if not digits:
+        return None
+    try:
+        return int(digits)
+    except ValueError:
+        return None
+
+
+def _is_exports_ready(export_paths: Any) -> bool:
+    if not isinstance(export_paths, dict):
+        return False
+
+    required_keys = ["plan", "result", "profile"]
+    for key in required_keys:
+        value = export_paths.get(key)
+        if not isinstance(value, str) or not value.strip():
+            return False
+    return True
+
+
+def _value_from(container: Any, key: str) -> Any:
+    if isinstance(container, dict):
+        return container.get(key)
+    return getattr(container, key, None)
