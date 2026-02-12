@@ -1,0 +1,14 @@
+pack_id: de_muc
+pack_version: "0.1.0"
+scope:
+  country: DE
+  state: BY
+  city: MUC
+reviewed_at: "2026-02-12"
+depends_on_core:
+  - file: data/meta.yaml
+    dataset_version: "0.0.1"
+  - file: data/rulepacks/DE.yaml
+    reviewed_at: "2026-01-01"
+  - file: data/variants.yaml
+    reviewed_at_field: review_date
