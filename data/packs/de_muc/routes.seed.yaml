@@ -1,1 +1,393 @@
-routes: []
+routes:
+- id: route.de_muc.short.01
+  title: Зарплата -> сервис за 2 шага
+  route_type: short
+  entry_conditions:
+  - Есть минимум 6 часов в неделю на side activity
+  - Есть базовый комплект документов для подработки
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.01
+    action: Выбрать один сервисный оффер и протестировать на тёплом контакте
+    input_conditions:
+    - Подготовлено простое описание оффера (что/для кого/за сколько)
+    expected_result: Получен первый оплаченный тестовый заказ
+  - step: 2
+    bridge_id: br.de_muc.service_product.01
+    action: Зафиксировать повторяемые задачи в шаблон
+    input_conditions:
+    - После первого заказа выделены 3+ повторяющихся шага
+    expected_result: Собран шаблон, готовый к повторному использованию и продаже
+- id: route.de_muc.short.02
+  title: Локальный сервис -> удалённый сервис -> продукт
+  route_type: short
+  entry_conditions:
+  - Есть 2 локальных клиента с подтверждённым результатом
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.service_service.01
+    action: Перенести коммуникацию и оплату в онлайн-канал
+    input_conditions:
+    - Настроены мессенджер и способ удалённой оплаты
+    expected_result: Получен первый удалённый заказ
+  - step: 2
+    bridge_id: br.de_muc.service_product.03
+    action: Упаковать deliverables в набор шаблонов
+    input_conditions:
+    - Есть не менее 5 повторяющихся deliverables
+    expected_result: Опубликован минимальный продуктовый пакет
+- id: route.de_muc.short.03
+  title: Оклад -> консультация -> knowledge asset
+  route_type: short
+  entry_conditions:
+  - Есть экспертная тема и 1 кейс подтверждённого результата
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.05
+    action: Провести диагностическую консультацию
+    input_conditions:
+    - Сформирован скрипт диагностики и список вопросов
+    expected_result: Клиент покупает follow-up консультацию
+  - step: 2
+    bridge_id: br.de_muc.service_product.05
+    action: Собрать FAQ и оформить в платную базу знаний
+    input_conditions:
+    - Накоплено не менее 20 типовых вопросов
+    expected_result: Запущен knowledge asset с первым платным доступом
+- id: route.de_muc.short.04
+  title: Сервис-подписка -> self-serve продукт
+  route_type: short
+  entry_conditions:
+  - Есть 3+ клиента на регулярном сервисе
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.10
+    action: Стандартизировать recurring-процессы сервиса
+    input_conditions:
+    - Описаны SLA и месячные циклы работ
+    expected_result: Сервис выполняется по повторяемому циклу
+  - step: 2
+    bridge_id: br.de_muc.service_product.08
+    action: Создать self-serve toolkit для текущих клиентов
+    input_conditions:
+    - Выделены артефакты, которые клиент может использовать самостоятельно
+    expected_result: Первые клиенты переходят на продуктовый формат
+- id: route.de_muc.short.05
+  title: Зарплата -> smoke-test продукта
+  route_type: short
+  entry_conditions:
+  - Есть бюджет теста до 150 EUR
+  - Есть одна проверяемая продуктовая гипотеза
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_product.01
+    action: Собрать лендинг и оффер для теста спроса
+    input_conditions:
+    - Определены ICP и ценностное предложение
+    expected_result: Собраны первые лиды/предзаказы
+  - step: 2
+    bridge_id: br.de_muc.service_product.02
+    action: Добавить DIY-материалы как повышение ценности
+    input_conditions:
+    - Получены вопросы от лидов по внедрению
+    expected_result: Оформлен базовый DIY-комплект и совершены продажи
+- id: route.de_muc.short.06
+  title: Сервис -> консалтинг пакет -> лицензия
+  route_type: short
+  entry_conditions:
+  - Есть 3 завершённых проекта с измеримым результатом
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.service_service.02
+    action: Перевести почасовые задачи в пакетированный консалтинг
+    input_conditions:
+    - Определены границы пакета и цена
+    expected_result: Клиенты покупают пакет вместо часов
+  - step: 2
+    bridge_id: br.de_muc.service_product.09
+    action: Оформить методологию как лицензируемый фреймворк
+    input_conditions:
+    - Есть описанная методология и KPI успеха
+    expected_result: Подписано первое лицензионное соглашение
+- id: route.de_muc.short.07
+  title: Зарплата -> high-ticket сервис -> платформенный актив
+  route_type: short
+  entry_conditions:
+  - Есть подтверждённая экспертность и поток лидов из сети контактов
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.13
+    action: Запустить high-ticket сервис с квалификацией лидов
+    input_conditions:
+    - Собран квалификационный опрос и критерии отказа
+    expected_result: Закрыта high-ticket сделка с предоплатой
+  - step: 2
+    bridge_id: br.de_muc.service_product.13
+    action: Автоматизировать повторяемое ядро в платформенный актив
+    input_conditions:
+    - Выделены повторяемые сценарии оказания услуги
+    expected_result: Создан MVP платформы с самостоятельным onboarding
+- id: route.de_muc.long.01
+  title: Salary -> Service -> Product ladder (classic)
+  route_type: long
+  entry_conditions:
+  - Есть стабильная зарплата и 8+ часов в неделю на развитие
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.01
+    action: Запустить первый локальный сервисный оффер
+    input_conditions:
+    - Подготовлен прайс и скрипт продажи
+    expected_result: Получен первый оплативший клиент
+  - step: 2
+    bridge_id: br.de_muc.salary_service.03
+    action: Перевести услугу в удалённый формат
+    input_conditions:
+    - Отработан процесс удалённой коммуникации
+    expected_result: Есть 2 удалённых клиента
+  - step: 3
+    bridge_id: br.de_muc.service_product.03
+    action: Упаковать deliverables в продуктовый пакет
+    input_conditions:
+    - Стабильно повторяются 5+ deliverables
+    expected_result: Опубликован MVP продукта
+  - step: 4
+    bridge_id: br.de_muc.service_product.06
+    action: Стандартизировать продажу продукта через сервис
+    input_conditions:
+    - Есть 10+ продаж сервиса за период
+    expected_result: Продукт продаётся в каждом втором проекте
+  - step: 5
+    bridge_id: br.de_muc.service_product.10
+    action: Разделить сервисную и продуктовую выручку
+    input_conditions:
+    - Ведётся отдельный учёт выручки по направлениям
+    expected_result: Продуктовая выручка >25% общего потока
+- id: route.de_muc.long.02
+  title: Employment to subscription service to assets
+  route_type: long
+  entry_conditions:
+  - Есть опыт операционного управления и текущая занятость
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.04
+    action: Пакетировать локальную услугу
+    input_conditions:
+    - Есть минимум 3 кейса выполненной услуги
+    expected_result: Сформированы 2 понятных пакета
+  - step: 2
+    bridge_id: br.de_muc.salary_service.08
+    action: Собрать микростудию с делегированием
+    input_conditions:
+    - Найдены 2 надёжных подрядчика
+    expected_result: Параллельно выполняются 2 проекта
+  - step: 3
+    bridge_id: br.de_muc.salary_service.10
+    action: Ввести подписную модель обслуживания
+    input_conditions:
+    - Определён recurring-набор работ
+    expected_result: Подключены 3 клиента на подписку
+  - step: 4
+    bridge_id: br.de_muc.service_product.08
+    action: Сделать self-serve toolkit для подписчиков
+    input_conditions:
+    - Собраны стандартизированные артефакты
+    expected_result: Клиенты покупают toolkit отдельно
+  - step: 5
+    bridge_id: br.de_muc.service_asset.01
+    action: Оформить регламенты как актив
+    input_conditions:
+    - SOP описывает процесс end-to-end
+    expected_result: Создан лицензируемый операционный актив
+- id: route.de_muc.long.03
+  title: Expert salary -> premium service -> IP portfolio
+  route_type: long
+  entry_conditions:
+  - Есть экспертная роль и кейсы с измеримым impact
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.11
+    action: Сформировать premium service предложение
+    input_conditions:
+    - Есть аудит как входной продукт
+    expected_result: Получена сделка с предоплатой
+  - step: 2
+    bridge_id: br.de_muc.service_product.09
+    action: Лицензировать методологию
+    input_conditions:
+    - Методология формализована в документах
+    expected_result: Подписано первое лицензионное соглашение
+  - step: 3
+    bridge_id: br.de_muc.service_product.11
+    action: Собрать IP-портфель
+    input_conditions:
+    - Определены объекты IP и каналы монетизации
+    expected_result: Появился повторяемый лицензионный доход
+  - step: 4
+    bridge_id: br.de_muc.service_product.12
+    action: Выделить продуктовое направление
+    input_conditions:
+    - Назначен owner продуктового roadmap
+    expected_result: Продуктовое направление работает автономно
+- id: route.de_muc.long.04
+  title: Service expansion to franchise brand asset
+  route_type: long
+  entry_conditions:
+  - Есть работающий сервис и подтверждённый unit economics
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.service_service.02
+    action: Перевести услуги в пакетный консалтинг
+    input_conditions:
+    - Определены границы и SLA пакетов
+    expected_result: Снижение доли ad-hoc задач
+  - step: 2
+    bridge_id: br.de_muc.service_product.07
+    action: Развить медиа-актив вокруг ниши
+    input_conditions:
+    - Есть контент-план и регулярный выпуск
+    expected_result: Медиа приводит входящие заявки
+  - step: 3
+    bridge_id: br.de_muc.salary_service.14
+    action: Стандартизировать сервис под франшизу
+    input_conditions:
+    - Описан операционный playbook
+    expected_result: Подготовлен франшизный пакет
+  - step: 4
+    bridge_id: br.de_muc.service_product.14
+    action: Лицензировать бренд-актив
+    input_conditions:
+    - Есть брендбук и договорная модель
+    expected_result: Запущен отдельный поток лицензионной выручки
+- id: route.de_muc.long.05
+  title: Salary side-gig to product company
+  route_type: long
+  entry_conditions:
+  - Есть стабильный доход и минимум 10 часов/неделю на side-gig
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.02
+    action: Запустить B2B микро-услугу параллельно работе
+    input_conditions:
+    - Есть один демонстрационный кейс
+    expected_result: Проведён пилот с оплатой
+  - step: 2
+    bridge_id: br.de_muc.salary_service.07
+    action: Стандартизировать сервисный пакет
+    input_conditions:
+    - Собрана обратная связь от первых клиентов
+    expected_result: 50% работ выполняется по шаблону
+  - step: 3
+    bridge_id: br.de_muc.service_product.04
+    action: Запустить обучающий мини-курс
+    input_conditions:
+    - Есть результаты клиентов до/после
+    expected_result: Стартовала первая когорта
+  - step: 4
+    bridge_id: br.de_muc.service_product.06
+    action: Продуктизировать ключевые deliverables
+    input_conditions:
+    - Понятна юнит-экономика сервиса
+    expected_result: Продукт продаётся вместе с сервисом
+  - step: 5
+    bridge_id: br.de_muc.service_product.12
+    action: Выделить продуктовую линию в отдельный контур
+    input_conditions:
+    - Ведётся продуктовая аналитика usage
+    expected_result: Работает отдельная продуктовая воронка
+- id: route.de_muc.long.06
+  title: Local service to knowledge asset ladder
+  route_type: long
+  entry_conditions:
+  - Есть минимум 5 выполненных заказов и клиентские отзывы
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.04
+    action: Упаковать локальный сервис в стандартизированные пакеты
+    input_conditions:
+    - Понятны границы работ и SLA
+    expected_result: Появились повторяемые продажи
+  - step: 2
+    bridge_id: br.de_muc.service_product.02
+    action: Собрать DIY материалы для клиентов
+    input_conditions:
+    - Есть фотопримеры и инструкции
+    expected_result: DIY-комплект протестирован на покупателях
+  - step: 3
+    bridge_id: br.de_muc.service_product.04
+    action: Развернуть мини-курс из инструкций
+    input_conditions:
+    - Собран curriculum 3-5 модулей
+    expected_result: Запущена первая учебная когорта
+  - step: 4
+    bridge_id: br.de_muc.service_product.05
+    action: Сформировать платную базу знаний
+    input_conditions:
+    - Накоплен FAQ по ходу курса
+    expected_result: Открыт платный доступ к knowledge base
+- id: route.de_muc.long.07
+  title: Agency route with asset monetization
+  route_type: long
+  entry_conditions:
+  - Есть действующий сервис и стабильные лиды
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.06
+    action: Делегировать часть исполнения и собрать SOP
+    input_conditions:
+    - Назначен исполнитель на рутинные задачи
+    expected_result: Освобождено время владельца
+  - step: 2
+    bridge_id: br.de_muc.salary_service.12
+    action: Сформировать мини-агентство
+    input_conditions:
+    - Есть owner продаж и owner delivery
+    expected_result: Сервис работает как команда
+  - step: 3
+    bridge_id: br.de_muc.service_product.10
+    action: Вывести линейку продуктовых SKU
+    input_conditions:
+    - Есть 3 SKU с разной ценой
+    expected_result: Продуктовая выручка растёт
+  - step: 4
+    bridge_id: br.de_muc.service_product.13
+    action: Автоматизировать ядро в платформенный актив
+    input_conditions:
+    - Есть повторяемые сценарии спроса
+    expected_result: Запущен платформенный актив
+  - step: 5
+    bridge_id: br.de_muc.product_asset.01
+    action: Построить экосистему активов вокруг продукта
+    input_conditions:
+    - Продукт стабильно продаётся 2+ месяца
+    expected_result: Появилась повторная монетизация активов
+- id: route.de_muc.long.08
+  title: Niche expertise to asset library
+  route_type: long
+  entry_conditions:
+  - Есть подтверждённая нишевая экспертиза
+  steps:
+  - step: 1
+    bridge_id: br.de_muc.salary_service.15
+    action: Запустить нишевую практику как сервис
+    input_conditions:
+    - Есть партнёрский канал и кейсы
+    expected_result: Сформирован предсказуемый pipeline
+  - step: 2
+    bridge_id: br.de_muc.service_product.15
+    action: Собрать библиотеку шаблонов/методик
+    input_conditions:
+    - Есть запрос клиентов на самостоятельное внедрение
+    expected_result: Библиотека активов продаётся отдельно
+  - step: 3
+    bridge_id: br.de_muc.service_product.11
+    action: Оформить активы в IP-портфель
+    input_conditions:
+    - Подготовлены условия лицензирования
+    expected_result: Запущена повторяемая лицензионная модель
+  - step: 4
+    bridge_id: br.de_muc.service_product.14
+    action: Масштабировать через бренд-актив
+    input_conditions:
+    - Бренд и стандарты задокументированы
+    expected_result: Запущены партнёрские лицензии под брендом
