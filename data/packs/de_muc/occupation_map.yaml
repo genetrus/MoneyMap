@@ -1,1 +1,265 @@
-maps: []
+maps:
+  - id: "de.muc.occ.translation_interpretation"
+    priority: 120
+    active: true
+    match:
+      beruf_any:
+        - "übersetzer"
+        - "dolmetscher"
+        - "translator"
+        - "interpreter"
+      branche_any:
+        - "übersetzung"
+        - "lokalisierung"
+        - "sprachdienstleistungen"
+    assign:
+      cell_id: "A2"
+      taxonomy_id: "service_fee"
+      tags:
+        - "sell:service"
+        - "to_whom:business"
+        - "value_measure:fixed_fee"
+        - "language_services"
+
+  - id: "de.muc.occ.it_software_dev"
+    priority: 118
+    active: true
+    match:
+      beruf_any:
+        - "softwareentwickler"
+        - "software engineer"
+        - "webentwickler"
+        - "devops"
+      branche_any:
+        - "it"
+        - "software"
+        - "saas"
+        - "informationstechnologie"
+    assign:
+      cell_id: "A2"
+      taxonomy_id: "service_fee"
+      tags:
+        - "sell:service"
+        - "to_whom:business"
+        - "remote_possible"
+        - "digital"
+
+  - id: "de.muc.occ.design_content_creative"
+    priority: 116
+    active: true
+    match:
+      beruf_any:
+        - "grafikdesigner"
+        - "ux designer"
+        - "content creator"
+        - "copywriter"
+      branchengruppe_any:
+        - "marketing"
+        - "medien"
+        - "werbung"
+        - "kreativwirtschaft"
+    assign:
+      cell_id: "A2"
+      taxonomy_id: "service_fee"
+      tags:
+        - "sell:service"
+        - "to_whom:business"
+        - "value_measure:fixed_fee"
+        - "creative"
+
+  - id: "de.muc.occ.crafts_handwerk_local"
+    priority: 114
+    active: true
+    match:
+      beruf_any:
+        - "elektriker"
+        - "installateur"
+        - "maler"
+        - "schreiner"
+        - "handwerker"
+      branchengruppe_any:
+        - "handwerk"
+        - "bau"
+        - "installation"
+    assign:
+      cell_id: "A1"
+      taxonomy_id: "labor"
+      tags:
+        - "sell:service"
+        - "to_whom:consumer"
+        - "local"
+        - "regulated"
+        - "craft"
+
+  - id: "de.muc.occ.cleaning_care_support"
+    priority: 112
+    active: true
+    match:
+      beruf_any:
+        - "reinigungskraft"
+        - "haushaltshilfe"
+        - "pflegehilfskraft"
+        - "betreuungskraft"
+      branchengruppe_any:
+        - "haushaltsnahe dienstleistungen"
+        - "pflege"
+        - "soziales"
+    assign:
+      cell_id: "A1"
+      taxonomy_id: "labor"
+      tags:
+        - "sell:service"
+        - "to_whom:consumer"
+        - "local"
+        - "people_ops"
+
+  - id: "de.muc.occ.delivery_transport"
+    priority: 110
+    active: true
+    match:
+      beruf_any:
+        - "fahrer"
+        - "kurier"
+        - "lieferfahrer"
+        - "taxifahrer"
+      branchengruppe_any:
+        - "transport"
+        - "logistik"
+        - "lieferdienste"
+    assign:
+      cell_id: "A1"
+      taxonomy_id: "labor"
+      tags:
+        - "sell:service"
+        - "to_whom:consumer"
+        - "local"
+        - "transport"
+
+  - id: "de.muc.occ.sales_commission"
+    priority: 108
+    active: true
+    match:
+      beruf_any:
+        - "vertrieb"
+        - "sales"
+        - "handelsvertreter"
+        - "makler"
+      branche_any:
+        - "immobilien"
+        - "versicherung"
+        - "finanzvermittlung"
+      keywords_any:
+        - "provision"
+        - "commission"
+        - "erfolgsbasiert"
+    assign:
+      cell_id: "B1"
+      taxonomy_id: "commission"
+      tags:
+        - "sell:service"
+        - "to_whom:business"
+        - "value_measure:percent"
+        - "regulated"
+
+  - id: "de.muc.occ.ecommerce_product_sale"
+    priority: 106
+    active: true
+    match:
+      beruf_any:
+        - "onlinehändler"
+        - "shop-betreiber"
+        - "e-commerce manager"
+      branche_any:
+        - "einzelhandel"
+        - "e-commerce"
+        - "marketplace"
+    assign:
+      cell_id: "B2"
+      taxonomy_id: "product_sale"
+      tags:
+        - "sell:asset"
+        - "to_whom:consumer"
+        - "digital"
+        - "scale"
+
+  - id: "de.muc.occ.rental_assets"
+    priority: 104
+    active: true
+    match:
+      beruf_any:
+        - "vermieter"
+        - "fahrzeugvermietung"
+        - "gerätevermietung"
+        - "eventvermietung"
+      branchengruppe_any:
+        - "vermietung"
+        - "mobilität"
+        - "events"
+    assign:
+      cell_id: "B2"
+      taxonomy_id: "asset_rental"
+      tags:
+        - "sell:asset"
+        - "to_whom:consumer"
+        - "value_measure:recurring"
+
+  - id: "de.muc.occ.education_coaching"
+    priority: 102
+    active: true
+    match:
+      beruf_any:
+        - "lehrer"
+        - "dozent"
+        - "trainer"
+        - "coach"
+      branchengruppe_any:
+        - "bildung"
+        - "weiterbildung"
+        - "coaching"
+    assign:
+      cell_id: "A2"
+      taxonomy_id: "service_fee"
+      tags:
+        - "sell:service"
+        - "to_whom:business"
+        - "to_whom:consumer"
+        - "value_measure:fixed_fee"
+
+  - id: "de.muc.occ.fallback_branche_known"
+    priority: 20
+    active: true
+    match:
+      branche_present: true
+    assign:
+      cell_id: "A1"
+      taxonomy_id: "service_fee"
+      tags:
+        - "needs_manual_review"
+        - "fallback"
+        - "source:branche"
+
+  - id: "de.muc.occ.fallback_branchengruppe_known"
+    priority: 15
+    active: true
+    match:
+      branchengruppe_present: true
+    assign:
+      cell_id: "A1"
+      taxonomy_id: "service_fee"
+      tags:
+        - "needs_manual_review"
+        - "fallback"
+        - "source:branchengruppe"
+
+  - id: "de.muc.occ.fallback_unknown"
+    priority: 1
+    active: true
+    match:
+      always: true
+    assign:
+      cell_id: "A1"
+      taxonomy_id: "service_fee"
+      tags:
+        - "needs_manual_review"
+        - "fallback"
+        - "unknown_occupation"
