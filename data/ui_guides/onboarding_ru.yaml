@@ -1,0 +1,96 @@
+steps:
+  - id: step_data_status
+    title: "Проверка данных"
+    page: "data-status"
+    goal: "Убедиться, что данные целые и актуальные."
+    do_now:
+      - "Проверь статус validate и критические ошибки"
+      - "Если есть FAIL/FATAL — исправь данные"
+    prerequisites: []
+    completion:
+      - "data_valid == true"
+    primary_action:
+      label: "Continue → Profile"
+      action_key: "go_profile"
+      target_page: "profile"
+
+  - id: step_profile
+    title: "Заполнить профиль"
+    page: "profile"
+    goal: "Задать ограничения, чтобы рекомендации были реалистичными."
+    do_now:
+      - "Заполни обязательные поля профиля"
+    prerequisites:
+      - "data_valid == true"
+    completion:
+      - "profile_status == 'ready'"
+    primary_action:
+      label: "Continue → Classify"
+      action_key: "go_classify"
+      target_page: "classify"
+    blockers_resolver:
+      focus_page: "profile"
+      highlight_fields: ["time_per_week", "language_level", "objective"]
+
+  - id: step_classify
+    title: "Сузить фокус через Classify"
+    page: "classify"
+    goal: "Проверить идею и получить фильтр taxonomy/cell перед Recommendations."
+    do_now:
+      - "Введи идею и запусти классификацию"
+      - "Проверь top-3 и отправь prefilter в Recommendations"
+    prerequisites:
+      - "profile_status == 'ready'"
+    completion:
+      - "classify_ready == true"
+    primary_action:
+      label: "Continue → Recommendations"
+      action_key: "go_recommendations"
+      target_page: "recommendations"
+
+  - id: step_recommendations
+    title: "Выбрать вариант"
+    page: "recommendations"
+    goal: "Выбрать один вариант для построения плана."
+    do_now:
+      - "Проверь reality check"
+      - "Выбери вариант"
+    prerequisites:
+      - "profile_status == 'ready'"
+      - "classify_ready == true"
+    completion:
+      - "selected_variant_id != null"
+    primary_action:
+      label: "Continue → Plan"
+      action_key: "go_plan"
+      target_page: "plan"
+
+  - id: step_plan
+    title: "Проверить план"
+    page: "plan"
+    goal: "Проверить checklist, 4 weeks и compliance."
+    do_now:
+      - "Убедись, что план построен"
+    prerequisites:
+      - "selected_variant_id != null"
+    completion:
+      - "plan_ready == true"
+    primary_action:
+      label: "Continue → Export"
+      action_key: "go_export"
+      target_page: "export"
+
+  - id: step_export
+    title: "Зафиксировать результат"
+    page: "export"
+    goal: "Выгрузить пакет артефактов."
+    do_now:
+      - "Сформируй и скачай plan.md/result.json/profile.yaml"
+    prerequisites:
+      - "plan_ready == true"
+    completion:
+      - "exports_ready == true"
+    primary_action:
+      label: "Готово"
+      action_key: "finish"
+      target_page: "export"

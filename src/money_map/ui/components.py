@@ -6,6 +6,7 @@ from typing import Any
 
 import streamlit as st
 
+from money_map.ui.copy import copy_text
 from money_map.ui.status_tokens import (
     confidence_dots,
     get_feasibility_token,
@@ -22,6 +23,99 @@ BADGE_CLASS_BY_STALENESS = {
 
 def _badge(label: str, value: str, *, css_class: str = "badge-stale") -> str:
     return f'<span class="status-badge {css_class}"><strong>{label}:</strong> {value}</span>'
+
+
+def build_action_contract(
+    *,
+    label: str,
+    intent: str,
+    effect: str,
+    next_step: str,
+    undo: str,
+) -> dict[str, str]:
+    return {
+        "Label": label,
+        "Intent": intent,
+        "Effect": effect,
+        "Next": next_step,
+        "Undo": undo,
+    }
+
+
+def action_contract_help(contract: dict[str, str]) -> str:
+    return " | ".join(
+        [f"{key}: {contract.get(key, '')}" for key in ["Label", "Intent", "Effect", "Next", "Undo"]]
+    )
+
+
+def render_tooltip(label: str, text: str) -> None:
+    st.caption(f"{label}: {text}")
+
+
+def render_inline_hint(text: str) -> None:
+    st.info(text)
+
+
+def render_info_callout(text: str, *, level: str = "info") -> None:
+    if level == "warning":
+        st.warning(text)
+    elif level == "error":
+        st.error(text)
+    else:
+        st.info(text)
+
+
+def render_empty_state(
+    *,
+    title: str,
+    reason: str,
+    actions: list[dict[str, str]] | None = None,
+    diagnostics: list[str] | None = None,
+    key_prefix: str = "empty",
+) -> str | None:
+    st.warning(f"{title}\n\n{reason}")
+    chosen: str | None = None
+    if actions:
+        cols = st.columns(len(actions))
+        for col, action in zip(cols, actions):
+            with col:
+                if st.button(
+                    action.get("label", "Action"),
+                    key=f"{key_prefix}-{action.get('key', 'action')}",
+                ):
+                    chosen = action.get("key")
+    if diagnostics:
+        st.caption("Diagnostics")
+        for item in diagnostics:
+            st.write(f"- {item}")
+    return chosen
+
+
+def render_filter_chips_bar(
+    *,
+    active_filters: dict[str, str],
+    key_prefix: str = "filters",
+) -> str | None:
+    if not active_filters:
+        st.caption(copy_text("components.filter_chips.none", "No active filters"))
+        return None
+
+    st.markdown(f"**{copy_text('components.filter_chips.title', 'Active filters')}**")
+    chosen_remove: str | None = None
+    cols = st.columns(min(4, len(active_filters) + 1))
+    idx = 0
+    for filter_key, filter_value in active_filters.items():
+        with cols[idx % len(cols)]:
+            label = f"{filter_key}: {filter_value} ✕"
+            if st.button(label, key=f"{key_prefix}-remove-{filter_key}"):
+                chosen_remove = filter_key
+        idx += 1
+    with cols[-1]:
+        if st.button(
+            copy_text("components.filter_chips.reset", "Reset filters"), key=f"{key_prefix}-reset"
+        ):
+            return "__reset__"
+    return chosen_remove
 
 
 def render_badge_set(
@@ -114,45 +208,198 @@ def render_context_bar(*, page: str, subview: str | None, selected_ids: dict[str
         crumbs.append(subview)
 
     focus = [f"{k}: {v}" for k, v in selected_ids.items() if v]
-    focus_text = " · ".join(focus) if focus else "No pinned selection"
+    focus_text = (
+        " · ".join(focus)
+        if focus
+        else copy_text("components.context_bar.no_pinned_selection", "No pinned selection")
+    )
+    context_prefix = copy_text("components.context_bar.context_prefix", "Context")
     st.markdown(
         f"""
         <div class="mm-context-bar">
-          <div><strong>Context:</strong> {" / ".join(crumbs)}</div>
+          <div><strong>{context_prefix}:</strong> {" / ".join(crumbs)}</div>
           <div class="mm-context-focus">{focus_text}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button(
+            copy_text("components.context_bar.staleness_badge", "Staleness"),
+            key="context-open-data-status",
+            help=action_contract_help(
+                build_action_contract(
+                    label=copy_text("components.context_bar.staleness_badge", "Staleness"),
+                    intent=copy_text(
+                        "components.context_bar.staleness_intent", "Проверить актуальность данных"
+                    ),
+                    effect=copy_text(
+                        "components.context_bar.staleness_effect",
+                        "Откроет Data status и покажет риски устаревания данных.",
+                    ),
+                    next_step=copy_text("components.context_bar.staleness_next", "Data status"),
+                    undo=copy_text(
+                        "components.context_bar.staleness_undo",
+                        "Вернись на предыдущую страницу через навигацию",
+                    ),
+                )
+            ),
+            use_container_width=True,
+        ):
+            st.session_state["page"] = "data-status"
+            st.rerun()
+    with c2:
+        if st.button(
+            copy_text("components.context_bar.profile_badge", "Profile"),
+            key="context-open-profile",
+            help=action_contract_help(
+                build_action_contract(
+                    label=copy_text("components.context_bar.profile_badge", "Profile"),
+                    intent=copy_text("components.context_bar.profile_intent", "Исправить профиль"),
+                    effect=copy_text(
+                        "components.context_bar.profile_effect",
+                        "Откроет Profile для исправления ограничений/обязательных полей.",
+                    ),
+                    next_step=copy_text("components.context_bar.profile_next", "Profile"),
+                    undo=copy_text(
+                        "components.context_bar.profile_undo", "Вернись через навигацию"
+                    ),
+                )
+            ),
+            use_container_width=True,
+        ):
+            st.session_state["page"] = "profile"
+            st.rerun()
+    with c3:
+        if st.button(
+            copy_text("components.context_bar.selected_badge", "Selected"),
+            key="context-open-drawer",
+            help=action_contract_help(
+                build_action_contract(
+                    label=copy_text("components.context_bar.selected_badge", "Selected"),
+                    intent=copy_text(
+                        "components.context_bar.selected_intent", "Посмотреть детали выбора"
+                    ),
+                    effect=copy_text(
+                        "components.context_bar.selected_effect",
+                        "Откроет Detail Drawer для выбранной сущности и быстрых действий.",
+                    ),
+                    next_step=copy_text("components.context_bar.selected_next", "Detail Drawer"),
+                    undo=copy_text("components.context_bar.selected_undo", "Сверни Detail Drawer"),
+                )
+            ),
+            use_container_width=True,
+        ):
+            st.session_state["open_detail_drawer"] = True
+            st.rerun()
 
-def render_detail_drawer(selected_ids: dict[str, str], *, page_slug: str) -> None:
-    with st.expander("Detail Drawer", expanded=False):
+
+def render_guide_panel(*, runtime: dict[str, Any], current_page_slug: str) -> None:
+    current_step = runtime.get("current_step") or {}
+    blockers = runtime.get("blockers") or []
+    primary_action = runtime.get("primary_action") or {}
+    resolver = runtime.get("blockers_resolver") or {}
+
+    st.markdown(f"### {copy_text('guide_panel.title', 'Guide panel')}")
+    st.caption(str(current_step.get("goal") or ""))
+
+    do_now = current_step.get("do_now") or []
+    if do_now:
+        st.markdown(f"**{copy_text('guide_panel.do_now', 'Сделай сейчас')}**")
+        for item in do_now:
+            st.markdown(f"- {item}")
+
+    if blockers:
+        st.warning(copy_text("guided.blocked_title", "Шаг заблокирован:"))
+        for blocker in blockers:
+            st.caption(f"• {blocker}")
+        if st.button(
+            copy_text("guided.resolve_cta", "Показать где исправить"),
+            key=f"guide-panel-resolve-{current_step.get('id', current_page_slug)}",
+            use_container_width=True,
+        ):
+            focus_page = str(resolver.get("focus_page") or primary_action.get("target_page") or "")
+            st.session_state["page"] = focus_page
+            st.session_state["guide_highlight_fields"] = resolver.get("highlight_fields", [])
+            st.rerun()
+
+    label = str(primary_action.get("label") or "Continue")
+    target_page = str(primary_action.get("target_page") or current_page_slug)
+    if st.button(
+        label,
+        key=f"guide-panel-primary-{current_step.get('id', current_page_slug)}",
+        disabled=bool(primary_action.get("disabled")),
+        help=copy_text(
+            "guide_panel.primary_effect",
+            "Перейдёт на следующий шаг. Если шаг заблокирован — сначала исправь блокеры.",
+        ),
+        use_container_width=True,
+    ):
+        st.session_state["page"] = target_page
+        st.rerun()
+
+
+def render_detail_drawer(
+    selected_ids: dict[str, str],
+    *,
+    page_slug: str,
+    expanded: bool = False,
+) -> None:
+    with st.expander(
+        copy_text("components.detail_drawer.title", "Detail Drawer"),
+        expanded=expanded,
+    ):
         has_selection = any(selected_ids.values())
         if not has_selection:
             st.caption(
-                "No entity selected yet. Pick Cell/Taxonomy/Variant/Bridge/Path to pin context."
+                copy_text("components.detail_drawer.no_entity_selected", "No entity selected yet.")
             )
             return
 
-        st.write("Pinned selection")
+        st.write(copy_text("components.detail_drawer.pinned_selection", "Pinned selection"))
         for key, value in selected_ids.items():
             if value:
                 st.write(f"- **{key}**: `{value}`")
 
-        st.write("Cross-links")
+        st.write(copy_text("components.detail_drawer.cross_links", "Cross-links"))
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("Open in Explore", key=f"drawer-open-explore-{page_slug}"):
+            if st.button(
+                copy_text("components.detail_drawer.open_explore", "Open in Explore"),
+                key=f"drawer-open-explore-{page_slug}",
+                help=copy_text(
+                    "components.detail_drawer.open_explore_effect",
+                    "Откроет Explore и сохранит текущий фокус.",
+                ),
+            ):
                 st.session_state["page"] = "explore"
                 st.rerun()
         with col2:
-            if st.button("Filter Recommendations", key=f"drawer-open-rec-{page_slug}"):
+            if st.button(
+                copy_text(
+                    "components.detail_drawer.filter_recommendations", "Filter Recommendations"
+                ),
+                key=f"drawer-open-rec-{page_slug}",
+                help=copy_text(
+                    "components.detail_drawer.filter_recommendations_effect",
+                    "Перейдёт в Recommendations и применит контекст выбора как фильтр.",
+                ),
+            ):
                 st.session_state["page"] = "recommendations"
                 st.rerun()
         with col3:
             disabled = not bool(selected_ids.get("variant"))
-            if st.button("Build Plan", key=f"drawer-open-plan-{page_slug}", disabled=disabled):
+            if st.button(
+                copy_text("components.detail_drawer.build_plan", "Build Plan"),
+                key=f"drawer-open-plan-{page_slug}",
+                disabled=disabled,
+                help=copy_text(
+                    "components.detail_drawer.build_plan_effect",
+                    "Сохранит выбранный вариант и откроет Plan.",
+                ),
+            ):
                 st.session_state["selected_variant_id"] = selected_ids.get("variant", "")
                 st.session_state["page"] = "plan"
                 st.rerun()
@@ -169,34 +416,47 @@ def render_graph_fallback(
 ) -> None:
     st.markdown(f"**{title}**")
     if not interactive_available:
-        st.info("Interactive view unavailable, fallback applied.")
+        st.info(
+            copy_text(
+                "components.graph_fallback.interactive_unavailable",
+                "Interactive view unavailable, fallback applied.",
+            )
+        )
 
     try:
         st.graphviz_chart(graphviz_dot, use_container_width=True)
     except Exception:
-        st.warning("Graphviz render failed, table fallback applied.")
+        st.warning(
+            copy_text(
+                "components.graph_fallback.render_failed",
+                "Graphviz render failed, table fallback applied.",
+            )
+        )
 
-    with st.expander("Graph fallback: list/table", expanded=False):
+    with st.expander(
+        copy_text("components.graph_fallback.expander_title", "Graph fallback: list/table"),
+        expanded=False,
+    ):
         if nodes_rows:
-            st.write("Nodes")
+            st.write(copy_text("components.graph_fallback.nodes_title", "Nodes"))
             st.dataframe(nodes_rows, use_container_width=True)
         if edges_rows:
-            st.write("Edges")
+            st.write(copy_text("components.graph_fallback.edges_title", "Edges"))
             st.dataframe(edges_rows, use_container_width=True)
 
         node_ids = [row.get("id", "") for row in nodes_rows if row.get("id")]
         edge_ids = [row.get("id", "") for row in edges_rows if row.get("id")]
         selected_node = st.selectbox(
-            "Select node",
+            copy_text("components.graph_fallback.select_node", "Select node"),
             [""] + node_ids,
             key=f"{key_prefix}-fallback-node",
-            format_func=lambda value: value or "none",
+            format_func=lambda value: value or copy_text("components.graph_fallback.none", "none"),
         )
         selected_edge = st.selectbox(
-            "Select edge",
+            copy_text("components.graph_fallback.select_edge", "Select edge"),
             [""] + edge_ids,
             key=f"{key_prefix}-fallback-edge",
-            format_func=lambda value: value or "none",
+            format_func=lambda value: value or copy_text("components.graph_fallback.none", "none"),
         )
         if selected_node:
             st.caption(f"Selected node: {selected_node}")

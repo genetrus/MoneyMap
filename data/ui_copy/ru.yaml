@@ -1,0 +1,134 @@
+app:
+  mode_label: Режим работы
+  mode_guided: Вести меня
+  mode_explorer: Я сам
+  guide_layout_label: Guide layout
+  guide_layout_auto: Auto
+  guide_layout_right: Right panel
+  guide_layout_top: Top panel
+guided:
+  next_step_banner: 'Guided mode: следующий шаг — {title} ({page}).'
+  next_step_cta: Continue → {page}
+  blocked_title: 'Шаг заблокирован:'
+  resolve_cta: Показать где исправить
+pages:
+  profile:
+    preview_locked: Заполните обязательные поля профиля, чтобы открыть live preview.
+    missing_required_prefix: 'Не заполнены обязательные поля: '
+    goal_hint: 'Профиль превращает желание в ограничения: без обязательных полей рекомендации
+      будут заблокированы.'
+    objective_tooltip: Меняет приоритет ранжирования, не меняет данные.
+    language_tooltip: Влияет на доступные варианты и скорость входа.
+    time_tooltip: Реально доступные часы в неделю для старта.
+    capital_tooltip: Сумма, которую можно вложить без критичного риска.
+    constraints_tooltip: Ограничения применяются как фильтры и их можно ослабить позже.
+    blocked_reason: 'Почему заблокировано: не заполнены обязательные поля.'
+    todo_prefix: 'Что сделать: заполнить поле'
+    continue_intent: Перейти к выбору варианта
+    continue_effect: Откроет Recommendations с текущим профилем.
+    continue_next: Проверь Reality Check и выбери вариант
+    continue_undo: Вернись в Profile и отредактируй поля
+  recommendations:
+    not_ready: Профиль не готов для рекомендаций.
+    top_hint: Настрой фильтры и пересчитай рекомендации.
+    recompute_tooltip: Пересчитает Top-N по текущим фильтрам.
+    recompute_intent: Обновить ранжирование
+    recompute_effect: Пересчитает результаты с текущими фильтрами.
+    recompute_next: Проверь обновлённые карточки
+    recompute_undo: Измени фильтры или objective
+    reality_hint: Проверь ключевые блокеры и quick fixes.
+    empty_title: Ничего не найдено
+    empty_reason: Все варианты были отфильтрованы текущими ограничениями.
+    objective_hint: Меняет веса ранжирования. Данные не изменяются.
+    filters_hint: Фильтры отсекают варианты. Если пусто — ослабь ограничения.
+    select_intent: Сохранить вариант и перейти к плану
+    select_effect: Обновит Selected в контексте и откроет Plan.
+    select_next: Проверь Checklist / 4 weeks / Compliance
+    select_undo: Выбери другой вариант в Recommendations
+    selected_notice: 'Selected обновлён. Следующий шаг: Plan.'
+    open_intent: Посмотреть вариант на карте
+    open_effect: Откроет Explore с выбранной taxonomy/cell.
+    open_next: Изучи связи и вернись к выбору
+    open_undo: Вернись на Recommendations через навигацию
+  plan:
+    not_ready: План пока недоступен.
+    need_variant_reason: Сначала выберите вариант в Recommendations.
+  export:
+    not_ready: Экспорт пока недоступен.
+    need_variant_reason: Сначала выберите вариант в Recommendations.
+    need_plan_reason: Сначала соберите план на экране Plan.
+  data_status:
+    goal_hint: 'Проверь целостность и актуальность данных: при FATAL рекомендации
+      и план блокируются.'
+    what_means: 'What this means: статус данных определяет надежность рекомендаций
+      и доступность следующих шагов.'
+    rerun_validate: Re-run validate
+    rerun_intent: Обновить validate отчет
+    rerun_effect: Пересчитает отчет validation на текущих данных.
+    rerun_next: Проверь изменившиеся WARN/FATAL
+    rerun_undo: Исправь данные и запусти заново
+    continue_profile: Continue → Profile
+    continue_blocked_reason: 'Continue заблокирован: есть FATAL ошибки в validate
+      report.'
+    continue_intent: Перейти к заполнению профиля
+    continue_effect: Откроет экран Profile для задания ограничений.
+    continue_next: Заполни обязательные поля
+    continue_undo: Вернись в Data status через навигацию
+  explore:
+    goal_hint: 'Explore показывает карту связей: ячейки, механизмы, мосты и примеры.'
+    matrix_hint: Нажми ячейку, чтобы увидеть варианты и быстро отправить фильтр в
+      Recommendations.
+    taxonomy_hint: Выбери механизм и изучи связи taxonomy → cell → variant.
+    bridges_hint: Мост показывает переход между ячейками и связанные варианты.
+    paths_hint: Маршрут — это цепочка переходов. Можно использовать как плановый backbone.
+    library_hint: Каталог примеров без ранжирования. Фильтруй и отправляй в Recommendations.
+components:
+  context_bar:
+    no_pinned_selection: Нет закреплённого выбора
+    context_prefix: Контекст
+    staleness_badge: Staleness
+    profile_badge: Profile
+    selected_badge: Selected
+    staleness_effect: Откроет Data status и объяснит риск устаревания данных.
+    profile_effect: Откроет Profile и покажет, что нужно заполнить.
+    selected_effect: Откроет Detail Drawer с выбранной сущностью и быстрыми действиями.
+    staleness_intent: Проверить актуальность данных
+    staleness_next: Data status
+    staleness_undo: Вернуться через навигацию на предыдущий экран
+    profile_intent: Проверить и дополнить профиль
+    profile_next: Profile
+    profile_undo: Вернуться через навигацию
+    selected_intent: Открыть детали выбранной сущности
+    selected_next: Detail Drawer
+    selected_undo: Свернуть Detail Drawer
+  detail_drawer:
+    title: Detail Drawer
+    no_entity_selected: Пока ничего не выбрано. Выберите Cell/Taxonomy/Variant/Bridge/Path,
+      чтобы закрепить контекст.
+    pinned_selection: Закреплённый выбор
+    cross_links: Переходы
+    open_explore: Открыть в Explore
+    filter_recommendations: Фильтр в Recommendations
+    build_plan: Собрать план
+    open_explore_effect: Откроет Explore для текущей сущности.
+    filter_recommendations_effect: Перейдёт в Recommendations и применит контекст
+      как фильтр.
+    build_plan_effect: Сохранит выбор и откроет Plan.
+  graph_fallback:
+    interactive_unavailable: Interactive режим недоступен, включён fallback.
+    render_failed: Graphviz не отрисовался, показан fallback в виде таблицы.
+    expander_title: 'Graph fallback: list/table'
+    nodes_title: Nodes
+    edges_title: Edges
+    select_node: Выбрать node
+    select_edge: Выбрать edge
+    none: none
+  filter_chips:
+    title: Активные фильтры
+    none: Нет активных фильтров
+    reset: Сбросить фильтры
+guide_panel:
+  title: Guide Panel
+  do_now: Сделай сейчас
+  primary_effect: Перейдёт к следующему шагу. Если есть блокеры — сначала устрани
+    их.

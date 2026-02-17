@@ -14,9 +14,10 @@ def test_ui_cache_contracts_present() -> None:
 
 def test_ui_recommendations_empty_state_contract_present() -> None:
     source = _read_ui_app()
-    assert '_render_status(\n                    "empty",' in source
-    assert "Empty state quick fixes are available above." in source
+    assert "render_empty_state(" in source
     assert "Quick fix: allow prep" in source
+    assert "Quick fix: relax legal" in source
+    assert "Quick fix: extend time" in source
 
 
 def test_ui_export_artifact_panel_contract_present() -> None:
@@ -36,3 +37,45 @@ def test_ui_plan_tabs_contract_present() -> None:
     assert "4 weeks" in source
     assert "Compliance" in source
     assert "Step detail drawer" in source
+
+
+def test_ui_global_shell_guidance_contract_present() -> None:
+    source = _read_ui_app()
+    assert "guide_panel_layout" in source
+    assert "render_guide_panel(runtime=guidance_runtime" in source
+    components_source = Path("src/money_map/ui/components.py").read_text(encoding="utf-8")
+    assert "context-open-data-status" in components_source
+    assert "context-open-profile" in components_source
+    assert "context-open-drawer" in components_source
+
+
+def test_ui_data_status_profile_guidance_contract_present() -> None:
+    source = _read_ui_app()
+    assert "pages.data_status.goal_hint" in source
+    assert "data-status-go-profile" in source
+    assert "data-status-rerun-validate" in source
+    assert "pages.profile.goal_hint" in source
+    assert "profile-go-recommendations" in source
+    assert "pages.profile.blocked_reason" in source
+
+
+def test_ui_explore_recommendations_guidance_contract_present() -> None:
+    source = _read_ui_app()
+    assert "pages.explore.goal_hint" in source
+    assert "pages.explore.matrix_hint" in source
+    assert "pages.explore.taxonomy_hint" in source
+    assert "pages.explore.bridges_hint" in source
+    assert "pages.recommendations.objective_hint" in source
+    assert "pages.recommendations.filters_hint" in source
+    assert "**Почему в топе**" in source
+    assert "**Что мешает**" in source
+    assert "Explain score" in source
+
+
+def test_ui_explorer_mode_context_help_and_recovery_actions_present() -> None:
+    source = _read_ui_app()
+    assert "guided.explorer_context_hint" in source
+    assert "plan-back-recommendations" in source
+    assert "export-back-plan" in source
+    assert "explore-fatals" in source
+    assert "rec-profile-empty" in source

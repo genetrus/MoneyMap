@@ -28,13 +28,23 @@ from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
 from money_map.ui.components import (
+    action_contract_help,
+    build_action_contract,
     render_badge_set,
     render_context_bar,
+    render_detail_drawer,
+    render_empty_state,
+    render_filter_chips_bar,
     render_graph_fallback,
+    render_guide_panel,
     render_header_bar,
+    render_info_callout,
+    render_inline_hint,
     render_kpi_grid,
+    render_tooltip,
     selected_ids_from_state,
 )
+from money_map.ui.copy import copy_text
 from money_map.ui.data_status import (
     aggregate_pack_metrics,
     build_validate_rows,
@@ -44,6 +54,7 @@ from money_map.ui.data_status import (
     variants_by_cell,
     variants_by_legal_gate,
 )
+from money_map.ui.guidance import compute_guidance_runtime, initialize_guide_state
 from money_map.ui.jobs_live import create_variant_draft, resolve_jobs_source
 from money_map.ui.navigation import (
     NAV_ITEMS,
@@ -217,6 +228,7 @@ def _init_state() -> None:
     st.session_state.setdefault("classify_prefilter", {})
     st.session_state.setdefault("jobs_variant_drafts", [])
     st.session_state.setdefault("jobs_last_source", {})
+    initialize_guide_state(st.session_state)
     st.session_state["filters_hash"] = compute_filters_hash(st.session_state["filters"])
 
 
@@ -606,6 +618,32 @@ def run_app() -> None:
             st.experimental_set_query_params(page=page_slug)
     render_view_mode_control("sidebar")
 
+    guide_state = initialize_guide_state(st.session_state)
+    mode_options = [
+        copy_text("app.mode_guided", "Вести меня"),
+        copy_text("app.mode_explorer", "Я сам"),
+    ]
+    default_mode = mode_options[0] if guide_state.get("enabled", True) else mode_options[1]
+    selected_mode = st.sidebar.radio(
+        copy_text("app.mode_label", "Режим работы"),
+        mode_options,
+        index=mode_options.index(default_mode),
+        key="guide_mode_selector",
+    )
+    guide_state["enabled"] = selected_mode == mode_options[0]
+
+    if guide_state["enabled"]:
+        guide_layout_options = [
+            copy_text("app.guide_layout_auto", "Auto"),
+            copy_text("app.guide_layout_right", "Right panel"),
+            copy_text("app.guide_layout_top", "Top panel"),
+        ]
+        st.sidebar.selectbox(
+            copy_text("app.guide_layout_label", "Guide layout"),
+            guide_layout_options,
+            key="guide_panel_layout",
+        )
+
     report = _get_validation()
     st.session_state["validate_report"] = report
     sync_dataset_meta(
@@ -615,6 +653,10 @@ def run_app() -> None:
         reviewed_at=report.get("reviewed_at", ""),
         staleness_level=report.get("status", "WARN"),
         country="DE",
+    )
+    guidance_runtime = compute_guidance_runtime(
+        st.session_state,
+        validate_report=report,
     )
     render_header_bar(
         country=st.session_state.get("rulepack_country", "DE"),
@@ -631,6 +673,67 @@ def run_app() -> None:
         or (st.session_state.get("explore_tab") if page_slug == "explore" else None),
         selected_ids=selected_ids_from_state(st.session_state),
     )
+
+    selected_ids = selected_ids_from_state(st.session_state)
+    if guidance_runtime["is_guided"]:
+        current_step = guidance_runtime["current_step"]
+        primary_action = guidance_runtime["primary_action"]
+        next_page = NAV_LABEL_BY_SLUG.get(
+            primary_action["target_page"], primary_action["target_page"]
+        )
+        st.info(
+            copy_text(
+                "guided.next_step_banner",
+                "Guided mode: следующий шаг — {title} ({page}).",
+                title=str(current_step.get("title") or "Следующий шаг"),
+                page=next_page,
+            )
+        )
+
+        layout_label = st.session_state.get(
+            "guide_panel_layout", copy_text("app.guide_layout_auto", "Auto")
+        )
+        use_top_layout = layout_label == copy_text("app.guide_layout_top", "Top panel")
+        use_right_layout = layout_label == copy_text("app.guide_layout_right", "Right panel")
+        if not use_top_layout and not use_right_layout:
+            use_top_layout = page_slug in {"data-status", "profile"}
+            use_right_layout = not use_top_layout
+
+        if use_right_layout:
+            guide_col, drawer_col = st.columns([0.68, 0.32])
+            with guide_col:
+                render_guide_panel(runtime=guidance_runtime, current_page_slug=page_slug)
+            with drawer_col:
+                render_detail_drawer(
+                    selected_ids,
+                    page_slug=page_slug,
+                    expanded=bool(st.session_state.pop("open_detail_drawer", False)),
+                )
+        else:
+            render_guide_panel(runtime=guidance_runtime, current_page_slug=page_slug)
+            render_detail_drawer(
+                selected_ids,
+                page_slug=page_slug,
+                expanded=bool(st.session_state.pop("open_detail_drawer", False)),
+            )
+    else:
+        render_detail_drawer(
+            selected_ids,
+            page_slug=page_slug,
+            expanded=bool(st.session_state.pop("open_detail_drawer", False)),
+        )
+        current_step = guidance_runtime.get("current_step") or {}
+        hint_page = NAV_LABEL_BY_SLUG.get(
+            str(current_step.get("page") or ""), str(current_step.get("page") or "")
+        )
+        st.caption(
+            copy_text(
+                "guided.explorer_context_hint",
+                "Explorer mode: подсказка доступна без авто-навигации — next: {title} ({page}).",
+                title=str(current_step.get("title") or "Следующий шаг"),
+                page=hint_page,
+            )
+        )
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
         header_left, header_right = st.columns([0.78, 0.22])
@@ -663,6 +766,15 @@ def run_app() -> None:
         _render_page_header(
             "Data status",
             "Validation, staleness, and dataset metadata (offline-first).",
+        )
+        render_inline_hint(
+            copy_text(
+                "pages.data_status.goal_hint",
+                (
+                    "Проверь целостность и актуальность данных: при FATAL "
+                    "рекомендации и план блокируются."
+                ),
+            )
         )
 
         def _render_status() -> None:
@@ -712,6 +824,84 @@ def run_app() -> None:
                 )
             else:
                 st.caption("Data is valid.")
+
+            render_info_callout(
+                copy_text(
+                    "pages.data_status.what_means",
+                    (
+                        "What this means: статус данных определяет надежность рекомендаций "
+                        "и доступность следующих шагов."
+                    ),
+                ),
+                level="info",
+            )
+
+            status_controls = st.columns(2)
+            with status_controls[0]:
+                if st.button(
+                    copy_text("pages.data_status.rerun_validate", "Re-run validate"),
+                    key="data-status-rerun-validate",
+                    help=action_contract_help(
+                        build_action_contract(
+                            label=copy_text("pages.data_status.rerun_validate", "Re-run validate"),
+                            intent=copy_text(
+                                "pages.data_status.rerun_intent", "Обновить validate отчет"
+                            ),
+                            effect=copy_text(
+                                "pages.data_status.rerun_effect",
+                                "Пересчитает отчет validation на текущих данных.",
+                            ),
+                            next_step=copy_text(
+                                "pages.data_status.rerun_next", "Проверь изменившиеся WARN/FATAL"
+                            ),
+                            undo=copy_text(
+                                "pages.data_status.rerun_undo", "Исправь данные и запусти заново"
+                            ),
+                        )
+                    ),
+                    use_container_width=True,
+                ):
+                    _get_validation.clear()
+                    st.rerun()
+            with status_controls[1]:
+                blocked = fatals_count > 0
+                if blocked:
+                    render_info_callout(
+                        copy_text(
+                            "pages.data_status.continue_blocked_reason",
+                            "Continue заблокирован: есть FATAL ошибки в validate report.",
+                        ),
+                        level="warning",
+                    )
+                if st.button(
+                    copy_text("pages.data_status.continue_profile", "Continue → Profile"),
+                    key="data-status-go-profile",
+                    disabled=blocked,
+                    help=action_contract_help(
+                        build_action_contract(
+                            label=copy_text(
+                                "pages.data_status.continue_profile", "Continue → Profile"
+                            ),
+                            intent=copy_text(
+                                "pages.data_status.continue_intent", "Перейти к заполнению профиля"
+                            ),
+                            effect=copy_text(
+                                "pages.data_status.continue_effect",
+                                "Откроет экран Profile для задания ограничений.",
+                            ),
+                            next_step=copy_text(
+                                "pages.data_status.continue_next", "Заполни обязательные поля"
+                            ),
+                            undo=copy_text(
+                                "pages.data_status.continue_undo",
+                                "Вернись в Data status через навигацию",
+                            ),
+                        )
+                    ),
+                    use_container_width=True,
+                ):
+                    st.session_state["page"] = "profile"
+                    st.rerun()
 
             if visibility["show_validate_report"]:
                 st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -912,6 +1102,15 @@ def run_app() -> None:
 
     elif page_slug == "profile":
         _render_page_header("Profile")
+        render_inline_hint(
+            copy_text(
+                "pages.profile.goal_hint",
+                (
+                    "Профиль превращает желание в ограничения: без обязательных полей "
+                    "рекомендации будут заблокированы."
+                ),
+            )
+        )
 
         def _render_profile() -> None:
             repo_root = Path(__file__).resolve().parents[3]
@@ -991,6 +1190,13 @@ def run_app() -> None:
                     ),
                     key="profile_objective",
                 )
+                render_tooltip(
+                    "Objective",
+                    copy_text(
+                        "pages.profile.objective_tooltip",
+                        "Меняет приоритет ранжирования, не меняет данные.",
+                    ),
+                )
                 profile["language_level"] = st.selectbox(
                     "Language level",
                     ["A1", "A2", "B1", "B2", "C1", "C2", "native"],
@@ -998,6 +1204,13 @@ def run_app() -> None:
                         st.session_state.get("profile_language_level", "B1")
                     ),
                     key="profile_language_level",
+                )
+                render_tooltip(
+                    "Language level",
+                    copy_text(
+                        "pages.profile.language_tooltip",
+                        "Влияет на доступные варианты и скорость входа.",
+                    ),
                 )
                 profile["time_per_week"] = st.slider(
                     "Time per week",
@@ -1008,11 +1221,24 @@ def run_app() -> None:
                     ),
                     key="profile_time_per_week",
                 )
+                render_tooltip(
+                    "Time per week",
+                    copy_text(
+                        "pages.profile.time_tooltip", "Реально доступные часы в неделю для старта."
+                    ),
+                )
                 profile["capital_eur"] = st.number_input(
                     "Capital (EUR)",
                     min_value=0,
                     value=st.session_state.get("profile_capital_eur", profile["capital_eur"]),
                     key="profile_capital_eur",
+                )
+                render_tooltip(
+                    "Capital",
+                    copy_text(
+                        "pages.profile.capital_tooltip",
+                        "Сумма, которую можно вложить без критичного риска.",
+                    ),
                 )
                 st.caption(f"Capital band: {_capital_band(int(profile['capital_eur']))}")
 
@@ -1020,6 +1246,13 @@ def run_app() -> None:
                 skills_text = st.text_input("Skills (comma separated)", key="profile_skills_text")
                 constraints_text = st.text_area(
                     "Constraints (comma separated)", key="profile_constraints_text"
+                )
+                render_tooltip(
+                    "Constraints",
+                    copy_text(
+                        "pages.profile.constraints_tooltip",
+                        "Ограничения применяются как фильтры и их можно ослабить позже.",
+                    ),
                 )
                 profile["assets"] = [
                     item.strip() for item in assets_text.split(",") if item.strip()
@@ -1041,26 +1274,81 @@ def run_app() -> None:
                         preview = _profile_preview_snapshot(profile)
                     _render_profile_preview(preview)
                 else:
-                    st.info("Complete required profile fields to unlock live preview.")
+                    st.info(
+                        copy_text(
+                            "pages.profile.preview_locked",
+                            "Complete required profile fields to unlock live preview.",
+                        )
+                    )
 
                 if profile_validation["missing"]:
-                    st.info("Missing required fields: " + ", ".join(profile_validation["missing"]))
+                    st.info(
+                        copy_text(
+                            "pages.profile.missing_required_prefix", "Missing required fields: "
+                        )
+                        + ", ".join(profile_validation["missing"])
+                    )
                 for warning in profile_validation["warnings"]:
                     st.warning(warning)
 
                 st.caption(f"Profile hash: {st.session_state.get('profile_hash', '')}")
                 if profile_validation["is_ready"]:
                     st.success("Profile ready")
-                    if st.button("Go to Recommendations", key="profile-go-recommendations"):
-                        st.session_state["page"] = "recommendations"
-                        st.rerun()
                 else:
                     st.caption("Profile draft")
+                    if profile_validation["missing"]:
+                        render_info_callout(
+                            copy_text(
+                                "pages.profile.blocked_reason",
+                                "Почему заблокировано: не заполнены обязательные поля.",
+                            ),
+                            level="warning",
+                        )
+                        todo_prefix = copy_text(
+                            "pages.profile.todo_prefix",
+                            "Что сделать: заполнить поле",
+                        )
+                        for field_name in profile_validation["missing"]:
+                            st.caption(f"• {todo_prefix} `{field_name}`")
+
+                if st.button(
+                    "Go to Recommendations",
+                    key="profile-go-recommendations",
+                    disabled=not profile_validation["is_ready"],
+                    help=action_contract_help(
+                        build_action_contract(
+                            label="Go to Recommendations",
+                            intent=copy_text(
+                                "pages.profile.continue_intent", "Перейти к выбору варианта"
+                            ),
+                            effect=copy_text(
+                                "pages.profile.continue_effect",
+                                "Откроет Recommendations с текущим профилем.",
+                            ),
+                            next_step=copy_text(
+                                "pages.profile.continue_next",
+                                "Проверь Reality Check и выбери вариант",
+                            ),
+                            undo=copy_text(
+                                "pages.profile.continue_undo",
+                                "Вернись в Profile и отредактируй поля",
+                            ),
+                        )
+                    ),
+                ):
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
 
         _run_with_error_boundary(_render_profile)
 
     elif page_slug == "jobs-live":
         _render_page_header("Jobs (Live)", "Vacancies with automatic live/cache/seed fallback.")
+        render_inline_hint(
+            copy_text(
+                "pages.jobs.goal_hint",
+                "Live вакансии с fallback на snapshot/seed и датой источника.",
+            )
+        )
 
         def _render_jobs_live() -> None:
             profile = st.session_state.get("profile", {})
@@ -1101,12 +1389,27 @@ def run_app() -> None:
 
             source = source_meta.get("source", "unknown")
             snapshot = source_meta.get("snapshot", "")
+            fetched_at = source_meta.get("fetched_at", "")
+            confidence = "high" if source == "live" else ("medium" if source == "cache" else "low")
             if source == "live":
-                st.success("Источник данных: live")
+                st.success(
+                    f"Источник данных: live · snapshot_at: {fetched_at} · confidence: {confidence}"
+                )
             elif source == "cache":
-                st.warning(f"Источник данных: cache · snapshot: {snapshot}")
+                st.warning(
+                    (
+                        "Источник данных: cache · "
+                        f"snapshot: {snapshot} · snapshot_at: {fetched_at} · "
+                        f"confidence: {confidence}"
+                    )
+                )
             else:
-                st.info("Источник данных: seed (компактный fallback)")
+                st.info(
+                    (
+                        "Источник данных: seed (компактный fallback) · "
+                        f"snapshot_at: {fetched_at} · confidence: {confidence}"
+                    )
+                )
 
             table_rows = []
             for row in rows:
@@ -1120,7 +1423,17 @@ def run_app() -> None:
                         "url": row.get("url", ""),
                     }
                 )
-            st.dataframe(table_rows, use_container_width=True, hide_index=True)
+            if table_rows:
+                st.dataframe(table_rows, use_container_width=True, hide_index=True)
+            else:
+                render_empty_state(
+                    title=copy_text("pages.jobs.empty_title", "Вакансии не найдены"),
+                    reason=copy_text(
+                        "pages.jobs.empty_reason", "Проверь фильтры, город или период публикации."
+                    ),
+                    actions=[{"key": "retry", "label": "Retry"}],
+                    key_prefix="jobs-empty",
+                )
 
             st.markdown("### Create Variant Draft")
             if rows:
@@ -1158,12 +1471,15 @@ def run_app() -> None:
         def _render_explore() -> None:
             report = _get_validation()
             if report["fatals"]:
-                _render_status(
-                    "invalid_data",
-                    "Explore is blocked by validation fatals.",
-                    reasons=[", ".join(_issue_codes(report["fatals"]))],
-                    level="error",
+                action = render_empty_state(
+                    title="Explore is blocked by validation fatals.",
+                    reason=", ".join(_issue_codes(report["fatals"])),
+                    actions=[{"key": "go_data_status", "label": "Go to Data status"}],
+                    key_prefix="explore-fatals",
                 )
+                if action == "go_data_status":
+                    st.session_state["page"] = "data-status"
+                    st.rerun()
                 return
 
             if report["status"] == "stale":
@@ -1183,8 +1499,23 @@ def run_app() -> None:
                 variants = sorted(app_data.variants, key=_stable_variant_sort_key)
 
             _render_status("ready", f"Explore tab ready: {selected_tab}.")
+            render_inline_hint(
+                copy_text(
+                    "pages.explore.goal_hint",
+                    "Explore показывает карту связей: ячейки, механизмы, мосты и примеры.",
+                )
+            )
 
             if selected_tab == "Matrix":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.matrix_hint",
+                        (
+                            "Нажми ячейку, чтобы увидеть варианты и быстро отправить фильтр "
+                            "в Recommendations."
+                        ),
+                    )
+                )
                 selected_cell = st.selectbox("Cell", CELL_OPTIONS, key="explore_selected_cell")
                 st.session_state["selected_cell_id"] = selected_cell
                 cell_variants = [v for v in variants if _variant_cell(v) == selected_cell]
@@ -1215,12 +1546,15 @@ def run_app() -> None:
 
                 st.subheader(f"Cell {selected_cell}")
                 if not cell_variants:
-                    _render_status(
-                        "empty_view",
-                        "No variants for selected cell.",
-                        reasons=["Try another cell or open Bridges tab."],
-                        level="warning",
+                    action = render_empty_state(
+                        title="No variants for selected cell.",
+                        reason="Try another cell or open Bridges tab.",
+                        actions=[{"key": "open_bridges", "label": "Open Bridges"}],
+                        key_prefix="explore-matrix-empty",
                     )
+                    if action == "open_bridges":
+                        st.session_state["explore_tab"] = "Bridges"
+                        st.rerun()
                     return
                 st.write("Typical variants:")
                 for variant in cell_variants[:12]:
@@ -1232,6 +1566,12 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Taxonomy":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.taxonomy_hint",
+                        "Выбери механизм и изучи связи taxonomy → cell → variant.",
+                    )
+                )
                 selected_taxonomy = st.selectbox(
                     "Taxonomy",
                     TAXONOMY_OPTIONS,
@@ -1281,12 +1621,15 @@ def run_app() -> None:
 
                 st.subheader(f"Taxonomy: {selected_taxonomy}")
                 if not tax_variants:
-                    _render_status(
-                        "empty_view",
-                        "No variants for selected taxonomy.",
-                        reasons=["Try another taxonomy category."],
-                        level="warning",
+                    action = render_empty_state(
+                        title="No variants for selected taxonomy.",
+                        reason="Try another taxonomy category.",
+                        actions=[{"key": "open_matrix", "label": "Open Matrix"}],
+                        key_prefix="explore-tax-empty",
                     )
+                    if action == "open_matrix":
+                        st.session_state["explore_tab"] = "Matrix"
+                        st.rerun()
                     return
                 st.write("Examples:")
                 for variant in tax_variants[:10]:
@@ -1298,6 +1641,12 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Bridges":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.bridges_hint",
+                        "Мост показывает переход между ячейками и связанные варианты.",
+                    )
+                )
                 selected_bridge = st.selectbox(
                     "Bridge",
                     BRIDGE_OPTIONS,
@@ -1344,12 +1693,15 @@ def run_app() -> None:
                     st.session_state["page"] = "recommendations"
                     st.rerun()
                 if not bridge_variants:
-                    _render_status(
-                        "empty_view",
-                        "No variants mapped to this bridge yet.",
-                        reasons=["Use neighboring bridge or relax filters in Recommendations."],
-                        level="warning",
+                    action = render_empty_state(
+                        title="No variants mapped to this bridge yet.",
+                        reason="Use neighboring bridge or relax filters in Recommendations.",
+                        actions=[{"key": "go_recommendations", "label": "Go to Recommendations"}],
+                        key_prefix="explore-bridge-empty",
                     )
+                    if action == "go_recommendations":
+                        st.session_state["page"] = "recommendations"
+                        st.rerun()
                     return
                 st.write("Common variants for this bridge:")
                 for variant in bridge_variants[:10]:
@@ -1361,6 +1713,15 @@ def run_app() -> None:
                     )
 
             elif selected_tab == "Paths":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.paths_hint",
+                        (
+                            "Маршрут — это цепочка переходов. "
+                            "Можно использовать как плановый backbone."
+                        ),
+                    )
+                )
                 path_options = {
                     "Route-1": ["A1", "A2", "B2"],
                     "Route-2": ["A1", "B1", "B2"],
@@ -1390,6 +1751,15 @@ def run_app() -> None:
                     st.rerun()
 
             elif selected_tab == "Variants Library":
+                render_inline_hint(
+                    copy_text(
+                        "pages.explore.library_hint",
+                        (
+                            "Каталог примеров без ранжирования. "
+                            "Фильтруй и отправляй в Recommendations."
+                        ),
+                    )
+                )
                 selected_cell_filter = st.multiselect(
                     "Cell",
                     CELL_OPTIONS,
@@ -1489,12 +1859,15 @@ def run_app() -> None:
                         st.session_state["classify_result"] = None
 
             if st.session_state.get("classify_error"):
-                _render_status(
-                    "error",
-                    "Classification failed.",
-                    reasons=[st.session_state["classify_error"]],
-                    level="error",
+                action = render_empty_state(
+                    title="Classification failed.",
+                    reason=st.session_state["classify_error"],
+                    actions=[{"key": "clear_error", "label": "Try again"}],
+                    key_prefix="classify-error",
                 )
+                if action == "clear_error":
+                    st.session_state["classify_error"] = ""
+                    st.rerun()
                 return
 
             result = st.session_state.get("classify_result")
@@ -1615,15 +1988,40 @@ def run_app() -> None:
                 reasons.extend(
                     [f"Warning: {warning}" for warning in profile_validation["warnings"]]
                 )
-                _render_status(
-                    "not_ready",
-                    "Profile is not ready for recommendations.",
-                    reasons=reasons,
-                    level="warning",
+                action = render_empty_state(
+                    title=copy_text(
+                        "pages.recommendations.not_ready",
+                        "Profile is not ready for recommendations.",
+                    ),
+                    reason="; ".join(reasons) if reasons else "Complete profile first.",
+                    actions=[{"key": "go_profile", "label": "Go to Profile"}],
+                    key_prefix="rec-profile-empty",
                 )
+                if action == "go_profile":
+                    st.session_state["page"] = "profile"
+                    st.rerun()
                 return
 
             st.markdown("### Top controls")
+            render_inline_hint(
+                copy_text(
+                    "pages.recommendations.top_hint", "Настрой фильтры и пересчитай рекомендации."
+                )
+            )
+            render_tooltip(
+                "Objective",
+                copy_text(
+                    "pages.recommendations.objective_hint",
+                    "Меняет веса ранжирования. Данные не изменяются.",
+                ),
+            )
+            render_tooltip(
+                "Filters",
+                copy_text(
+                    "pages.recommendations.filters_hint",
+                    "Фильтры отсекают варианты. Если пусто — ослабь ограничения.",
+                ),
+            )
             top_bar = st.columns([0.26, 0.20, 0.18, 0.18, 0.18])
             objective_options = ["fastest_money", "max_net"]
             current_objective = _ensure_objective(profile, objective_options)
@@ -1693,6 +2091,31 @@ def run_app() -> None:
                 objective_preset=selected_objective,
             )
 
+            active_filter_chips = {
+                "objective": selected_objective,
+                "top_n": str(top_n),
+                "max_time_days": str(st.session_state["filters"].get("max_time_to_money_days", 60)),
+                "exclude_blocked": str(st.session_state["filters"].get("exclude_blocked", True)),
+                "exclude_not_feasible": str(
+                    st.session_state["filters"].get("exclude_not_feasible", False)
+                ),
+            }
+            chip_action = render_filter_chips_bar(
+                active_filters=active_filter_chips, key_prefix="rec-filters"
+            )
+            if chip_action == "__reset__":
+                st.session_state["filters"] = DEFAULT_FILTERS.copy()
+                st.rerun()
+            if chip_action == "exclude_blocked":
+                st.session_state["filters"]["exclude_blocked"] = False
+                st.rerun()
+            if chip_action == "exclude_not_feasible":
+                st.session_state["filters"]["exclude_not_feasible"] = False
+                st.rerun()
+            if chip_action == "max_time_days":
+                st.session_state["filters"]["max_time_to_money_days"] = 60
+                st.rerun()
+
             def _run_recommendations() -> None:
                 result = _get_recommendations(
                     json.dumps(profile, ensure_ascii=False),
@@ -1709,21 +2132,60 @@ def run_app() -> None:
                     st.session_state["selected_variant_id"] = ""
                     st.session_state["plan"] = None
 
-            if st.button("Recompute", key="recompute-recommendations"):
+            render_tooltip(
+                "Recompute",
+                copy_text(
+                    "pages.recommendations.recompute_tooltip",
+                    "Пересчитает Top-N по текущим фильтрам.",
+                ),
+            )
+            if st.button(
+                "Recompute",
+                key="recompute-recommendations",
+                help=action_contract_help(
+                    build_action_contract(
+                        label="Recompute",
+                        intent=copy_text(
+                            "pages.recommendations.recompute_intent", "Обновить ранжирование"
+                        ),
+                        effect=copy_text(
+                            "pages.recommendations.recompute_effect",
+                            "Пересчитает результаты с текущими фильтрами.",
+                        ),
+                        next_step=copy_text(
+                            "pages.recommendations.recompute_next", "Проверь обновлённые карточки"
+                        ),
+                        undo=copy_text(
+                            "pages.recommendations.recompute_undo",
+                            "Сними фильтры или измени objective",
+                        ),
+                    )
+                ),
+            ):
                 _run_recommendations()
 
             result = st.session_state.get("recommendations") or st.session_state.get(
                 "last_recommendations"
             )
             if result is None:
-                _render_status(
-                    "not_ready",
-                    "Run recommendations to see results.",
-                    reasons=["No recommendations have been generated yet."],
+                action = render_empty_state(
+                    title="Run recommendations to see results.",
+                    reason="No recommendations have been generated yet.",
+                    actions=[{"key": "run_now", "label": "Run now"}],
+                    key_prefix="rec-run-empty",
                 )
+                if action == "run_now":
+                    _run_recommendations()
+                    st.rerun()
                 return
 
             st.markdown("### Reality Check")
+            render_info_callout(
+                copy_text(
+                    "pages.recommendations.reality_hint", "Проверь ключевые блокеры и quick fixes."
+                ),
+                level="info",
+            )
             blocker_counts = Counter()
             for rec in result.ranked_variants:
                 blocker_counts.update(rec.feasibility.blockers)
@@ -1748,17 +2210,35 @@ def run_app() -> None:
                 _run_recommendations()
 
             if not result.ranked_variants:
-                _render_status(
-                    "empty",
-                    "No results found.",
-                    reasons=["All candidates were filtered out by current constraints."],
-                    level="warning",
-                )
+                diagnostics = []
                 if result.diagnostics.get("reasons"):
-                    st.caption("Diagnostics")
-                    for reason, count in result.diagnostics["reasons"].items():
-                        st.write(f"- {reason}: {count}")
-                st.info("Empty state quick fixes are available above.")
+                    diagnostics = [
+                        f"{reason}: {count}"
+                        for reason, count in result.diagnostics["reasons"].items()
+                    ]
+                empty_action = render_empty_state(
+                    title=copy_text("pages.recommendations.empty_title", "Ничего не найдено"),
+                    reason=copy_text(
+                        "pages.recommendations.empty_reason",
+                        "Все варианты были отфильтрованы текущими ограничениями.",
+                    ),
+                    actions=[
+                        {"key": "allow_prep", "label": "Quick fix: allow prep"},
+                        {"key": "relax_legal", "label": "Quick fix: relax legal"},
+                        {"key": "extend_time", "label": "Quick fix: extend time"},
+                    ],
+                    diagnostics=diagnostics,
+                    key_prefix="rec-empty",
+                )
+                if empty_action == "allow_prep":
+                    st.session_state["filters"]["exclude_not_feasible"] = False
+                    _run_recommendations()
+                elif empty_action == "relax_legal":
+                    st.session_state["filters"]["exclude_blocked"] = False
+                    _run_recommendations()
+                elif empty_action == "extend_time":
+                    st.session_state["filters"]["max_time_to_money_days"] = 60
+                    _run_recommendations()
                 return
 
             mode = st.radio(
@@ -1812,17 +2292,45 @@ def run_app() -> None:
                         confidence=rec.economics.confidence,
                     )
 
+                    st.write("**Summary:** " + rec.variant.title)
                     st.write(
-                        "Economics: TTFM "
-                        + "-".join(map(str, rec.economics.time_to_first_money_days_range))
-                        + " days; net/month €"
-                        + "-".join(map(str, rec.economics.typical_net_month_eur_range))
+                        (
+                            "**Cell/Taxonomy:** "
+                            f"`{_variant_cell(rec.variant)}` / "
+                            f"`{_variant_taxonomy(rec.variant)}`"
+                        )
                     )
-                    st.write("Pros: " + "; ".join(rec.pros[:3]))
-                    if rec.cons:
-                        st.write("Cons: " + "; ".join(rec.cons[:2]))
 
-                    with st.expander("Score contribution"):
+                    st.markdown("**Feasibility**")
+                    st.write(f"Status: {rec.feasibility.status}")
+                    if rec.feasibility.blockers:
+                        st.write("Blockers: " + "; ".join(rec.feasibility.blockers[:3]))
+                    if rec.feasibility.prep_steps:
+                        st.write("Prep steps: " + "; ".join(rec.feasibility.prep_steps[:3]))
+
+                    st.markdown("**Economics**")
+                    st.write(
+                        "TTFM: "
+                        + "-".join(map(str, rec.economics.time_to_first_money_days_range))
+                        + " days; net/month: €"
+                        + "-".join(map(str, rec.economics.typical_net_month_eur_range))
+                        + f"; confidence: {rec.economics.confidence}"
+                    )
+
+                    st.markdown("**Legal / Compliance**")
+                    st.write(f"Legal gate: {rec.legal.legal_gate}")
+                    if rec.legal.checklist:
+                        st.write("Checklist: " + "; ".join(rec.legal.checklist[:3]))
+
+                    st.markdown("**Почему в топе**")
+                    for item in rec.pros[:3]:
+                        st.write(f"- {item}")
+
+                    st.markdown("**Что мешает**")
+                    for item in rec.cons[:2]:
+                        st.write(f"- {item}")
+
+                    with st.expander("Explain score"):
                         rows = _score_contribution_rows(rec)
                         st.vega_lite_chart(
                             {
@@ -1849,13 +2357,62 @@ def run_app() -> None:
                     if c1.button(
                         f"Select & Build Plan · {rec.variant.variant_id}",
                         key=f"rec-plan-{rec.variant.variant_id}",
+                        help=action_contract_help(
+                            build_action_contract(
+                                label="Select & Build Plan",
+                                intent=copy_text(
+                                    "pages.recommendations.select_intent",
+                                    "Сохранить вариант и перейти к плану",
+                                ),
+                                effect=copy_text(
+                                    "pages.recommendations.select_effect",
+                                    "Обновит Selected в контексте и откроет Plan.",
+                                ),
+                                next_step=copy_text(
+                                    "pages.recommendations.select_next",
+                                    "Проверь Checklist / 4 weeks / Compliance",
+                                ),
+                                undo=copy_text(
+                                    "pages.recommendations.select_undo",
+                                    "Выбери другой вариант в Recommendations",
+                                ),
+                            )
+                        ),
                     ):
                         st.session_state["selected_variant_id"] = rec.variant.variant_id
+                        st.session_state["guide_state"]["current_step_id"] = "step_plan"
+                        st.success(
+                            copy_text(
+                                "pages.recommendations.selected_notice",
+                                "Selected обновлён. Следующий шаг: Plan.",
+                            )
+                        )
                         st.session_state["page"] = "plan"
                         st.rerun()
                     if c2.button(
                         f"Open in Explore · {rec.variant.variant_id}",
                         key=f"rec-open-exp-{rec.variant.variant_id}",
+                        help=action_contract_help(
+                            build_action_contract(
+                                label="Open in Explore",
+                                intent=copy_text(
+                                    "pages.recommendations.open_intent",
+                                    "Посмотреть вариант на карте",
+                                ),
+                                effect=copy_text(
+                                    "pages.recommendations.open_effect",
+                                    "Откроет Explore с выбранной taxonomy/cell.",
+                                ),
+                                next_step=copy_text(
+                                    "pages.recommendations.open_next",
+                                    "Изучи связи и вернись к выбору",
+                                ),
+                                undo=copy_text(
+                                    "pages.recommendations.open_undo",
+                                    "Вернись на Recommendations через навигацию",
+                                ),
+                            )
+                        ),
                     ):
                         st.session_state["selected_variant_id"] = rec.variant.variant_id
                         st.session_state["selected_cell_id"] = _variant_cell(rec.variant)
@@ -1872,18 +2429,30 @@ def run_app() -> None:
 
     elif page_slug == "plan":
         _render_page_header("Plan")
+        render_inline_hint(
+            copy_text(
+                "pages.plan.goal_hint",
+                "План превращает выбранный вариант в конкретные шаги и артефакты.",
+            )
+        )
 
         def _render_plan() -> None:
             report = _get_validation()
             _guard_fatals(report)
             variant_id = st.session_state.get("selected_variant_id")
             if not variant_id:
-                _render_status(
-                    "no_selection",
-                    "Plan is not ready.",
-                    reasons=["Select a variant in Recommendations."],
-                    level="warning",
+                action = render_empty_state(
+                    title=copy_text("pages.plan.not_ready", "Plan is not ready."),
+                    reason=copy_text(
+                        "pages.plan.need_variant_reason",
+                        "Select a variant in Recommendations.",
+                    ),
+                    actions=[{"key": "go_recommendations", "label": "Go to Recommendations"}],
+                    key_prefix="plan-empty",
                 )
+                if action == "go_recommendations":
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
                 return
 
             profile = st.session_state["profile"]
@@ -1916,6 +2485,13 @@ def run_app() -> None:
 
             st.session_state["plan"] = plan
             st.markdown(f"### Variant: {variant_id}")
+            render_info_callout(
+                copy_text(
+                    "pages.plan.readiness_hint",
+                    "Plan ready, когда есть шаги, артефакты, 4 недели и compliance-проверки.",
+                ),
+                level="info",
+            )
             route = []
             if plan.week_plan:
                 for week in sorted(plan.week_plan.keys()):
@@ -1937,6 +2513,15 @@ def run_app() -> None:
 
             with tab_checklist:
                 st.markdown("#### Checklist")
+                render_inline_hint(
+                    copy_text(
+                        "pages.plan.checklist_hint",
+                        (
+                            "Отмечай выполненные шаги: это влияет на прогресс сессии, "
+                            "но не меняет данные."
+                        ),
+                    )
+                )
                 for idx, step in enumerate(plan.steps):
                     col_a, col_b = st.columns([0.8, 0.2])
                     with col_a:
@@ -1957,6 +2542,13 @@ def run_app() -> None:
 
             with tab_compliance:
                 st.markdown("#### Compliance")
+                render_info_callout(
+                    copy_text(
+                        "pages.plan.compliance_hint",
+                        "Это не юридическое заключение, а чеклист снижения риска.",
+                    ),
+                    level="warning",
+                )
                 st.write("Legal gate:", plan.legal_gate)
                 for item in plan.compliance:
                     st.write(f"- {item}")
@@ -1969,7 +2561,33 @@ def run_app() -> None:
                     st.write(f"Step id: `{step_id}`")
                     st.write(f"Title: {st.session_state.get('selected_plan_step_title', '')}")
                     st.write(f"Detail: {st.session_state.get('selected_plan_step_detail', '')}")
-                    st.caption("Outputs/artifacts: follow plan.md required artifacts section.")
+                    st.write(
+                        "Purpose:",
+                        copy_text(
+                            "pages.plan.drawer_purpose", "Зачем: приблизить запуск варианта."
+                        ),
+                    )
+                    st.write(
+                        "Output artifact:",
+                        copy_text(
+                            "pages.plan.drawer_output",
+                            "Что на выходе: артефакт из раздела artifacts/plan.md.",
+                        ),
+                    )
+                    st.write(
+                        "Dependencies:",
+                        copy_text(
+                            "pages.plan.drawer_dependencies",
+                            "Зависимости: предыдущие шаги и доступные ресурсы.",
+                        ),
+                    )
+                    st.write(
+                        "Risks:",
+                        copy_text(
+                            "pages.plan.drawer_risks",
+                            "Риски: юридические и операционные блокеры до завершения шага.",
+                        ),
+                    )
 
             st.markdown("### Export preview")
             plan_text = render_plan_md(plan)
@@ -1979,7 +2597,11 @@ def run_app() -> None:
                 file_name="plan.md",
                 mime="text/markdown",
             )
-            if st.button("Go to Export", key="plan-go-export"):
+            plan_nav1, plan_nav2 = st.columns(2)
+            if plan_nav1.button("Back to Recommendations", key="plan-back-recommendations"):
+                st.session_state["page"] = "recommendations"
+                st.rerun()
+            if plan_nav2.button("Go to Export", key="plan-go-export"):
                 st.session_state["page"] = "export"
                 st.rerun()
 
@@ -1987,6 +2609,12 @@ def run_app() -> None:
 
     elif page_slug == "export":
         _render_page_header("Export")
+        render_inline_hint(
+            copy_text(
+                "pages.export.goal_hint",
+                "Экспорт фиксирует решение и версии данных для воспроизводимости.",
+            )
+        )
 
         def _render_export() -> None:
             report = _get_validation()
@@ -1998,12 +2626,34 @@ def run_app() -> None:
             if not variant_id or plan is None:
                 reasons = []
                 if not variant_id:
-                    reasons.append("Select a variant in Recommendations.")
+                    reasons.append(
+                        copy_text(
+                            "pages.export.need_variant_reason",
+                            "Select a variant in Recommendations.",
+                        )
+                    )
                 if plan is None:
-                    reasons.append("Generate a plan in the Plan screen.")
-                _render_status(
-                    "not_ready", "Export is not ready.", reasons=reasons, level="warning"
+                    reasons.append(
+                        copy_text(
+                            "pages.export.need_plan_reason",
+                            "Generate a plan in the Plan screen.",
+                        )
+                    )
+                action = render_empty_state(
+                    title=copy_text("pages.export.not_ready", "Export is not ready."),
+                    reason="; ".join(reasons),
+                    actions=[
+                        {"key": "go_plan", "label": "Go to Plan"},
+                        {"key": "go_recommendations", "label": "Go to Recommendations"},
+                    ],
+                    key_prefix="export-empty",
                 )
+                if action == "go_plan":
+                    st.session_state["page"] = "plan"
+                    st.rerun()
+                if action == "go_recommendations":
+                    st.session_state["page"] = "recommendations"
+                    st.rerun()
                 return
 
             app_data = _get_app_data()
@@ -2053,6 +2703,16 @@ def run_app() -> None:
                     st.code(profile_yaml, language="yaml")
 
             st.markdown("### Export metadata")
+            render_info_callout(
+                copy_text(
+                    "pages.export.repro_hint",
+                    (
+                        "Экспорт сохраняет dataset/rulepack/objective/profile_hash "
+                        "для честного сравнения запусков."
+                    ),
+                ),
+                level="info",
+            )
             metadata_rows = [
                 {"key": "dataset_version", "value": app_data.meta.dataset_version},
                 {"key": "rulepack_reviewed_at", "value": app_data.rulepack.reviewed_at},
@@ -2068,6 +2728,10 @@ def run_app() -> None:
             st.code(run_cmd, language="bash")
             if st.button("Copy run command", key="export-copy-run-cmd"):
                 st.info("Command shown above. Copy from code block.")
+
+            if st.button("Back to Plan", key="export-back-plan"):
+                st.session_state["page"] = "plan"
+                st.rerun()
 
             if st.button("Generate export files", key="export-generate"):
                 try:
