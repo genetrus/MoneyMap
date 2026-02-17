@@ -411,3 +411,13 @@
 - Consequences: Data Status is deterministic and diagnostics-first; adding new source files in supported trees becomes visible automatically; UI no longer needs source guessing logic.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8-9, p.11, p.14; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
 - Owner: team
+
+## 2026-02-17 — DE pack expansion and regulated-domain guardrails for Data status/validation
+- Date: 2026-02-17
+- Title: Expand `data/packs/de_muc` to working minimum and add regulated-domain coverage guardrails
+- Context: Stage data operations needed denser DE pack seed content and clearer validation/reporting split for User vs Developer workflows, while preserving offline deterministic behavior.
+- Decision: (1) Rebuild DE pack to 384 variants, 72 bridges, 30 routes, 36 rule checks; (2) add real-world variant fields (`cell_id`, `taxonomy_id`, legal/economics metadata, `next_steps`, `artifacts`) plus `regulated_domain`; (3) add regulated-domain dictionary/checklists in `rulepack.yaml`; (4) enforce validator warning when `regulated_domain` is set with `legal_gate=ok`; (5) add Data status regulated-domain coverage metrics and split downloads by view mode (`Download summary` in User mode, `Download full report` with diagnostics in Developer mode); (6) clarify “core vs pack” as demo core dataset vs DE expansion pack and include zero-count cells in pack coverage.
+- Alternatives: Keep sparse rulepack/bridges/routes and old variant shape; keep single raw-report presentation regardless of audience.
+- Consequences: Better pack readiness for expansion QA and clearer legal-caution UX; core runtime contracts stay backward-compatible through compatibility fields.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8-10, p.14-15; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.1-2
+- Owner: team

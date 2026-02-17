@@ -319,7 +319,7 @@ def validate(app_data: AppData) -> ValidationReport:
                 )
             )
         else:
-            legal_gate = variant.legal.get("legal_gate")
+            legal_gate = variant.legal.get("legal_gate") or variant.legal.get("gate")
             if not legal_gate:
                 warns.append(
                     _issue(
@@ -338,6 +338,41 @@ def validate(app_data: AppData) -> ValidationReport:
                         hint="Use one of: ok, require_check, registration, license, blocked.",
                     )
                 )
+
+            regulated_domain = variant.regulated_domain
+            if regulated_domain:
+                known_domains = set(app_data.rulepack.regulated_domains or [])
+                if regulated_domain not in known_domains:
+                    warns.append(
+                        _issue(
+                            "VARIANT_REGULATED_DOMAIN_UNKNOWN",
+                            message=f"Unknown regulated_domain '{regulated_domain}'",
+                            source="variants",
+                            location=f"variants[{variant.variant_id}].regulated_domain",
+                        )
+                    )
+                if legal_gate == "ok":
+                    warns.append(
+                        _issue(
+                            "VARIANT_REGULATED_DOMAIN_GATE_TOO_WEAK",
+                            message=(
+                                "Variant "
+                                f"{variant.variant_id} has regulated_domain="
+                                f"{regulated_domain} but legal_gate=ok"
+                            ),
+                            source="variants",
+                            location=f"variants[{variant.variant_id}].legal.legal_gate",
+                            hint="Use require_check or stricter for regulated domains.",
+                        )
+                    )
+                if not list(variant.legal.get("checklist") or []):
+                    warns.append(
+                        _issue(
+                            "VARIANT_REGULATED_DOMAIN_CHECKLIST_EMPTY",
+                            source="variants",
+                            location=f"variants[{variant.variant_id}].legal.checklist",
+                        )
+                    )
 
             referenced_rules = variant.legal.get("rule_ids", [])
             if isinstance(referenced_rules, list):
