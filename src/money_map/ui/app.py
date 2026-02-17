@@ -28,11 +28,11 @@ from money_map.render.plan_md import render_plan_md
 from money_map.render.result_json import render_result_json
 from money_map.storage.fs import read_yaml
 from money_map.ui.components import (
+    action_contract_help,
+    build_action_contract,
     render_badge_set,
     render_context_bar,
     render_detail_drawer,
-    action_contract_help,
-    build_action_contract,
     render_empty_state,
     render_filter_chips_bar,
     render_graph_fallback,
@@ -758,7 +758,10 @@ def run_app() -> None:
         render_inline_hint(
             copy_text(
                 "pages.data_status.goal_hint",
-                "Проверь целостность и актуальность данных: при FATAL рекомендации и план блокируются.",
+                (
+                    "Проверь целостность и актуальность данных: при FATAL "
+                    "рекомендации и план блокируются."
+                ),
             )
         )
 
@@ -813,7 +816,10 @@ def run_app() -> None:
             render_info_callout(
                 copy_text(
                     "pages.data_status.what_means",
-                    "What this means: статус данных определяет надежность рекомендаций и доступность следующих шагов.",
+                    (
+                        "What this means: статус данных определяет надежность рекомендаций "
+                        "и доступность следующих шагов."
+                    ),
                 ),
                 level="info",
             )
@@ -1087,7 +1093,10 @@ def run_app() -> None:
         render_inline_hint(
             copy_text(
                 "pages.profile.goal_hint",
-                "Профиль превращает желание в ограничения: без обязательных полей рекомендации будут заблокированы.",
+                (
+                    "Профиль превращает желание в ограничения: без обязательных полей "
+                    "рекомендации будут заблокированы."
+                ),
             )
         )
 
@@ -1283,10 +1292,12 @@ def run_app() -> None:
                             ),
                             level="warning",
                         )
+                        todo_prefix = copy_text(
+                            "pages.profile.todo_prefix",
+                            "Что сделать: заполнить поле",
+                        )
                         for field_name in profile_validation["missing"]:
-                            st.caption(
-                                f"• {copy_text('pages.profile.todo_prefix', 'Что сделать: заполнить поле')} `{field_name}`"
-                            )
+                            st.caption(f"• {todo_prefix} `{field_name}`")
 
                 if st.button(
                     "Go to Recommendations",
@@ -1320,7 +1331,12 @@ def run_app() -> None:
 
     elif page_slug == "jobs-live":
         _render_page_header("Jobs (Live)", "Vacancies with automatic live/cache/seed fallback.")
-        render_inline_hint(copy_text("pages.jobs.goal_hint", "Live вакансии с fallback на snapshot/seed и датой источника."))
+        render_inline_hint(
+            copy_text(
+                "pages.jobs.goal_hint",
+                "Live вакансии с fallback на snapshot/seed и датой источника.",
+            )
+        )
 
         def _render_jobs_live() -> None:
             profile = st.session_state.get("profile", {})
@@ -1364,11 +1380,24 @@ def run_app() -> None:
             fetched_at = source_meta.get("fetched_at", "")
             confidence = "high" if source == "live" else ("medium" if source == "cache" else "low")
             if source == "live":
-                st.success(f"Источник данных: live · snapshot_at: {fetched_at} · confidence: {confidence}")
+                st.success(
+                    f"Источник данных: live · snapshot_at: {fetched_at} · confidence: {confidence}"
+                )
             elif source == "cache":
-                st.warning(f"Источник данных: cache · snapshot: {snapshot} · snapshot_at: {fetched_at} · confidence: {confidence}")
+                st.warning(
+                    (
+                        "Источник данных: cache · "
+                        f"snapshot: {snapshot} · snapshot_at: {fetched_at} · "
+                        f"confidence: {confidence}"
+                    )
+                )
             else:
-                st.info(f"Источник данных: seed (компактный fallback) · snapshot_at: {fetched_at} · confidence: {confidence}")
+                st.info(
+                    (
+                        "Источник данных: seed (компактный fallback) · "
+                        f"snapshot_at: {fetched_at} · confidence: {confidence}"
+                    )
+                )
 
             table_rows = []
             for row in rows:
@@ -1387,7 +1416,9 @@ def run_app() -> None:
             else:
                 render_empty_state(
                     title=copy_text("pages.jobs.empty_title", "Вакансии не найдены"),
-                    reason=copy_text("pages.jobs.empty_reason", "Проверь фильтры, город или период публикации."),
+                    reason=copy_text(
+                        "pages.jobs.empty_reason", "Проверь фильтры, город или период публикации."
+                    ),
                     actions=[{"key": "retry", "label": "Retry"}],
                     key_prefix="jobs-empty",
                 )
@@ -1464,7 +1495,10 @@ def run_app() -> None:
                 render_inline_hint(
                     copy_text(
                         "pages.explore.matrix_hint",
-                        "Нажми ячейку, чтобы увидеть варианты и быстро отправить фильтр в Recommendations.",
+                        (
+                            "Нажми ячейку, чтобы увидеть варианты и быстро отправить фильтр "
+                            "в Recommendations."
+                        ),
                     )
                 )
                 selected_cell = st.selectbox("Cell", CELL_OPTIONS, key="explore_selected_cell")
@@ -1658,7 +1692,10 @@ def run_app() -> None:
                 render_inline_hint(
                     copy_text(
                         "pages.explore.paths_hint",
-                        "Маршрут — это цепочка переходов. Можно использовать как плановый backbone.",
+                        (
+                            "Маршрут — это цепочка переходов. "
+                            "Можно использовать как плановый backbone."
+                        ),
                     )
                 )
                 path_options = {
@@ -1693,7 +1730,10 @@ def run_app() -> None:
                 render_inline_hint(
                     copy_text(
                         "pages.explore.library_hint",
-                        "Каталог примеров без ранжирования. Фильтруй и отправляй в Recommendations.",
+                        (
+                            "Каталог примеров без ранжирования. "
+                            "Фильтруй и отправляй в Recommendations."
+                        ),
                     )
                 )
                 selected_cell_filter = st.multiselect(
@@ -2220,7 +2260,11 @@ def run_app() -> None:
 
                     st.write("**Summary:** " + rec.variant.title)
                     st.write(
-                        f"**Cell/Taxonomy:** `{_variant_cell(rec.variant)}` / `{_variant_taxonomy(rec.variant)}`"
+                        (
+                            "**Cell/Taxonomy:** "
+                            f"`{_variant_cell(rec.variant)}` / "
+                            f"`{_variant_taxonomy(rec.variant)}`"
+                        )
                     )
 
                     st.markdown("**Feasibility**")
@@ -2351,7 +2395,12 @@ def run_app() -> None:
 
     elif page_slug == "plan":
         _render_page_header("Plan")
-        render_inline_hint(copy_text("pages.plan.goal_hint", "План превращает выбранный вариант в конкретные шаги и артефакты."))
+        render_inline_hint(
+            copy_text(
+                "pages.plan.goal_hint",
+                "План превращает выбранный вариант в конкретные шаги и артефакты.",
+            )
+        )
 
         def _render_plan() -> None:
             report = _get_validation()
@@ -2402,7 +2451,13 @@ def run_app() -> None:
 
             st.session_state["plan"] = plan
             st.markdown(f"### Variant: {variant_id}")
-            render_info_callout(copy_text("pages.plan.readiness_hint", "Plan ready, когда есть шаги, артефакты, 4 недели и compliance-проверки."), level="info")
+            render_info_callout(
+                copy_text(
+                    "pages.plan.readiness_hint",
+                    "Plan ready, когда есть шаги, артефакты, 4 недели и compliance-проверки.",
+                ),
+                level="info",
+            )
             route = []
             if plan.week_plan:
                 for week in sorted(plan.week_plan.keys()):
@@ -2424,7 +2479,15 @@ def run_app() -> None:
 
             with tab_checklist:
                 st.markdown("#### Checklist")
-                render_inline_hint(copy_text("pages.plan.checklist_hint", "Отмечай выполненные шаги: это влияет на прогресс сессии, но не меняет данные."))
+                render_inline_hint(
+                    copy_text(
+                        "pages.plan.checklist_hint",
+                        (
+                            "Отмечай выполненные шаги: это влияет на прогресс сессии, "
+                            "но не меняет данные."
+                        ),
+                    )
+                )
                 for idx, step in enumerate(plan.steps):
                     col_a, col_b = st.columns([0.8, 0.2])
                     with col_a:
@@ -2445,7 +2508,13 @@ def run_app() -> None:
 
             with tab_compliance:
                 st.markdown("#### Compliance")
-                render_info_callout(copy_text("pages.plan.compliance_hint", "Это не юридическое заключение, а чеклист снижения риска."), level="warning")
+                render_info_callout(
+                    copy_text(
+                        "pages.plan.compliance_hint",
+                        "Это не юридическое заключение, а чеклист снижения риска.",
+                    ),
+                    level="warning",
+                )
                 st.write("Legal gate:", plan.legal_gate)
                 for item in plan.compliance:
                     st.write(f"- {item}")
@@ -2458,10 +2527,33 @@ def run_app() -> None:
                     st.write(f"Step id: `{step_id}`")
                     st.write(f"Title: {st.session_state.get('selected_plan_step_title', '')}")
                     st.write(f"Detail: {st.session_state.get('selected_plan_step_detail', '')}")
-                    st.write("Purpose:", copy_text("pages.plan.drawer_purpose", "Зачем: приблизить запуск варианта."))
-                    st.write("Output artifact:", copy_text("pages.plan.drawer_output", "Что на выходе: артефакт из раздела artifacts/plan.md."))
-                    st.write("Dependencies:", copy_text("pages.plan.drawer_dependencies", "Зависимости: предыдущие шаги и доступные ресурсы."))
-                    st.write("Risks:", copy_text("pages.plan.drawer_risks", "Риски: юридические и операционные блокеры до завершения шага."))
+                    st.write(
+                        "Purpose:",
+                        copy_text(
+                            "pages.plan.drawer_purpose", "Зачем: приблизить запуск варианта."
+                        ),
+                    )
+                    st.write(
+                        "Output artifact:",
+                        copy_text(
+                            "pages.plan.drawer_output",
+                            "Что на выходе: артефакт из раздела artifacts/plan.md.",
+                        ),
+                    )
+                    st.write(
+                        "Dependencies:",
+                        copy_text(
+                            "pages.plan.drawer_dependencies",
+                            "Зависимости: предыдущие шаги и доступные ресурсы.",
+                        ),
+                    )
+                    st.write(
+                        "Risks:",
+                        copy_text(
+                            "pages.plan.drawer_risks",
+                            "Риски: юридические и операционные блокеры до завершения шага.",
+                        ),
+                    )
 
             st.markdown("### Export preview")
             plan_text = render_plan_md(plan)
@@ -2479,7 +2571,12 @@ def run_app() -> None:
 
     elif page_slug == "export":
         _render_page_header("Export")
-        render_inline_hint(copy_text("pages.export.goal_hint", "Экспорт фиксирует решение и версии данных для воспроизводимости."))
+        render_inline_hint(
+            copy_text(
+                "pages.export.goal_hint",
+                "Экспорт фиксирует решение и версии данных для воспроизводимости.",
+            )
+        )
 
         def _render_export() -> None:
             report = _get_validation()
@@ -2568,7 +2665,16 @@ def run_app() -> None:
                     st.code(profile_yaml, language="yaml")
 
             st.markdown("### Export metadata")
-            render_info_callout(copy_text("pages.export.repro_hint", "Экспорт сохраняет dataset/rulepack/objective/profile_hash для честного сравнения запусков."), level="info")
+            render_info_callout(
+                copy_text(
+                    "pages.export.repro_hint",
+                    (
+                        "Экспорт сохраняет dataset/rulepack/objective/profile_hash "
+                        "для честного сравнения запусков."
+                    ),
+                ),
+                level="info",
+            )
             metadata_rows = [
                 {"key": "dataset_version", "value": app_data.meta.dataset_version},
                 {"key": "rulepack_reviewed_at", "value": app_data.rulepack.reviewed_at},
