@@ -393,3 +393,21 @@
 - Consequences: Explore navigation is self-explanatory for newcomers, recommendations become auditable and action-oriented, and selected-state progression is explicit in guided flow.
 - Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8, p.14; Блок-схема_старт_разработки_A4_FINAL_v3.pdf p.1
 - Owner: team
+
+## 2026-02-17 — Full data-source registry in validation/Data Status and staleness aggregation rules
+- Date: 2026-02-17
+- Title: Canonicalize Data Status inputs around full source registry and explicit reviewed_at/staleness aggregates
+- Context: Data Status had a partial source table and mixed reviewed_at semantics (dataset/rulepack/source age) in UI and validation payload.
+- Decision:
+  - Added canonical `DataSourceInfo` model in core storage contract and made loader collect all connected local sources from core + pack + overlays + generated + rulepack + meta trees.
+  - Extended `ValidationReport` with `sources[]` and `staleness.by_source` + `staleness.aggregated` so UI can render source-level freshness without reconstructing source guesses.
+  - Adopted reviewed_at/staleness aggregation rules:
+    1. `dataset_reviewed_at` comes from core dataset meta source when present.
+    2. `rulepack_reviewed_at` remains the rulepack value.
+    3. `oldest_source_reviewed_at` is the minimum reviewed_at across sources where reviewed_at is present.
+    4. Aggregated staleness token is driven by the most critical/oldest source in `staleness.by_source` (`OK`/`WARN`/`HARD` mapped from aggregate severity/status).
+  - Recomputed derived Data Status metrics (`dataset_version`, `variants_count`, coverage/freshness/staleness views) from registry data instead of hardcoded file assumptions.
+- Alternatives: (1) Keep fixed source list in UI. (2) Keep staleness only for rulepack+variants. (3) Compute source freshness ad-hoc in UI without validation contract.
+- Consequences: Data Status is deterministic and diagnostics-first; adding new source files in supported trees becomes visible automatically; UI no longer needs source guessing logic.
+- Spec reference (PDF + page): Money_Map_Spec_Packet.pdf p.8-9, p.11, p.14; Блок-схема_Данные_проекта_Определение_и_Сбор_A4_FINAL_v3.pdf p.2
+- Owner: team

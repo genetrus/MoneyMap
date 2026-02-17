@@ -8,6 +8,7 @@ def test_validate_data_contains_expected_fields() -> None:
     assert report["status"] in {"valid", "invalid", "stale"}
     assert "dataset_version" in report
     assert "reviewed_at" in report
+    assert "dataset_reviewed_at" in report
     assert "staleness_policy_days" in report
     assert "generated_at" in report
     assert "warns" in report

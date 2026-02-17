@@ -27,9 +27,11 @@ def _validation_payload(report) -> dict[str, Any]:
         "warns": report.warns,
         "dataset_version": report.dataset_version,
         "reviewed_at": report.reviewed_at,
+        "dataset_reviewed_at": report.dataset_reviewed_at,
         "stale": report.stale,
         "staleness_policy_days": report.staleness_policy_days,
         "generated_at": report.generated_at,
+        "sources": [asdict(source) for source in report.sources],
         "staleness": report.staleness,
     }
 

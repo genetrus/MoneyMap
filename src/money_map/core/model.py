@@ -59,6 +59,18 @@ class AppData:
     meta: Meta
     rulepack: Rulepack
     variants: list[Variant]
+    sources: list["DataSourceInfo"]
+
+
+@dataclass(frozen=True)
+class DataSourceInfo:
+    source: str
+    type: str
+    schema_version: str
+    items: int
+    reviewed_at: str
+    mtime: str
+    notes: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -79,9 +91,11 @@ class ValidationReport:
     warns: list[dict[str, Any]]
     dataset_version: str
     reviewed_at: str
+    dataset_reviewed_at: str
     stale: bool
     staleness_policy_days: int
     generated_at: str
+    sources: list[DataSourceInfo]
     staleness: dict[str, Any]
 
 

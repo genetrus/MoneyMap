@@ -31,6 +31,7 @@ def test_validate_report_contract_keys() -> None:
         "status",
         "dataset_version",
         "reviewed_at",
+        "dataset_reviewed_at",
         "stale",
         "staleness_policy_days",
         "generated_at",
