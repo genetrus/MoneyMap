@@ -46,12 +46,22 @@ class Variant:
     variant_id: str
     title: str
     summary: str
-    tags: list[str]
-    feasibility: dict[str, Any]
-    prep_steps: list[str]
-    economics: dict[str, Any]
-    legal: dict[str, Any]
-    review_date: str
+    cell_id: str = ""
+    taxonomy_id: str = ""
+    tags: list[str] = None
+    regulated_domain: str | None = None
+    feasibility: dict[str, Any] = None
+    prep_steps: list[str] = None
+    economics: dict[str, Any] = None
+    legal: dict[str, Any] = None
+    review_date: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "tags", list(self.tags or []))
+        object.__setattr__(self, "feasibility", dict(self.feasibility or {}))
+        object.__setattr__(self, "prep_steps", list(self.prep_steps or []))
+        object.__setattr__(self, "economics", dict(self.economics or {}))
+        object.__setattr__(self, "legal", dict(self.legal or {}))
 
 
 @dataclass(frozen=True)

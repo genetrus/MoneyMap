@@ -69,6 +69,10 @@ def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
         yaml.safe_dump(
             {
                 "reviewed_at": "2025-02-01",
+                "regulated_domains": {
+                    "childcare": {"checklist": ["doc1"]},
+                    "food": {"checklist": ["doc2"]}
+                },
                 "rules": [{"rule_id": "r1"}, {"rule_id": "r2"}],
             },
             sort_keys=False,
@@ -79,8 +83,8 @@ def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
         yaml.safe_dump(
             {
                 "variants": [
-                    {"id": "v1", "cell_id": "A1"},
-                    {"id": "v2", "cell_id": "A1"},
+                    {"id": "v1", "cell_id": "A1", "regulated_domain": "childcare", "legal": {"legal_gate": "require_check"}},
+                    {"id": "v2", "cell_id": "A1", "regulated_domain": "food", "legal": {"legal_gate": "ok"}},
                     {"id": "v3", "cell_id": "B2"},
                 ]
             },
@@ -107,10 +111,15 @@ def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
     assert metrics["bridges_total"] == 1
     assert metrics["routes_total"] == 2
     assert metrics["rule_checks_total"] == 2
-    assert metrics["variants_per_cell"] == [
-        {"label": "A1", "count": 2},
-        {"label": "B2", "count": 1},
-    ]
+    cells = {row["label"]: row["count"] for row in metrics["variants_per_cell"]}
+    assert cells["A1"] == 2
+    assert cells["B2"] == 1
+    assert cells["P4"] == 0
     assert metrics["oldest_reviewed_at"] == "2025-01-01"
     assert metrics["is_stale"] is True
     assert set(metrics["stale_sources"]) == {"meta.yaml", "rulepack.yaml"}
+    assert metrics["regulated_domain_coverage"] == {
+        "variants_with_regulated_domain": 2,
+        "variants_require_check": 1,
+        "variants_with_checklist_coverage": 2,
+    }

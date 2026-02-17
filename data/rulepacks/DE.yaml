@@ -1,21 +1,24 @@
-reviewed_at: "2026-01-01"
+reviewed_at: '2026-01-01'
 staleness_policy:
   warn_after_days: 180
   hard_after_days: 365
 compliance_kits:
   tax_basics:
-    - Track invoices and receipts weekly
-    - Keep an income/expense log
+  - Track invoices and receipts weekly
+  - Keep an income/expense log
   invoicing_basics:
-    - Include service description and date
-    - Store invoice copies for records
+  - Include service description and date
+  - Store invoice copies for records
   insurance_basics:
-    - Review liability coverage needs
-    - Note renewal dates
+  - Review liability coverage needs
+  - Note renewal dates
 regulated_domains:
-  - regulated
+- regulated
+- childcare
+- food_service
+- transport
 rules:
-  - rule_id: "de.legal.regulated.require_check_if_stale"
-    reason: "Regulated work requires extra checks when rulepack is stale."
-  - rule_id: "de.legal.blocked.default"
-    reason: "Blocked variants must not proceed without review."
+- rule_id: de.legal.regulated.require_check_if_stale
+  reason: Regulated work requires extra checks when rulepack is stale.
+- rule_id: de.legal.blocked.default
+  reason: Blocked variants must not proceed without review.

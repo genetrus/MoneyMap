@@ -46,6 +46,7 @@ from money_map.ui.components import (
 )
 from money_map.ui.copy import copy_text
 from money_map.ui.data_status import (
+    aggregate_pack_metrics,
     build_validate_rows,
     data_status_visibility,
     derive_registry_metrics,
@@ -808,6 +809,10 @@ def run_app() -> None:
                 report = _get_validation()
                 app_data = _get_app_data()
                 registry_metrics = derive_registry_metrics(report)
+                pack_metrics = aggregate_pack_metrics(
+                    pack_dir=Path("data/packs/de_muc"),
+                    staleness_policy_days=int(report.get("staleness_policy_days", 180) or 180),
+                )
             warns_count = len(report["warns"])
             fatals_count = len(report["fatals"])
             warn_summary = _issue_summary(report["warns"])
@@ -821,15 +826,15 @@ def run_app() -> None:
                     {"label": "Dataset version", "value": str(report["dataset_version"])},
                     {
                         "label": "Dataset reviewed_at",
-                        "value": str(report.get("dataset_reviewed_at", "") or "n/a"),
+                        "value": str(report.get("dataset_reviewed_at", "") or "0"),
                     },
                     {
                         "label": "Rulepack reviewed_at",
-                        "value": str(report.get("reviewed_at", "") or "n/a"),
+                        "value": str(report.get("reviewed_at", "") or "0"),
                     },
                     {
                         "label": "Oldest source reviewed_at",
-                        "value": str(registry_metrics.get("oldest_source_reviewed_at") or "n/a"),
+                        "value": str(registry_metrics.get("oldest_source_reviewed_at") or "0"),
                     },
                     {"label": "Status", "value": status_label, "status": report["status"]},
                     {"label": "Warnings", "value": str(warns_count), "subtext": warn_summary or ""},
@@ -954,12 +959,28 @@ def run_app() -> None:
                 file_name = (
                     f"money_map_validate_report__{report['dataset_version']}__{safe_ts}.json"
                 )
-                st.download_button(
-                    "Download validate report",
-                    data=report_json,
-                    file_name=file_name,
-                    mime="application/json",
-                )
+                if visibility["show_compact_summary"]:
+                    summary = {
+                        "status": report.get("status"),
+                        "dataset_version": report.get("dataset_version"),
+                        "warnings": len(report.get("warns", [])),
+                        "fatals": len(report.get("fatals", [])),
+                        "staleness": report.get("staleness", {}).get("aggregated", {}).get("status", "unknown"),
+                    }
+                    st.download_button(
+                        "Download summary",
+                        data=json.dumps(summary, ensure_ascii=False, indent=2),
+                        file_name=f"money_map_summary__{report['dataset_version']}__{safe_ts}.json",
+                        mime="application/json",
+                    )
+                    st.json(summary)
+                else:
+                    st.download_button(
+                        "Download full report",
+                        data=report_json,
+                        file_name=file_name,
+                        mime="application/json",
+                    )
                 st.write(f"Generated at: {report['generated_at']}")
                 st.write(
                     "Includes: status, fatals[], warns[], dataset_version, reviewed_at, stale, "
@@ -1060,20 +1081,38 @@ def run_app() -> None:
                 metric_cols = st.columns(3)
                 metric_cols[0].metric("Sources", str(registry_metrics["sources_total"]))
                 metric_cols[1].metric(
-                    "Variants (registry)", str(registry_metrics["variants_count"])
+                    "Core variants (active dataset)", str(registry_metrics["variants_count"])
                 )
                 metric_cols[2].metric(
                     "Stale sources",
                     str(len(registry_metrics.get("stale_sources", []))),
                 )
 
+                st.markdown("#### Core vs pack coverage")
+                render_tooltip(
+                    "Why core differs from pack",
+                    "Core = active minimal dataset used by engine now. Pack = DE/BY/MUC expansion dataset used for coverage/scaffold.",
+                )
+                pack_cols = st.columns(4)
+                pack_cols[0].metric("Pack variants", str(pack_metrics.get("variants_total", 0)))
+                pack_cols[1].metric("Pack bridges", str(pack_metrics.get("bridges_total", 0)))
+                pack_cols[2].metric("Pack routes", str(pack_metrics.get("routes_total", 0)))
+                pack_cols[3].metric("Pack rule checks", str(pack_metrics.get("rule_checks_total", 0)))
+                st.caption("Core sample (demo) vs DE pack: pack shows full matrix A1..P4 including zero-count cells.")
+
+                reg = pack_metrics.get("regulated_domain_coverage", {})
+                reg_cols = st.columns(3)
+                reg_cols[0].metric("Variants with regulated_domain", str(reg.get("variants_with_regulated_domain", 0)))
+                reg_cols[1].metric("...with legal_gate=require_check", str(reg.get("variants_require_check", 0)))
+                reg_cols[2].metric("...with checklist coverage", str(reg.get("variants_with_checklist_coverage", 0)))
+
                 if visibility["show_staleness_details"]:
                     with st.expander("Staleness details"):
                         st.write("RulePack: DE")
                         st.write(
-                            f"dataset_reviewed_at: {report.get('dataset_reviewed_at', '') or 'n/a'}"
+                            f"dataset_reviewed_at: {report.get('dataset_reviewed_at', '') or '0'}"
                         )
-                        st.write(f"rulepack_reviewed_at: {report.get('reviewed_at', '') or 'n/a'}")
+                        st.write(f"rulepack_reviewed_at: {report.get('reviewed_at', '') or '0'}")
                         oldest_source = registry_metrics.get("oldest_source_reviewed_at") or "n/a"
                         st.write(f"oldest_source_reviewed_at: {oldest_source}")
                         st.write(f"staleness_policy_days: {report['staleness_policy_days']}")

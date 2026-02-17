@@ -12,7 +12,7 @@ variants:
     required_assets:
     - laptop
     - internet
-  prep_steps:
+  prep_steps: &id001
   - Create 3 writing samples (2h)
   - Set up a simple pricing sheet (1h)
   economics:
@@ -42,6 +42,27 @@ variants:
     required_docs:
     - ID
   review_date: '2026-01-01'
+  cell_id: A1
+  taxonomy_id: service_fee
+  regulated_domain: null
+  legal_gate: ok
+  legal_notes_short: No legal guarantees; verify obligations for DE/BY and local municipality.
+  requirements:
+  - ID/registration docs
+  - Invoice + receipt discipline
+  constraints:
+  - No legal advice
+  - No income guarantees
+  range_low: 400
+  range_high: 900
+  currency: EUR
+  basis: net_month
+  confidence: medium
+  source_label: seed_dataset_v0.0.1
+  reviewed_at: '2026-01-01'
+  next_steps: *id001
+  artifacts:
+  - checklist.md
 - variant_id: de.local.errand_helper
   title: Local errand helper
   summary: Provide quick errands and delivery support within your district.
@@ -54,7 +75,7 @@ variants:
     min_time_per_week: 6
     required_assets:
     - phone
-  prep_steps:
+  prep_steps: &id002
   - Draft a service checklist (1h)
   - Prepare simple ID badge (1h)
   economics:
@@ -81,6 +102,27 @@ variants:
     checklist:
     - Confirm local permit rules
   review_date: '2026-01-01'
+  cell_id: A1
+  taxonomy_id: service_fee
+  regulated_domain: null
+  legal_gate: ok
+  legal_notes_short: No legal guarantees; verify obligations for DE/BY and local municipality.
+  requirements:
+  - ID/registration docs
+  - Invoice + receipt discipline
+  constraints:
+  - No legal advice
+  - No income guarantees
+  range_low: 300
+  range_high: 700
+  currency: EUR
+  basis: net_month
+  confidence: medium
+  source_label: seed_dataset_v0.0.1
+  reviewed_at: '2026-01-01'
+  next_steps: *id002
+  artifacts:
+  - checklist.md
 - variant_id: de.regulated.childcare_assist
   title: Childcare assistant
   summary: Assist families with childcare support (regulated activities).
@@ -94,7 +136,7 @@ variants:
     required_assets:
     - phone
     - transport
-  prep_steps:
+  prep_steps: &id003
   - Collect reference letters (1w)
   - Draft safety checklist (2h)
   economics:
@@ -124,6 +166,27 @@ variants:
     required_docs:
     - Background check
   review_date: '2026-01-01'
+  cell_id: A1
+  taxonomy_id: service_fee
+  regulated_domain: childcare
+  legal_gate: require_check
+  legal_notes_short: No legal guarantees; verify obligations for DE/BY and local municipality.
+  requirements:
+  - ID/registration docs
+  - Invoice + receipt discipline
+  constraints:
+  - No legal advice
+  - No income guarantees
+  range_low: 600
+  range_high: 1200
+  currency: EUR
+  basis: net_month
+  confidence: low
+  source_label: seed_dataset_v0.0.1
+  reviewed_at: '2026-01-01'
+  next_steps: *id003
+  artifacts:
+  - checklist.md
 - variant_id: de.remote.translation
   title: Translation mini-projects
   summary: Translate short documents for local NGOs and small firms.
@@ -137,7 +200,7 @@ variants:
     required_assets:
     - laptop
     - internet
-  prep_steps:
+  prep_steps: &id004
   - Assemble translation samples (2h)
   - Build glossary template (1h)
   economics:
@@ -164,3 +227,24 @@ variants:
     checklist:
     - Confirm invoicing requirements
   review_date: '2026-01-01'
+  cell_id: A1
+  taxonomy_id: service_fee
+  regulated_domain: null
+  legal_gate: ok
+  legal_notes_short: No legal guarantees; verify obligations for DE/BY and local municipality.
+  requirements:
+  - ID/registration docs
+  - Invoice + receipt discipline
+  constraints:
+  - No legal advice
+  - No income guarantees
+  range_low: 500
+  range_high: 1100
+  currency: EUR
+  basis: net_month
+  confidence: medium
+  source_label: seed_dataset_v0.0.1
+  reviewed_at: '2026-01-01'
+  next_steps: *id004
+  artifacts:
+  - checklist.md

@@ -1,191 +1,251 @@
-reviewed_at: "2026-02-12"
+reviewed_at: '2026-02-16'
 staleness_policy:
   warn_after_days: 180
   hard_after_days: 365
 regulated_domains:
-  - regulated
+  childcare:
+    label: Childcare support
+    checklist: &id001
+    - Background check
+    - First-aid awareness
+    - Parental consent process
+  food_service:
+    label: Food handling/sales
+    checklist: &id002
+    - Hygiene training
+    - Traceability records
+    - Allergen communication
+  transport:
+    label: Transport/courier
+    checklist: &id003
+    - Insurance check
+    - Vehicle compliance
+    - Permit checks by city
+  health_support:
+    label: Health-adjacent support
+    checklist: &id004
+    - Scope boundary declaration
+    - Referral to licensed professionals
 compliance_kits:
   de_legal_startup_basics:
-    - Verify activity classification (freelance vs Gewerbe) before first invoice.
-    - Keep IDs, registrations, and tax letters in one folder.
-    - Re-check city/state/federal pages before submitting applications.
+  - Check registration/tax setup
+  - Keep evidence trail
+  regulated_domain_checklist:
+  - Run domain checklist before launch
 rules:
-  - id: "de.muc.gewerbe.registration.kvr"
-    scope: "country"
-    severity: "hard_gate"
-    triggers:
-      - "variant_selected"
-      - "legal_gate_registration"
-      - "activity_has_commercial_intent"
-    applies_to:
-      country: "DE"
-      state: "BY"
-      city: "MUC"
-      work_mode_any: ["services", "micro_product", "mixed_income"]
-      excludes_tags_any: ["freiberuflich_only"]
-    steps:
-      - "Check if activity is Gewerbe (not purely Freiberufler catalog profession)."
-      - "Complete Gewerbeanmeldung with KVR München (online with BayernID or in-person appointment)."
-      - "Submit required applicant/business details and activity description."
-      - "Pay the municipal registration fee during/after submission per KVR flow."
-      - "Store proof of filing and Gewerbeschein/confirmation for downstream tax and banking steps."
-    required_docs:
-      - "Valid ID or passport"
-      - "Meldebescheinigung/address registration (if requested)"
-      - "Residence permit with self-employment permission (for non-EU, where applicable)"
-      - "Business activity description"
-      - "Additional permits/professional approvals if activity is regulated"
-    links:
-      - "https://stadt.muenchen.de/service/info/gewerbeamt/1063528/"
-      - "https://www.gesetze-im-internet.de/gewo/__14.html"
-    reviewed_at: "2026-02-12"
-    sources:
-      - "KVR München: Gewerbe anmelden"
-      - "GewO §14"
-
-  - id: "de.tax.elster.fragebogen.zur-steuerlichen-erfassung"
-    scope: "country"
-    severity: "hard_gate"
-    triggers:
-      - "gewerbe_registered"
-      - "self_employment_started"
-      - "first_revenue_expected"
-    applies_to:
-      country: "DE"
-      legal_form_any: ["sole_proprietor", "einzelunternehmen"]
-      work_mode_any: ["services", "micro_product", "mixed_income"]
-    steps:
-      - "Create/activate ELSTER account if not available."
-      - "Submit 'Fragebogen zur steuerlichen Erfassung' via ELSTER after business start."
-      - "Include expected turnover/profit and VAT preference (Kleinunternehmerregelung yes/no)."
-      - "Wait for Steuernummer assignment before issuing invoices requiring it."
-    required_docs:
-      - "Tax ID (Steuer-Identifikationsnummer)"
-      - "Personal data and business address"
-      - "Business start date"
-      - "Revenue and profit estimates for current/next year"
-      - "IBAN/business bank details (if requested)"
-    links:
-      - "https://www.elster.de"
-      - "https://www.gesetze-im-internet.de/ao_1977/__138.html"
-    reviewed_at: "2026-02-12"
-    sources:
-      - "ELSTER portal guidance"
-      - "AO §138"
-
-  - id: "de.tax.elster.fragebogen.deadline"
-    scope: "country"
-    severity: "warning"
-    triggers:
-      - "self_employment_started"
-      - "days_since_start_gt_28"
-    applies_to:
-      country: "DE"
-      legal_form_any: ["sole_proprietor", "einzelunternehmen"]
-    steps:
-      - "File the ELSTER questionnaire within one month from opening/start date to avoid follow-up issues."
-      - "If deadline is missed, submit immediately and document reason for delay."
-      - "Track Finanzamt letters in case additional data is requested."
-    required_docs:
-      - "Business opening date proof"
-      - "Draft/complete ELSTER questionnaire"
-    links:
-      - "https://www.existenzgruender.de/DE/Gruendung-vorbereiten/Recht-und-Steuern/Fragebogen-zur-steuerlichen-Erfassung/inhalt.html"
-      - "https://www.gesetze-im-internet.de/ao_1977/__138.html"
-    reviewed_at: "2026-02-12"
-    sources:
-      - "BMWK Existenzgruender guidance"
-      - "AO §138"
-
-  - id: "de.ihk.mandatory.membership.for-trade"
-    scope: "country"
-    severity: "info"
-    triggers:
-      - "gewerbe_registered"
-      - "trade_activity_confirmed"
-    applies_to:
-      country: "DE"
-      state: "BY"
-      city: "MUC"
-      excludes_tags_any: ["freiberuflich_only", "handwerksrolle_hwk_only"]
-    steps:
-      - "Assume IHK membership is mandatory for Gewerbe activities in chamber district unless statutory exception applies."
-      - "Wait for IHK contact after Gewerbeamt data transfer; verify classification and contribution notice."
-      - "Check whether founder-year/small-profit contribution relief applies."
-    required_docs:
-      - "Gewerbeanmeldung confirmation"
-      - "Steuernummer notice (when available)"
-      - "IHK contribution notice/letters"
-    links:
-      - "https://www.ihk-muenchen.de/de/Service/Recht-und-Steuern/Gewerberecht/IHK-Zugehoerigkeit/"
-      - "https://www.gesetze-im-internet.de/ihkg/__2.html"
-    reviewed_at: "2026-02-12"
-    sources:
-      - "IHK für München und Oberbayern"
-      - "IHKG §2"
-
-  - id: "de.tax.basics.vat-trade-tax-income-tax"
-    scope: "country"
-    severity: "warning"
-    triggers:
-      - "self_employment_started"
-      - "pricing_defined"
-      - "invoice_template_created"
-    applies_to:
-      country: "DE"
-      work_mode_any: ["services", "micro_product", "mixed_income", "employment"]
-    steps:
-      - "Income tax applies to profits from self-employment/business; keep records from day one."
-      - "Check VAT treatment: Kleinunternehmerregelung possible if legal thresholds are met; otherwise charge and remit VAT."
-      - "Check trade tax relevance for Gewerbebetrieb and municipal Hebesatz impact."
-      - "For pure employment-only variants, apply payroll tax rules instead of business VAT/trade-tax setup."
-    required_docs:
-      - "Revenue/expense ledger"
-      - "Invoices and receipts"
-      - "ELSTER credentials"
-      - "Optional accountant/tax advisor mandate"
-    links:
-      - "https://www.gesetze-im-internet.de/estg/__15.html"
-      - "https://www.gesetze-im-internet.de/ustg_1980/__19.html"
-      - "https://www.gesetze-im-internet.de/gewstg/__2.html"
-    reviewed_at: "2026-02-12"
-    sources:
-      - "EStG §15"
-      - "UStG §19"
-      - "GewStG §2"
-
-  - id: "de.permits.restricted-activities.require-precheck"
-    scope: "country"
-    severity: "hard_gate"
-    triggers:
-      - "activity_selected"
-      - "regulated_domain_detected"
-      - "before_market_launch"
-    applies_to:
-      country: "DE"
-      tags_any:
-        - "regulated"
-        - "craft"
-        - "food"
-        - "transport"
-        - "health"
-        - "finance"
-    steps:
-      - "Check whether activity is regulated and requires permit, chamber registration, or reliability checks before start."
-      - "For crafts subject to authorization, verify Handwerksrolle/HWK obligations."
-      - "For gastronomic/food activities, verify hygiene/infection-protection and local permits."
-      - "Do not start paid operations until permits/registrations are complete."
-    required_docs:
-      - "Activity description with exact services/products"
-      - "Qualification certificates (if profession-regulated)"
-      - "Police clearance/reliability records (if requested)"
-      - "Sector-specific permit approvals"
-    links:
-      - "https://www.gesetze-im-internet.de/gewo/"
-      - "https://www.gesetze-im-internet.de/hwo/"
-      - "https://stadt.muenchen.de/infos/gewerbe.html"
-    reviewed_at: "2026-02-12"
-    sources:
-      - "GewO (regulated activities framework)"
-      - "HwO (craft authorization framework)"
-      - "City of Munich business portal"
+- id: de.rule.01
+  rule_id: de.rule.01
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.02
+  rule_id: de.rule.02
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.03
+  rule_id: de.rule.03
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.04
+  rule_id: de.rule.04
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.05
+  rule_id: de.rule.05
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.06
+  rule_id: de.rule.06
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.07
+  rule_id: de.rule.07
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.08
+  rule_id: de.rule.08
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.09
+  rule_id: de.rule.09
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.10
+  rule_id: de.rule.10
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.11
+  rule_id: de.rule.11
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.12
+  rule_id: de.rule.12
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.13
+  rule_id: de.rule.13
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.14
+  rule_id: de.rule.14
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.15
+  rule_id: de.rule.15
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.16
+  rule_id: de.rule.16
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.17
+  rule_id: de.rule.17
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.18
+  rule_id: de.rule.18
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.19
+  rule_id: de.rule.19
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.20
+  rule_id: de.rule.20
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.21
+  rule_id: de.rule.21
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.22
+  rule_id: de.rule.22
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.23
+  rule_id: de.rule.23
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.24
+  rule_id: de.rule.24
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.25
+  rule_id: de.rule.25
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.26
+  rule_id: de.rule.26
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.27
+  rule_id: de.rule.27
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.28
+  rule_id: de.rule.28
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.29
+  rule_id: de.rule.29
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.30
+  rule_id: de.rule.30
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.31
+  rule_id: de.rule.31
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.32
+  rule_id: de.rule.32
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
+- id: de.rule.33
+  rule_id: de.rule.33
+  severity: hard_gate
+  reason: 'childcare: checklist-first compliance reminder; no legal guarantees.'
+  domain: childcare
+  checklist: *id001
+- id: de.rule.34
+  rule_id: de.rule.34
+  severity: warning
+  reason: 'food_service: checklist-first compliance reminder; no legal guarantees.'
+  domain: food_service
+  checklist: *id002
+- id: de.rule.35
+  rule_id: de.rule.35
+  severity: warning
+  reason: 'transport: checklist-first compliance reminder; no legal guarantees.'
+  domain: transport
+  checklist: *id003
+- id: de.rule.36
+  rule_id: de.rule.36
+  severity: warning
+  reason: 'health_support: checklist-first compliance reminder; no legal guarantees.'
+  domain: health_support
+  checklist: *id004
