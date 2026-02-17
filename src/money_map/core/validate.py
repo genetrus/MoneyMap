@@ -6,7 +6,7 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
-from money_map.core.model import AppData, ValidationReport
+from money_map.core.model import AppData, DataSourceInfo, ValidationReport
 from money_map.core.staleness import evaluate_staleness
 
 ALLOWED_LEGAL_GATES = {"ok", "require_check", "registration", "license", "blocked"}
@@ -66,6 +66,87 @@ def _validate_numeric_range(
             )
         )
 
+
+
+
+def _parse_iso_date(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(str(raw))
+    except ValueError:
+        return None
+
+
+def _source_staleness(source: DataSourceInfo, policy_days: int) -> dict[str, Any]:
+    parsed = _parse_iso_date(source.reviewed_at)
+    if parsed is None:
+        return {
+            "reviewed_at": source.reviewed_at,
+            "age_days": None,
+            "is_stale": False,
+            "severity": "unknown",
+            "status": "unknown",
+        }
+    age_days = max(0, (datetime.utcnow() - parsed).days)
+    severity = "ok"
+    status = "ok"
+    if age_days > policy_days:
+        severity = "warn"
+        status = "warn"
+    return {
+        "reviewed_at": source.reviewed_at,
+        "age_days": age_days,
+        "is_stale": age_days > policy_days,
+        "severity": severity,
+        "status": status,
+    }
+
+
+def _aggregate_source_staleness(by_source: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    known = [item for item in by_source.values() if item.get("age_days") is not None]
+    if not known:
+        return {
+            "status": "unknown",
+            "severity": "unknown",
+            "is_stale": False,
+            "critical_source": "",
+            "critical_age_days": None,
+        }
+
+    critical = max(known, key=lambda item: int(item.get("age_days") or 0))
+    for source, details in by_source.items():
+        if details is critical:
+            critical_source = source
+            break
+    else:
+        critical_source = ""
+
+    age = int(critical.get("age_days") or 0)
+    severity = str(critical.get("severity") or "ok")
+    status = "ok" if severity == "ok" else "warn"
+    return {
+        "status": status,
+        "severity": severity,
+        "is_stale": status != "ok",
+        "critical_source": critical_source,
+        "critical_age_days": age,
+    }
+
+
+
+
+def _dataset_reviewed_at_from_sources(app_data: AppData) -> str:
+    for source in app_data.sources:
+        if source.type == "meta" and source.notes.get("group") == "core":
+            return source.reviewed_at
+    return ""
+
+def _dataset_version_from_sources(app_data: AppData) -> str:
+    for source in app_data.sources:
+        if source.type == "meta" and source.notes.get("group") == "core":
+            return app_data.meta.dataset_version
+    return app_data.meta.dataset_version
 
 def validate(app_data: AppData) -> ValidationReport:
     fatals: list[dict[str, str]] = []
@@ -339,17 +420,27 @@ def validate(app_data: AppData) -> ValidationReport:
     else:
         status = "valid"
 
+    source_staleness_by_source = {
+        source.source: _source_staleness(source, app_data.meta.staleness_policy.warn_after_days)
+        for source in app_data.sources
+    }
+    source_staleness_aggregated = _aggregate_source_staleness(source_staleness_by_source)
+
     return ValidationReport(
         status=status,
         fatals=fatals,
         warns=warns,
-        dataset_version=app_data.meta.dataset_version,
+        dataset_version=_dataset_version_from_sources(app_data),
         reviewed_at=app_data.rulepack.reviewed_at,
+        dataset_reviewed_at=_dataset_reviewed_at_from_sources(app_data),
         stale=stale,
         staleness_policy_days=app_data.meta.staleness_policy.warn_after_days,
         generated_at=datetime.utcnow().replace(microsecond=0).isoformat(),
+        sources=app_data.sources,
         staleness={
             "rulepack": asdict(rulepack_staleness),
             "variants": variant_staleness_by_id,
+            "by_source": source_staleness_by_source,
+            "aggregated": source_staleness_aggregated,
         },
     )

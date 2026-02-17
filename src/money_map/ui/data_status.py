@@ -109,6 +109,31 @@ def oldest_stale_entities(
     return rows[:limit]
 
 
+
+
+def derive_registry_metrics(report: dict[str, Any]) -> dict[str, Any]:
+    sources = list(report.get("sources", []))
+    variant_sources = [src for src in sources if str(src.get("type")) == "variants"]
+    variants_count = sum(int(src.get("items", 0) or 0) for src in variant_sources)
+
+    source_staleness = (report.get("staleness") or {}).get("by_source", {})
+    stale_sources = [name for name, details in source_staleness.items() if details.get("is_stale")]
+
+    reviewed_dates = [
+        str(src.get("reviewed_at", ""))
+        for src in sources
+        if str(src.get("reviewed_at", "")).strip()
+    ]
+    oldest_source_reviewed_at = min(reviewed_dates) if reviewed_dates else ""
+
+    return {
+        "dataset_reviewed_at": str(report.get("dataset_reviewed_at", "") or ""),
+        "rulepack_reviewed_at": str(report.get("reviewed_at", "") or ""),
+        "oldest_source_reviewed_at": oldest_source_reviewed_at,
+        "variants_count": variants_count,
+        "sources_total": len(sources),
+        "stale_sources": stale_sources,
+    }
 def _parse_iso_date(raw: str | None) -> date | None:
     if not raw:
         return None

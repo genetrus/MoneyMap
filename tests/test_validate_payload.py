@@ -10,6 +10,7 @@ def test_validate_data_payload_has_expected_keys():
         "stale",
         "staleness_policy_days",
         "generated_at",
+        "sources",
         "staleness",
         "fatals",
         "warns",

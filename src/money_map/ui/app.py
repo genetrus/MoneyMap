@@ -46,7 +46,7 @@ from money_map.ui.components import (
 )
 from money_map.ui.copy import copy_text
 from money_map.ui.data_status import (
-    aggregate_pack_metrics,
+    derive_registry_metrics,
     build_validate_rows,
     data_status_visibility,
     filter_validate_rows,
@@ -810,10 +810,7 @@ def run_app() -> None:
             with st.spinner("Loading validation snapshot..."):
                 report = _get_validation()
                 app_data = _get_app_data()
-                pack_metrics = aggregate_pack_metrics(
-                    pack_dir=Path("data/packs/de_muc"),
-                    staleness_policy_days=int(report["staleness_policy_days"]),
-                )
+                registry_metrics = derive_registry_metrics(report)
             warns_count = len(report["warns"])
             fatals_count = len(report["fatals"])
             warn_summary = _issue_summary(report["warns"])
@@ -825,14 +822,25 @@ def run_app() -> None:
             render_kpi_grid(
                 [
                     {"label": "Dataset version", "value": str(report["dataset_version"])},
-                    {"label": "Reviewed at", "value": str(report["reviewed_at"])},
+                    {
+                        "label": "Dataset reviewed_at",
+                        "value": str(report.get("dataset_reviewed_at", "") or "n/a"),
+                    },
+                    {
+                        "label": "Rulepack reviewed_at",
+                        "value": str(report.get("reviewed_at", "") or "n/a"),
+                    },
+                    {
+                        "label": "Oldest source reviewed_at",
+                        "value": str(registry_metrics.get("oldest_source_reviewed_at") or "n/a"),
+                    },
                     {"label": "Status", "value": status_label, "status": report["status"]},
                     {"label": "Warnings", "value": str(warns_count), "subtext": warn_summary or ""},
                     {"label": "Fatals", "value": str(fatals_count)},
                     {
-                        "label": "Stale",
-                        "value": str(report["stale"]),
-                        "subtext": f"Staleness policy: {report['staleness_policy_days']} days",
+                        "label": "Staleness",
+                        "value": str((report.get("staleness", {}).get("aggregated", {}).get("status") or "unknown")).upper(),
+                        "subtext": f"Policy: {report['staleness_policy_days']} days; stale sources: {len(registry_metrics.get('stale_sources', []))}",
                     },
                 ]
             )
@@ -1043,62 +1051,30 @@ def run_app() -> None:
                             st.session_state["page"] = "plan"
                             st.rerun()
 
-                metric_cols = st.columns(4)
-                metric_cols[0].metric(
-                    "Variants per cell", str(len(pack_metrics["variants_per_cell"]))
+                metric_cols = st.columns(3)
+                metric_cols[0].metric("Sources", str(registry_metrics["sources_total"]))
+                metric_cols[1].metric("Variants (registry)", str(registry_metrics["variants_count"]))
+                metric_cols[2].metric(
+                    "Stale sources",
+                    str(len(registry_metrics.get("stale_sources", []))),
                 )
-                metric_cols[1].metric("Bridges", str(pack_metrics["bridges_total"]))
-                metric_cols[2].metric("Routes", str(pack_metrics["routes_total"]))
-                metric_cols[3].metric("Rule checks", str(pack_metrics["rule_checks_total"]))
-
-                if pack_metrics["is_stale"]:
-                    st.warning(
-                        "Pack freshness warning: stale sources detected ("
-                        + ", ".join(pack_metrics["stale_sources"])
-                        + "). Interface remains available with cautious mode."
-                    )
-
-                c1, c2 = st.columns(2)
-                with c1:
-                    _render_distribution_chart(
-                        "Variants by cell (core)",
-                        variants_by_cell(app_data.variants, cell_resolver=_variant_cell),
-                    )
-                with c2:
-                    _render_distribution_chart(
-                        "Variants by cell (pack)",
-                        pack_metrics["variants_per_cell"],
-                    )
-
-                c3, c4 = st.columns(2)
-                with c3:
-                    _render_distribution_chart(
-                        "Variants by legal gate",
-                        variants_by_legal_gate(app_data.variants),
-                    )
-                with c4:
-                    st.markdown("**Freshness (pack files)**")
-                    st.caption(f"Oldest reviewed_at: {pack_metrics['oldest_reviewed_at'] or 'n/a'}")
-                    st.table(pack_metrics["freshness"])
-
-                with st.expander("Coverage & freshness"):
-                    stale_top = oldest_stale_entities(report["staleness"]["variants"], limit=10)
-                    st.write(
-                        "regulated domains coverage: n/a (field not present in current schema)"
-                    )
-                    if stale_top:
-                        st.write("Oldest entities (top 10)")
-                        st.table(stale_top)
-                    else:
-                        st.caption("No staleness age rows available.")
 
                 if visibility["show_staleness_details"]:
                     with st.expander("Staleness details"):
                         st.write("RulePack: DE")
-                        st.write(f"rulepack_reviewed_at: {app_data.rulepack.reviewed_at}")
+                        st.write(f"dataset_reviewed_at: {report.get('dataset_reviewed_at', '') or 'n/a'}")
+                        st.write(f"rulepack_reviewed_at: {report.get('reviewed_at', '') or 'n/a'}")
+                        st.write(
+                            f"oldest_source_reviewed_at: {registry_metrics.get('oldest_source_reviewed_at') or 'n/a'}"
+                        )
                         st.write(f"staleness_policy_days: {report['staleness_policy_days']}")
-                        rulepack_stale = report["staleness"]["rulepack"].get("is_stale")
-                        st.write(f"rulepack_stale: {rulepack_stale}")
+                        aggregated = report.get("staleness", {}).get("aggregated", {})
+                        st.write(
+                            f"staleness_aggregated: {(aggregated.get('status') or 'unknown').upper()}"
+                        )
+                        st.write(
+                            f"staleness_critical_source: {aggregated.get('critical_source') or 'n/a'}"
+                        )
                         variant_dates = [
                             variant.review_date
                             for variant in app_data.variants
@@ -1120,48 +1096,21 @@ def run_app() -> None:
 
                 if visibility["show_data_sources"]:
                     with st.expander("Data sources & diagnostics"):
-                        repo_root = Path(__file__).resolve().parents[3]
-                        data_dir = repo_root / "data"
-                        sources = []
-                        meta_path = data_dir / "meta.yaml"
-                        if meta_path.exists():
-                            meta_payload = read_yaml(meta_path)
-                            sources.append(
-                                {
-                                    "Source": "data/meta.yaml",
-                                    "Type": "meta",
-                                    "Schema version": str(meta_payload.get("schema_version", "")),
-                                    "Items": len(meta_payload),
-                                }
-                            )
-                        rulepack_path = data_dir / "rulepacks" / "DE.yaml"
-                        if rulepack_path.exists():
-                            rulepack_payload = read_yaml(rulepack_path)
-                            sources.append(
-                                {
-                                    "Source": "data/rulepacks/DE.yaml",
-                                    "Type": "rulepack",
-                                    "Schema version": str(
-                                        rulepack_payload.get("schema_version", "")
-                                    ),
-                                    "Items": len(rulepack_payload.get("rules", [])),
-                                }
-                            )
-                        variants_path = data_dir / "variants.yaml"
-                        if variants_path.exists():
-                            variants_payload = read_yaml(variants_path)
-                            sources.append(
-                                {
-                                    "Source": "data/variants.yaml",
-                                    "Type": "variants",
-                                    "Schema version": str(
-                                        variants_payload.get("schema_version", "")
-                                    ),
-                                    "Items": len(variants_payload.get("variants", [])),
-                                }
-                            )
+                        sources = report.get("sources", [])
                         if sources:
-                            st.table(sources)
+                            st.table(
+                                [
+                                    {
+                                        "Source": src.get("source", ""),
+                                        "Type": src.get("type", ""),
+                                        "Schema version": src.get("schema_version", ""),
+                                        "Items": src.get("items", 0),
+                                        "Reviewed at": src.get("reviewed_at", ""),
+                                        "Mtime": src.get("mtime", ""),
+                                    }
+                                    for src in sources
+                                ]
+                            )
 
                         st.write(
                             "Reproducibility gate: one script/process should rebuild the same "
