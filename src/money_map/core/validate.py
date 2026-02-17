@@ -67,8 +67,6 @@ def _validate_numeric_range(
         )
 
 
-
-
 def _parse_iso_date(raw: str | None) -> datetime | None:
     if not raw:
         return None
@@ -134,19 +132,19 @@ def _aggregate_source_staleness(by_source: dict[str, dict[str, Any]]) -> dict[st
     }
 
 
-
-
 def _dataset_reviewed_at_from_sources(app_data: AppData) -> str:
     for source in app_data.sources:
         if source.type == "meta" and source.notes.get("group") == "core":
             return source.reviewed_at
     return ""
 
+
 def _dataset_version_from_sources(app_data: AppData) -> str:
     for source in app_data.sources:
         if source.type == "meta" and source.notes.get("group") == "core":
             return app_data.meta.dataset_version
     return app_data.meta.dataset_version
+
 
 def validate(app_data: AppData) -> ValidationReport:
     fatals: list[dict[str, str]] = []

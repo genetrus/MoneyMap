@@ -46,13 +46,10 @@ from money_map.ui.components import (
 )
 from money_map.ui.copy import copy_text
 from money_map.ui.data_status import (
-    derive_registry_metrics,
     build_validate_rows,
     data_status_visibility,
+    derive_registry_metrics,
     filter_validate_rows,
-    oldest_stale_entities,
-    variants_by_cell,
-    variants_by_legal_gate,
 )
 from money_map.ui.guidance import compute_guidance_runtime, initialize_guide_state
 from money_map.ui.jobs_live import create_variant_draft, resolve_jobs_source
@@ -839,8 +836,17 @@ def run_app() -> None:
                     {"label": "Fatals", "value": str(fatals_count)},
                     {
                         "label": "Staleness",
-                        "value": str((report.get("staleness", {}).get("aggregated", {}).get("status") or "unknown")).upper(),
-                        "subtext": f"Policy: {report['staleness_policy_days']} days; stale sources: {len(registry_metrics.get('stale_sources', []))}",
+                        "value": str(
+                            (
+                                report.get("staleness", {}).get("aggregated", {}).get("status")
+                                or "unknown"
+                            )
+                        ).upper(),
+                        "subtext": (
+                            "Policy: "
+                            f"{report['staleness_policy_days']} days; "
+                            f"stale sources: {len(registry_metrics.get('stale_sources', []))}"
+                        ),
                     },
                 ]
             )
@@ -1053,7 +1059,9 @@ def run_app() -> None:
 
                 metric_cols = st.columns(3)
                 metric_cols[0].metric("Sources", str(registry_metrics["sources_total"]))
-                metric_cols[1].metric("Variants (registry)", str(registry_metrics["variants_count"]))
+                metric_cols[1].metric(
+                    "Variants (registry)", str(registry_metrics["variants_count"])
+                )
                 metric_cols[2].metric(
                     "Stale sources",
                     str(len(registry_metrics.get("stale_sources", []))),
@@ -1062,19 +1070,18 @@ def run_app() -> None:
                 if visibility["show_staleness_details"]:
                     with st.expander("Staleness details"):
                         st.write("RulePack: DE")
-                        st.write(f"dataset_reviewed_at: {report.get('dataset_reviewed_at', '') or 'n/a'}")
-                        st.write(f"rulepack_reviewed_at: {report.get('reviewed_at', '') or 'n/a'}")
                         st.write(
-                            f"oldest_source_reviewed_at: {registry_metrics.get('oldest_source_reviewed_at') or 'n/a'}"
+                            f"dataset_reviewed_at: {report.get('dataset_reviewed_at', '') or 'n/a'}"
                         )
+                        st.write(f"rulepack_reviewed_at: {report.get('reviewed_at', '') or 'n/a'}")
+                        oldest_source = registry_metrics.get("oldest_source_reviewed_at") or "n/a"
+                        st.write(f"oldest_source_reviewed_at: {oldest_source}")
                         st.write(f"staleness_policy_days: {report['staleness_policy_days']}")
                         aggregated = report.get("staleness", {}).get("aggregated", {})
-                        st.write(
-                            f"staleness_aggregated: {(aggregated.get('status') or 'unknown').upper()}"
-                        )
-                        st.write(
-                            f"staleness_critical_source: {aggregated.get('critical_source') or 'n/a'}"
-                        )
+                        staleness_status = (aggregated.get("status") or "unknown").upper()
+                        critical_source = aggregated.get("critical_source") or "n/a"
+                        st.write(f"staleness_aggregated: {staleness_status}")
+                        st.write(f"staleness_critical_source: {critical_source}")
                         variant_dates = [
                             variant.review_date
                             for variant in app_data.variants

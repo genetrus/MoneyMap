@@ -186,7 +186,9 @@ def _load_rulepack(rulepack_path: Path, meta_policy: StalenessPolicy) -> Rulepac
                 staleness_policy_raw.get("stale_after_days", meta_policy.warn_after_days),
             )
         ),
-        hard_after_days=int(staleness_policy_raw.get("hard_after_days", meta_policy.hard_after_days)),
+        hard_after_days=int(
+            staleness_policy_raw.get("hard_after_days", meta_policy.hard_after_days)
+        ),
     )
     rules = [Rule(rule_id=r["rule_id"], reason=r.get("reason", "")) for r in raw.get("rules", [])]
     return Rulepack(
