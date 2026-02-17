@@ -212,7 +212,11 @@ def _load_variants(variants_path: Path) -> list[Variant]:
                 cell_id=str(entry.get("cell_id", "")),
                 taxonomy_id=str(entry.get("taxonomy_id", "")),
                 tags=list(entry.get("tags", [])),
-                regulated_domain=(None if entry.get("regulated_domain") in (None, "") else str(entry.get("regulated_domain"))),
+                regulated_domain=(
+                    None
+                    if entry.get("regulated_domain") in (None, "")
+                    else str(entry.get("regulated_domain"))
+                ),
                 feasibility=entry.get("feasibility", {}),
                 prep_steps=list(entry.get("prep_steps", [])),
                 economics=entry.get("economics", {}),

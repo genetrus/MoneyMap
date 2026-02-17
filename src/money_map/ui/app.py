@@ -965,7 +965,9 @@ def run_app() -> None:
                         "dataset_version": report.get("dataset_version"),
                         "warnings": len(report.get("warns", [])),
                         "fatals": len(report.get("fatals", [])),
-                        "staleness": report.get("staleness", {}).get("aggregated", {}).get("status", "unknown"),
+                        "staleness": report.get("staleness", {})
+                        .get("aggregated", {})
+                        .get("status", "unknown"),
                     }
                     st.download_button(
                         "Download summary",
@@ -1091,20 +1093,39 @@ def run_app() -> None:
                 st.markdown("#### Core vs pack coverage")
                 render_tooltip(
                     "Why core differs from pack",
-                    "Core = active minimal dataset used by engine now. Pack = DE/BY/MUC expansion dataset used for coverage/scaffold.",
+                    (
+                        "Core = active minimal dataset used by engine now. "
+                        "Pack = DE/BY/MUC expansion dataset used for "
+                        "coverage/scaffold."
+                    ),
                 )
                 pack_cols = st.columns(4)
                 pack_cols[0].metric("Pack variants", str(pack_metrics.get("variants_total", 0)))
                 pack_cols[1].metric("Pack bridges", str(pack_metrics.get("bridges_total", 0)))
                 pack_cols[2].metric("Pack routes", str(pack_metrics.get("routes_total", 0)))
-                pack_cols[3].metric("Pack rule checks", str(pack_metrics.get("rule_checks_total", 0)))
-                st.caption("Core sample (demo) vs DE pack: pack shows full matrix A1..P4 including zero-count cells.")
+                pack_cols[3].metric(
+                    "Pack rule checks", str(pack_metrics.get("rule_checks_total", 0))
+                )
+                st.caption(
+                    (
+                        "Core sample (demo) vs DE pack: pack shows full matrix "
+                        "A1..P4 including zero-count cells."
+                    )
+                )
 
                 reg = pack_metrics.get("regulated_domain_coverage", {})
                 reg_cols = st.columns(3)
-                reg_cols[0].metric("Variants with regulated_domain", str(reg.get("variants_with_regulated_domain", 0)))
-                reg_cols[1].metric("...with legal_gate=require_check", str(reg.get("variants_require_check", 0)))
-                reg_cols[2].metric("...with checklist coverage", str(reg.get("variants_with_checklist_coverage", 0)))
+                reg_cols[0].metric(
+                    "Variants with regulated_domain",
+                    str(reg.get("variants_with_regulated_domain", 0)),
+                )
+                reg_cols[1].metric(
+                    "...with legal_gate=require_check", str(reg.get("variants_require_check", 0))
+                )
+                reg_cols[2].metric(
+                    "...with checklist coverage",
+                    str(reg.get("variants_with_checklist_coverage", 0)),
+                )
 
                 if visibility["show_staleness_details"]:
                     with st.expander("Staleness details"):

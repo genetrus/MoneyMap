@@ -356,8 +356,9 @@ def validate(app_data: AppData) -> ValidationReport:
                         _issue(
                             "VARIANT_REGULATED_DOMAIN_GATE_TOO_WEAK",
                             message=(
-                                f"Variant {variant.variant_id} has regulated_domain={regulated_domain} "
-                                "but legal_gate=ok"
+                                "Variant "
+                                f"{variant.variant_id} has regulated_domain="
+                                f"{regulated_domain} but legal_gate=ok"
                             ),
                             source="variants",
                             location=f"variants[{variant.variant_id}].legal.legal_gate",

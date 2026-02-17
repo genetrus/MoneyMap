@@ -52,9 +52,11 @@ def evaluate_legal(
     freshness_unknown = is_freshness_unknown(rulepack_staleness) or is_freshness_unknown(
         variant_staleness
     )
-    regulated = bool(variant.regulated_domain) or any(
-        tag in rulepack.regulated_domains for tag in variant.tags
-    ) or ("regulated" in variant.tags)
+    regulated = (
+        bool(variant.regulated_domain)
+        or any(tag in rulepack.regulated_domains for tag in variant.tags)
+        or ("regulated" in variant.tags)
+    )
 
     if variant.regulated_domain and legal_gate == "ok":
         legal_gate = "require_check"

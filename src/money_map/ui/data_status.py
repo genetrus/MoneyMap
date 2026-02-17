@@ -137,13 +137,20 @@ def derive_registry_metrics(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-
-def regulated_domain_coverage(variants: list[dict[str, Any]], rulepack_payload: dict[str, Any]) -> dict[str, int]:
+def regulated_domain_coverage(
+    variants: list[dict[str, Any]], rulepack_payload: dict[str, Any]
+) -> dict[str, int]:
     regulated = [v for v in variants if v.get("regulated_domain") not in (None, "")]
     require_check = [
         v
         for v in regulated
-        if str(((v.get("legal") or {}).get("legal_gate") or ((v.get("legal") or {}).get("gate")) or "").lower())
+        if str(
+            (
+                (v.get("legal") or {}).get("legal_gate")
+                or ((v.get("legal") or {}).get("gate"))
+                or ""
+            ).lower()
+        )
         == "require_check"
     ]
 
@@ -163,6 +170,7 @@ def regulated_domain_coverage(variants: list[dict[str, Any]], rulepack_payload: 
         "variants_require_check": len(require_check),
         "variants_with_checklist_coverage": checklist_covered,
     }
+
 
 def _parse_iso_date(raw: str | None) -> date | None:
     if not raw:
@@ -189,7 +197,9 @@ def aggregate_pack_metrics(
     meta_payload = read_mapping(pack_dir / "meta.yaml")
 
     variants = variants_payload.get("variants", [])
-    all_cells = [f"{chr(letter)}{row}" for letter in range(ord("A"), ord("P") + 1) for row in range(1, 5)]
+    all_cells = [
+        f"{chr(letter)}{row}" for letter in range(ord("A"), ord("P") + 1) for row in range(1, 5)
+    ]
     variants_per_cell = Counter(str(item.get("cell_id", "unknown")) for item in variants)
     for cell in all_cells:
         variants_per_cell.setdefault(cell, 0)

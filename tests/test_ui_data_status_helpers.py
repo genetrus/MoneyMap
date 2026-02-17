@@ -71,7 +71,7 @@ def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
                 "reviewed_at": "2025-02-01",
                 "regulated_domains": {
                     "childcare": {"checklist": ["doc1"]},
-                    "food": {"checklist": ["doc2"]}
+                    "food": {"checklist": ["doc2"]},
                 },
                 "rules": [{"rule_id": "r1"}, {"rule_id": "r2"}],
             },
@@ -83,8 +83,18 @@ def test_aggregate_pack_metrics_counts_and_staleness(tmp_path: Path) -> None:
         yaml.safe_dump(
             {
                 "variants": [
-                    {"id": "v1", "cell_id": "A1", "regulated_domain": "childcare", "legal": {"legal_gate": "require_check"}},
-                    {"id": "v2", "cell_id": "A1", "regulated_domain": "food", "legal": {"legal_gate": "ok"}},
+                    {
+                        "id": "v1",
+                        "cell_id": "A1",
+                        "regulated_domain": "childcare",
+                        "legal": {"legal_gate": "require_check"},
+                    },
+                    {
+                        "id": "v2",
+                        "cell_id": "A1",
+                        "regulated_domain": "food",
+                        "legal": {"legal_gate": "ok"},
+                    },
                     {"id": "v3", "cell_id": "B2"},
                 ]
             },
