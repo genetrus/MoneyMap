@@ -722,6 +722,18 @@ def run_app() -> None:
             page_slug=page_slug,
             expanded=bool(st.session_state.pop("open_detail_drawer", False)),
         )
+        current_step = guidance_runtime.get("current_step") or {}
+        hint_page = NAV_LABEL_BY_SLUG.get(
+            str(current_step.get("page") or ""), str(current_step.get("page") or "")
+        )
+        st.caption(
+            copy_text(
+                "guided.explorer_context_hint",
+                "Explorer mode: подсказка доступна без авто-навигации — next: {title} ({page}).",
+                title=str(current_step.get("title") or "Следующий шаг"),
+                page=hint_page,
+            )
+        )
 
     def _render_page_header(title: str, subtitle: str | None = None) -> None:
         header_left, header_right = st.columns([0.78, 0.22])
@@ -1459,12 +1471,15 @@ def run_app() -> None:
         def _render_explore() -> None:
             report = _get_validation()
             if report["fatals"]:
-                _render_status(
-                    "invalid_data",
-                    "Explore is blocked by validation fatals.",
-                    reasons=[", ".join(_issue_codes(report["fatals"]))],
-                    level="error",
+                action = render_empty_state(
+                    title="Explore is blocked by validation fatals.",
+                    reason=", ".join(_issue_codes(report["fatals"])),
+                    actions=[{"key": "go_data_status", "label": "Go to Data status"}],
+                    key_prefix="explore-fatals",
                 )
+                if action == "go_data_status":
+                    st.session_state["page"] = "data-status"
+                    st.rerun()
                 return
 
             if report["status"] == "stale":
@@ -1531,12 +1546,15 @@ def run_app() -> None:
 
                 st.subheader(f"Cell {selected_cell}")
                 if not cell_variants:
-                    _render_status(
-                        "empty_view",
-                        "No variants for selected cell.",
-                        reasons=["Try another cell or open Bridges tab."],
-                        level="warning",
+                    action = render_empty_state(
+                        title="No variants for selected cell.",
+                        reason="Try another cell or open Bridges tab.",
+                        actions=[{"key": "open_bridges", "label": "Open Bridges"}],
+                        key_prefix="explore-matrix-empty",
                     )
+                    if action == "open_bridges":
+                        st.session_state["explore_tab"] = "Bridges"
+                        st.rerun()
                     return
                 st.write("Typical variants:")
                 for variant in cell_variants[:12]:
@@ -1603,12 +1621,15 @@ def run_app() -> None:
 
                 st.subheader(f"Taxonomy: {selected_taxonomy}")
                 if not tax_variants:
-                    _render_status(
-                        "empty_view",
-                        "No variants for selected taxonomy.",
-                        reasons=["Try another taxonomy category."],
-                        level="warning",
+                    action = render_empty_state(
+                        title="No variants for selected taxonomy.",
+                        reason="Try another taxonomy category.",
+                        actions=[{"key": "open_matrix", "label": "Open Matrix"}],
+                        key_prefix="explore-tax-empty",
                     )
+                    if action == "open_matrix":
+                        st.session_state["explore_tab"] = "Matrix"
+                        st.rerun()
                     return
                 st.write("Examples:")
                 for variant in tax_variants[:10]:
@@ -1672,12 +1693,15 @@ def run_app() -> None:
                     st.session_state["page"] = "recommendations"
                     st.rerun()
                 if not bridge_variants:
-                    _render_status(
-                        "empty_view",
-                        "No variants mapped to this bridge yet.",
-                        reasons=["Use neighboring bridge or relax filters in Recommendations."],
-                        level="warning",
+                    action = render_empty_state(
+                        title="No variants mapped to this bridge yet.",
+                        reason="Use neighboring bridge or relax filters in Recommendations.",
+                        actions=[{"key": "go_recommendations", "label": "Go to Recommendations"}],
+                        key_prefix="explore-bridge-empty",
                     )
+                    if action == "go_recommendations":
+                        st.session_state["page"] = "recommendations"
+                        st.rerun()
                     return
                 st.write("Common variants for this bridge:")
                 for variant in bridge_variants[:10]:
@@ -1835,12 +1859,15 @@ def run_app() -> None:
                         st.session_state["classify_result"] = None
 
             if st.session_state.get("classify_error"):
-                _render_status(
-                    "error",
-                    "Classification failed.",
-                    reasons=[st.session_state["classify_error"]],
-                    level="error",
+                action = render_empty_state(
+                    title="Classification failed.",
+                    reason=st.session_state["classify_error"],
+                    actions=[{"key": "clear_error", "label": "Try again"}],
+                    key_prefix="classify-error",
                 )
+                if action == "clear_error":
+                    st.session_state["classify_error"] = ""
+                    st.rerun()
                 return
 
             result = st.session_state.get("classify_result")
@@ -1961,15 +1988,18 @@ def run_app() -> None:
                 reasons.extend(
                     [f"Warning: {warning}" for warning in profile_validation["warnings"]]
                 )
-                _render_status(
-                    "not_ready",
-                    copy_text(
+                action = render_empty_state(
+                    title=copy_text(
                         "pages.recommendations.not_ready",
                         "Profile is not ready for recommendations.",
                     ),
-                    reasons=reasons,
-                    level="warning",
+                    reason="; ".join(reasons) if reasons else "Complete profile first.",
+                    actions=[{"key": "go_profile", "label": "Go to Profile"}],
+                    key_prefix="rec-profile-empty",
                 )
+                if action == "go_profile":
+                    st.session_state["page"] = "profile"
+                    st.rerun()
                 return
 
             st.markdown("### Top controls")
@@ -2138,11 +2168,15 @@ def run_app() -> None:
                 "last_recommendations"
             )
             if result is None:
-                _render_status(
-                    "not_ready",
-                    "Run recommendations to see results.",
-                    reasons=["No recommendations have been generated yet."],
+                action = render_empty_state(
+                    title="Run recommendations to see results.",
+                    reason="No recommendations have been generated yet.",
+                    actions=[{"key": "run_now", "label": "Run now"}],
+                    key_prefix="rec-run-empty",
                 )
+                if action == "run_now":
+                    _run_recommendations()
+                    st.rerun()
                 return
 
             st.markdown("### Reality Check")
@@ -2563,7 +2597,11 @@ def run_app() -> None:
                 file_name="plan.md",
                 mime="text/markdown",
             )
-            if st.button("Go to Export", key="plan-go-export"):
+            plan_nav1, plan_nav2 = st.columns(2)
+            if plan_nav1.button("Back to Recommendations", key="plan-back-recommendations"):
+                st.session_state["page"] = "recommendations"
+                st.rerun()
+            if plan_nav2.button("Go to Export", key="plan-go-export"):
                 st.session_state["page"] = "export"
                 st.rerun()
 
@@ -2690,6 +2728,10 @@ def run_app() -> None:
             st.code(run_cmd, language="bash")
             if st.button("Copy run command", key="export-copy-run-cmd"):
                 st.info("Command shown above. Copy from code block.")
+
+            if st.button("Back to Plan", key="export-back-plan"):
+                st.session_state["page"] = "plan"
+                st.rerun()
 
             if st.button("Generate export files", key="export-generate"):
                 try:

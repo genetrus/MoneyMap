@@ -25,6 +25,7 @@ BLOCKER_TEXT = {
     "data_valid == true": "Данные невалидны: открой Data status и исправь FATAL/FAIL.",
     "profile_status == 'ready'": "Профиль не готов: заполни обязательные поля.",
     "selected_variant_id != null": "Сначала выбери вариант в Recommendations.",
+    "classify_ready == true": "Сначала получи результат в Classify.",
     "plan_ready == true": "Сначала построй план на экране Plan.",
     "exports_ready == true": "Сначала сформируй экспортные файлы.",
 }
@@ -166,6 +167,7 @@ def _collect_entities(
         profile_status = "draft"
 
     selected_variant_id = str(state.get("selected_variant_id") or "")
+    classify_ready = state.get("classify_result") is not None
     plan_ready = _is_plan_ready(state.get("plan"))
     exports_ready = _is_exports_ready(state.get("export_paths"))
 
@@ -173,6 +175,7 @@ def _collect_entities(
         "data_valid": data_valid,
         "profile_status": profile_status,
         "selected_variant_id": selected_variant_id or None,
+        "classify_ready": classify_ready,
         "plan_ready": plan_ready,
         "exports_ready": exports_ready,
     }

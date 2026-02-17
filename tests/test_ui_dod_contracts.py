@@ -70,3 +70,12 @@ def test_ui_explore_recommendations_guidance_contract_present() -> None:
     assert "**Почему в топе**" in source
     assert "**Что мешает**" in source
     assert "Explain score" in source
+
+
+def test_ui_explorer_mode_context_help_and_recovery_actions_present() -> None:
+    source = _read_ui_app()
+    assert "guided.explorer_context_hint" in source
+    assert "plan-back-recommendations" in source
+    assert "export-back-plan" in source
+    assert "explore-fatals" in source
+    assert "rec-profile-empty" in source

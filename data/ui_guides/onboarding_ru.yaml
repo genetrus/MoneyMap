@@ -25,12 +25,28 @@ steps:
     completion:
       - "profile_status == 'ready'"
     primary_action:
-      label: "Continue → Recommendations"
-      action_key: "go_recommendations"
-      target_page: "recommendations"
+      label: "Continue → Classify"
+      action_key: "go_classify"
+      target_page: "classify"
     blockers_resolver:
       focus_page: "profile"
       highlight_fields: ["time_per_week", "language_level", "objective"]
+
+  - id: step_classify
+    title: "Сузить фокус через Classify"
+    page: "classify"
+    goal: "Проверить идею и получить фильтр taxonomy/cell перед Recommendations."
+    do_now:
+      - "Введи идею и запусти классификацию"
+      - "Проверь top-3 и отправь prefilter в Recommendations"
+    prerequisites:
+      - "profile_status == 'ready'"
+    completion:
+      - "classify_ready == true"
+    primary_action:
+      label: "Continue → Recommendations"
+      action_key: "go_recommendations"
+      target_page: "recommendations"
 
   - id: step_recommendations
     title: "Выбрать вариант"
@@ -41,6 +57,7 @@ steps:
       - "Выбери вариант"
     prerequisites:
       - "profile_status == 'ready'"
+      - "classify_ready == true"
     completion:
       - "selected_variant_id != null"
     primary_action:
