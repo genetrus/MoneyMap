@@ -171,7 +171,22 @@ def build_theme_css(theme_name: str) -> str:
       --mm-icon-export: url("{ICONS["export"]}");
     }}
 
-    .stApp {{
+    .stApp,
+    .stAppViewContainer,
+    section.main,
+    .block-container {{
+      background: var(--mm-bg);
+      color: var(--mm-text);
+    }}
+
+    header[data-testid="stHeader"] {{
+      background: var(--mm-bg);
+      color: var(--mm-text);
+      border-bottom: 1px solid var(--mm-divider);
+    }}
+
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"] {{
       background: var(--mm-bg);
       color: var(--mm-text);
     }}
@@ -195,9 +210,25 @@ def build_theme_css(theme_name: str) -> str:
       text-decoration: underline;
     }}
 
+
+    div[data-testid="stSidebar"],
+    div[data-testid="stSidebar"] * {{
+      color: var(--mm-text);
+    }}
+
     div[data-testid="stSidebar"] > div {{
       background: var(--mm-sidebar-bg);
     }}
+
+    .stApp input,
+    .stApp textarea,
+    .stApp select,
+    .stApp div[role="combobox"] {{
+      background: var(--mm-control-bg);
+      color: var(--mm-control-text);
+      border-color: var(--mm-control-border);
+    }}
+
 
     .mm-sidebar {{
       color: var(--mm-text);

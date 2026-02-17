@@ -562,7 +562,24 @@ def _score_contribution_rows(rec) -> list[dict[str, float | str]]:
 
 
 def run_app() -> None:
+    st.set_page_config(
+        page_title="MoneyMap",
+        page_icon="🧭",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
     _init_state()
+    theme_preset = str(st.session_state.get("theme_preset") or "Light")
+    if theme_preset not in {"Light", "Dark"}:
+        theme_preset = "Light"
+        st.session_state["theme_preset"] = "Light"
+
+    last_theme = st.session_state.get("_theme_last_applied")
+    theme_change_requested = bool(
+        last_theme is not None and last_theme in {"Light", "Dark"} and last_theme != theme_preset
+    )
+    st.session_state["_theme_last_applied"] = theme_preset
+
     page_slugs = [slug for _, slug in NAV_ITEMS]
 
     params = st.query_params if hasattr(st, "query_params") else st.experimental_get_query_params()
@@ -576,7 +593,9 @@ def run_app() -> None:
     if st.session_state["page"] not in page_slugs:
         st.session_state["page"] = page_slugs[0]
 
-    inject_global_theme(st.session_state.get("theme_preset", "Light"))
+    inject_global_theme(theme_preset)
+    if theme_change_requested:
+        st.rerun()
 
     sidebar_html = """
     <div class="mm-sidebar">
@@ -667,11 +686,21 @@ def run_app() -> None:
     )
     if page_slug != "explore":
         st.session_state["subview"] = ""
+    context_selected_ids = selected_ids_from_state(st.session_state)
+    if page_slug == "data-status":
+        context_selected_ids = {
+            "cell": "",
+            "taxonomy": "",
+            "variant": "",
+            "bridge": "",
+            "path": "",
+        }
+
     render_context_bar(
         page=NAV_LABEL_BY_SLUG.get(page_slug, page_slug),
         subview=st.session_state.get("subview")
         or (st.session_state.get("explore_tab") if page_slug == "explore" else None),
-        selected_ids=selected_ids_from_state(st.session_state),
+        selected_ids=context_selected_ids,
     )
 
     selected_ids = selected_ids_from_state(st.session_state)
@@ -932,27 +961,87 @@ def run_app() -> None:
                 st.subheader("Validation summary")
 
                 validate_rows = build_validate_rows(report)
+                issues_total = len(report["warns"]) + len(report["fatals"])
                 severity_options = ["ALL", "FATAL", "WARN"]
                 entity_options = ["ALL"] + sorted({row["entity_type"] for row in validate_rows})
                 f1, f2 = st.columns(2)
                 with f1:
                     severity_filter = st.selectbox(
-                        "Severity filter", severity_options, key="ds-severity"
+                        "Severity filter",
+                        severity_options,
+                        key="ds-severity",
+                        disabled=issues_total == 0,
+                        help=("Нет issues для фильтрации" if issues_total == 0 else None),
                     )
                 with f2:
                     entity_filter = st.selectbox(
-                        "Entity type filter", entity_options, key="ds-entity"
+                        "Entity type filter",
+                        entity_options,
+                        key="ds-entity",
+                        disabled=issues_total == 0,
+                        help=("Нет issues для фильтрации" if issues_total == 0 else None),
                     )
 
-                filtered_rows = filter_validate_rows(
-                    validate_rows,
-                    severity=severity_filter,
-                    entity_type=entity_filter,
-                )
-                if filtered_rows:
-                    st.dataframe(filtered_rows, use_container_width=True)
+                if issues_total == 0:
+                    st.success("No issues found")
+                    st.caption("Нет issues для фильтрации")
                 else:
-                    st.info("No validate rows for selected filters.")
+                    filtered_rows = filter_validate_rows(
+                        validate_rows,
+                        severity=severity_filter,
+                        entity_type=entity_filter,
+                    )
+                    if filtered_rows:
+                        st.dataframe(filtered_rows, use_container_width=True)
+                    else:
+                        st.info("No validate rows for selected filters.")
+
+                st.markdown("#### Selection context")
+                explicit_selection = {
+                    "cell": str(st.session_state.get("selected_cell_id") or ""),
+                    "taxonomy": str(st.session_state.get("selected_taxonomy_id") or ""),
+                    "variant": str(st.session_state.get("selected_variant_id") or ""),
+                    "bridge": str(st.session_state.get("selected_bridge_id") or ""),
+                    "path": str(st.session_state.get("selected_path_id") or ""),
+                }
+                active_selection = {k: v for k, v in explicit_selection.items() if v}
+                if not active_selection:
+                    st.caption("Selected: none")
+                else:
+                    st.caption(
+                        "Selected: "
+                        + ", ".join([f"{key}={value}" for key, value in active_selection.items()])
+                    )
+                    nav_col1, nav_col2, nav_col3, nav_col4 = st.columns(4)
+                    with nav_col1:
+                        if st.button("Clear", key="data-status-clear-selection"):
+                            for state_key in (
+                                "selected_cell_id",
+                                "selected_taxonomy_id",
+                                "selected_variant_id",
+                                "selected_bridge_id",
+                                "selected_path_id",
+                            ):
+                                st.session_state[state_key] = ""
+                            st.rerun()
+                    with nav_col2:
+                        if st.button("Open Explore", key="data-status-open-explore"):
+                            st.session_state["page"] = "explore"
+                            st.rerun()
+                    with nav_col3:
+                        if st.button(
+                            "Open Recommendations", key="data-status-open-recommendations"
+                        ):
+                            st.session_state["page"] = "recommendations"
+                            st.rerun()
+                    with nav_col4:
+                        if st.button(
+                            "Open Plan",
+                            key="data-status-open-plan",
+                            disabled=not bool(explicit_selection["variant"]),
+                        ):
+                            st.session_state["page"] = "plan"
+                            st.rerun()
 
                 metric_cols = st.columns(4)
                 metric_cols[0].metric(
